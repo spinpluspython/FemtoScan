@@ -44,7 +44,7 @@ class Stage(Instrument.Instrument):
     def set_zero_position(self):
         self.position_zero=self.position_current
         self.position_max=self.position_max-self.position_current
-        self.position_min=self.position_min+self.position_current
+        self.position_min=self.position_min-self.position_current
         self.position_current=0
     
     def position_get(self):

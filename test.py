@@ -9,7 +9,13 @@ import Lockin
 
 stage=Stage.Stage()
 lockin=Lockin.Lockin()
-
+stage.connect()
+lockin.connect()
 for i in range(0,10):
     stage.move_relative(16)
     lockin.read_value('R')
+    
+stage.set_zero_position()
+stage.move_relative(-10)
+lockin.disconnect()
+stage.disconnect()

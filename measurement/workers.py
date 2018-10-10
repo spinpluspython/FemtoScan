@@ -4,17 +4,10 @@ Created on Nov 22 09:57:29 2017
 
 @author: S.Y. Agustsson
 """
+
 import time
-
 from PyQt5 import QtCore
-
-from utils.utils import raise_Qerror
-
-
-def main():
-    # w = Worker()
-    # w.work()
-    pass
+from utilities.qt import raise_Qerror
 
 
 class Worker(QtCore.QObject):
@@ -29,7 +22,7 @@ class Worker(QtCore.QObject):
     signals emitted:
         finished (dict): at end of the scan, emits the results stored over the whole scan.
         newData (dict): emitted at each measurement point. Usually contains a dictionary with the last measured values
-            toghether with scan progress information.
+            together with scan progress information.
         state (str): emitted when state of the worker changes. Allowed values of state are defined in STATE_VALUES.
     """
 
@@ -141,6 +134,12 @@ class Worker(QtCore.QObject):
         For hard stop, use kill_worker slot.
         """
         self.shouldStop = flag
+
+
+def main():
+    # w = Worker()
+    # w.work()
+    pass
 
 
 if __name__ == "__main__":

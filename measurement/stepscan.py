@@ -5,8 +5,9 @@
 """
 from PyQt5 import QtCore
 from measurement.workers import Worker
-from utils.utils import raise_Qerror
+from utilities.qt import raise_Qerror
 import time
+
 
 def main():
     pass
@@ -58,9 +59,9 @@ class StepScanWorker(Worker):
         print('worker scanning')
         self.state = 'scanning'
         pointsPerScan = len(self.stagePositions)
-        j=0
+        j = 0
         while j < self.numberOfScans:
-            j=j+1
+            j = j + 1
             self.result['data'][j] = {}
             for i in range(pointsPerScan):
                 pos = self.stagePositions[i]
@@ -89,6 +90,7 @@ class StepScanWorker(Worker):
     @QtCore.pyqtSlot(int)
     def set_number_of_scans(self, new_numberOfScans):
         self.set_numberOfScans = new_numberOfScans
+
 
 if __name__ == '__main__':
     main()

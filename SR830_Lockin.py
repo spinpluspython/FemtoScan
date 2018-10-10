@@ -39,12 +39,9 @@ class SR830(Lockin.Lockin):
         self.ser.port = self.COMPort
         self.sensetivity_dict = {'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3, '50nV/fA': 4, '100nV/fA': 5,
                                  '200nV/fA': 6, '500nV/fA': 7, '1uV/pA': 8, '2uV/pA': 9, '5uV/pA': 10, '10uV/pA': 11,
-                                 '20uV/pA': 12,
-                                 '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15, '500uV/pA': 16, '1mV/nA': 17,
-                                 '2mV/nA': 18,
-                                 '5mV/nA': 19, '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22, '100mV/nA': 23,
-                                 '200mV/nA': 24,
-                                 '500mV/nA': 25, '1V/uA': 26}
+                                 '20uV/pA': 12, '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15, '500uV/pA': 16,
+                                 '1mV/nA': 17, '2mV/nA': 18, '5mV/nA': 19, '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22,
+                                 '100mV/nA': 23, '200mV/nA': 24, '500mV/nA': 25, '1V/uA': 26}
 
         self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
                             'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
@@ -82,9 +79,11 @@ class SR830(Lockin.Lockin):
     # %% conection to Prologix USB-GPIB adapter
 
     def connect(self):
-        '''Set up the the connection with USB to GPIB adapter, opens port, sets up adater for communication with Lokin SR830m
+        """ connect to Lockin through Prologix USB-GPIB adapter
+
+        Set up the the connection with USB to GPIB adapter, opens port, sets up adater for communication with Lokin SR830m
         After using Lockin use Disconnect function to close the port
-        '''
+        """
         try:
             self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
             self.ser.write(
@@ -100,14 +99,15 @@ class SR830(Lockin.Lockin):
             self.ser.close()
 
     def disconnect(self):
-        '''Close com port
-        '''
+        """Close com port
+        """
         self.ser.close()
 
     def write(self, Command):
-        '''Send any command to the opened port in right format. 
+        """ Send any command to the opened port in right format.
+
         Comands which started with ++ goes to the prologix adapter, others go directly to device(Lockin)
-        '''
+        """
         try:
             # self.ser.open()
             self.ser.write((Command + '\r\n').encode('utf-8'))
@@ -118,36 +118,55 @@ class SR830(Lockin.Lockin):
 
     # %% Reading Lockin SR830 functions
 
-    def read(self, Command):
-        '''reads any information from lockin, input command should be query command for lockin, see manual.
-        Returns answer from lockin as a byte
-        '''
+    def read(self, command):
+        """reads any information from lockin, input command should be query command for lockin, see manual.
+        : parameters :
+            command: str
+                command string to send to lockin
+        : return :
+            value:
+                answer from lockin as byte
+        """
         try:
             # self.ser.open()
-            self.ser.write((Command + '\r\n').encode(
+            self.ser.write((command + '\r\n').encode(
                 'utf-8'))  # query info from lockin. adapter reads answer automaticaly and store it
             self.ser.write(('++read eoi\r\n').encode(
                 'utf-8'))  # query data stored in adapter, eoi means that readin will end as soon as special caracter will recieved. without it will read before timeout, which slow down reading
-            Value = self.ser.readline()  # reads answer
+            value = self.ser.readline()  # reads answer
             # self.ser.close()
-            return Value
+            return value
         except Exception as r:
             self.ser.close()
             print(r)
 
     def read_value(self, parameter):
-        '''Reads measured value from lockin. Parametr is a string like in manual. 
-        except Theta. Che the dictionary of parametrs for Output
-        '''
+        """Reads measured value from lockin.
+
+        Parametr is a string like in manual. except Theta. Che the dictionary of parametrs for Output
+
+        : parameters :
+            Parameter: str
+                string for communication as given in the manual.
+        : return :
+            value:
+                ???
+        """
         Command = 'OUTP ?' + str(self.output_dict[parameter])
         Value = float(self.read(Command))  # returns value as a float
         print(str(Value) + ' V')
         return Value
 
     def readSnap(self, parametrs):
-        '''Read chosen Values from Lokin simultaniously. returns dictionary of values. 
-        Parametrs is a list of strings from outputDict. Sould be at least 2
-        '''
+        """Read chosen Values from Lockin simultaneously.
+
+        : parameters :
+            parameters: lsit of strings
+                Parametrs is a list of strings from outputDict. Sould be at least 2
+        :return:
+            output: dict
+                returns dictionary of values.
+        """
         command = 'SNAP ? '
         for item in parametrs:
             command = command + str(self.output_dict[item]) + ', '  # compose command string with parametrs in input

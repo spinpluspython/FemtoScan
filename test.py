@@ -4,11 +4,10 @@ Created on Sat Apr 21 18:40:06 2018
 
 @author: t869
 """
-import Stage
-import Lockin
+from instruments import delaystage, lockinamplifier
 
-stage=Stage.Stage()
-lockin=Lockin.Lockin()
+stage= delaystage.DelayStage()
+lockin= lockinamplifier.LockInAmplifier()
 stage.connect()
 lockin.connect()
 for i in range(0,10):

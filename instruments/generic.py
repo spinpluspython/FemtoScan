@@ -22,6 +22,36 @@ Created on Sat Apr 21 16:08:39 2018
 """
 from configparser import ConfigParser
 
+
+class ExperimentalSetup(object):
+    """ WARNING: WORK IN PROGRESS"""
+    def __init__(self):
+        self.instrument_list = []
+
+    def add_instrument(self, name, model):
+        """ Add an instrument to the experimental setup
+
+        adds as a class attribute an instance of a given model of an instrument,
+        with a name of choice.
+
+        This is intended to use by calling ExpSetup.<instrument name>
+
+        : parameters :
+            name: str
+                name to give to this specific instrument
+            model: Instrument
+                instance of the class corresponding to the model of this instrument
+        """
+        assert isinstance(model,Instrument), '{} is not a recognized instrument type'.format(model)
+        setattr(self,name,model)
+        self.instrument_list.append(name)
+
+    def print_setup(self):
+        for name in self.instrument_list:
+            print('{}: type:{}'.format(name,type(getattr(self,name))))
+
+
+
 class Instrument(object):
     def __init__(self):
         self.connection_type = 'COM'

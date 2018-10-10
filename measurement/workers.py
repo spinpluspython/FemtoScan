@@ -9,6 +9,12 @@ import time
 from PyQt5 import QtCore
 from utilities.qt import raise_Qerror
 
+class Experiment(QtCore.QObject):
+
+    def __init__(self):
+        super(Experiment, self).__init__()
+
+        self.instruments =1
 
 class Worker(QtCore.QObject):
     """ Parent class for all workers.

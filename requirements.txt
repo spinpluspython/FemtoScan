@@ -1,0 +1,7 @@
+h5py==2.7.1
+matplotlib==2.2.2
+numpy==1.14.2
+pyqtgraph==0.10.0
+pyserial==3.4
+CommandInterfaceXPS
+PyQt5

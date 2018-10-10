@@ -36,11 +36,11 @@ class Instrument(object):
         print('unable to disconnect from the real instrument, function is not yet implemented')
         pass
 
-    def read(self):
+    def read(self, command):
         print('unable to read from the real instrument, function is not yet implemented')
         pass
 
-    def write(self):
+    def write(self, command):
         print('unable to write to the real instrument, function is not yet implemented')
         pass
 

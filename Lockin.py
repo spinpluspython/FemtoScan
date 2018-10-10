@@ -49,7 +49,7 @@ class Lockin(Instrument.Instrument):
 
     # %% set parameters
 
-    def set_sensetivity(self, sens):
+    def set_sensitivity(self, sens):
         self.configuration['Sensetivity'] = sens
 
     def set_time_constant(self, const):
@@ -66,7 +66,7 @@ class Lockin(Instrument.Instrument):
 
     # %% get parameters
 
-    def get_sensetivity(self):
+    def get_sensitivity(self):
         pass
 
     def get_time_constant(self):
@@ -97,8 +97,8 @@ class Lockin(Instrument.Instrument):
         self.set_reference_source(self.configuration['Reference source'])
         self.set_reference_trigger(self.configuration['Reference trigger'])
 
-    def saveConfiguration(self):
+    def save_configurution(self):
         pass
 
-    def laodConfiguration(self):
+    def laod_configuration(self):
         pass

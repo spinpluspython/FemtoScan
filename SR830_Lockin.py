@@ -12,7 +12,7 @@ class SR830(Lockin.Lockin):
     
     def __init__(self):
         self.COMPort='COM6'
-        self.Baud=115200
+        self.Baud=19200
         self.deviceAddr=8
         self.ser=serial.Serial()
         self.ser.baudrate=self.Baud
@@ -30,6 +30,8 @@ class SR830(Lockin.Lockin):
                             '10ms':6,'30ms':7,'100ms':8,'300ms':9,'1s':10,'3s':11,
                             '10s':12,'30s':13,'100s':14,'300s':15,'1ks':16,'3ks':17,
                             '10ks':18,'30ks':19}
+                            
+        self.sleep_time_dict={0:0.00001, 1:0.00003, 2:0.0001, 3:0.0003, 4:0.001, 5:0.003, 6:0.01, 7:0.03, 8:0.1, 9:0.3, 10:1, 11:3, 12: 10, 13: 30, 14: 100, 15: 300, 16: 1000, 17:3000}
         
         self.low_pass_filter_slope_dict={'6 dB':0, '12 dB':1, '18 dB':2, '24 dB':3}
         
@@ -65,8 +67,8 @@ class SR830(Lockin.Lockin):
             Value=self.ser.readline() # reads version
             print(Value)
             #self.ser.close()
-            self.sendCommand('++eoi 1') # enable the eoi signal mode, which signals about and of the line
-            self.sendCommand('++eos 2') # sets up the terminator <lf> wich will be added to every command for Lockin, this is only for GPIB connetction
+            self.write('++eoi 1') # enable the eoi signal mode, which signals about and of the line
+            self.write('++eos 2') # sets up the terminator <lf> wich will be added to every command for Lockin, this is only for GPIB connetction
         except Exception as xui: 
             print('error'+str(xui))
             self.ser.close()   
@@ -114,7 +116,7 @@ class SR830(Lockin.Lockin):
         print(str(Value)+' V')
         return Value
         
-    def readSnap(self, parametrs):
+    def read_snap(self, parametrs):
         '''Read chosen Values from Lokin simultaniously. returns dictionary of values. 
         Parametrs is a list of strings from outputDict. Sould be at least 2
         '''
@@ -130,6 +132,18 @@ class SR830(Lockin.Lockin):
         print(output)
         return output
         
+    def measure(self, avg=10, sleep=None, var='R'):
+        '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
+        if sleep==None:
+            sleeptime=self.sleep_time_dict[self.get_time_constant()]
+            sleep=3*float(sleeptime)
+            
+        signal=[]
+        time.sleep(sleep)
+        for i in range(avg):
+            signal.append(self.read_value(var))
+            val=sum(signal)/avg
+        return val
 #%% Set parametrs functions
         
     def set_to_default(self):
@@ -351,11 +365,12 @@ class SR830(Lockin.Lockin):
 
 if __name__ == '__main__':
     a=SR830()
-    a.connect()    #a.ser.write((Command+'\r\n').encode('utf-8'))
+    a.connect()    
+    #a.ser.write((Command+'\r\n').encode('utf-8'))
     #a.ser.write(('++read\r\n').encode('utf-8'))
     time0=time.clock()
     for i in range(0,10):
-        a.readValue('X')
+        a.read_value('X')
         
     time1=time.clock()
     print(time1-time0)

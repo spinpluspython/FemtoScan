@@ -112,7 +112,7 @@ class SR830(LockInAmplifier):
     def __init__(self):
         super(SR830, self).__init__()
         self.COMPort='COM6'
-        self.Baud=19200
+        self.Baud=9600
         self.deviceAddr=8
         self.ser=serial.Serial()
         self.ser.baudrate=self.Baud
@@ -207,6 +207,7 @@ class SR830(LockInAmplifier):
             #self.ser.close()
             self.write('++eoi 1') # enable the eoi signal mode, which signals about and of the line
             self.write('++eos 2') # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
+            self.write('++addr '+str(self.deviceAddr))
         except Exception as xui: 
             print('error'+str(xui))
             self.ser.close()   

@@ -21,7 +21,7 @@ class stepscan_measurements(object):
 
     def init_instruments(self):
         self.lockin_amplifier.connect()
-        self.cryostat.connect()
+        #self.cryostat.connect()
         # Magnet=CurrentSupplyLib.CurrentSUP()
         # Magnet.initcurrentsupply()
         # Magnet.SetVoltage(40)
@@ -55,8 +55,8 @@ class stepscan_measurements(object):
             self.delay_stage.move_absolute(item)
             # time.sleep(0.0)
             Y.append(self.lockin_amplifier.read_value('R'))
-            matplotlib.pyplot.plot(X, Y)
-            self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
+        matplotlib.pyplot.plot(X, Y)
+        self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
         return X, Y
 
     def finish(self):

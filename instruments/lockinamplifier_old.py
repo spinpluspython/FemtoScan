@@ -28,12 +28,18 @@ import time
 
 
 class LockInAmplifier(generic.Instrument):
+    """ generic lock-in amplifier class."""
     def __init__(self):
         super(LockInAmplifier, self).__init__()
 
         self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
                               'Frequency': 1, 'Reference trigger': 0}
-        self.sensitivity = self.attribute()
+        self.sensitivity = self.parameter()
+        self.time_constant = self.parameter()
+        self.reference_source = self.parameter()
+        self.frequency = self.parameter()
+        self.reference_trigger = self.parameter()
+
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
 

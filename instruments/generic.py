@@ -133,7 +133,7 @@ class Instrument(object):
         raise NotImplementedError('method not implemented for the current model')
 
 
-class parameter(object):
+class Parameter(object):
     """ [DEPRECATED] Value which can be set/read from the instrument."""
 
     def __init__(self, parent_instrument, **kwargs):
@@ -143,7 +143,7 @@ class parameter(object):
         self.value = None
         self.value_type = None
         self.codex = {}  # dictionary that converts humanly readable values into the instruments command value
-
+        self.cmd = None
 
         self.default_value = 0
         self.CONFIRM_VALUE_IS_SET = True
@@ -166,7 +166,7 @@ class parameter(object):
         # self.parent_instrument.write(command)
         # if self.CONFIRM_VALUE_IS_SET:
         #     self.get()
-        raise NotImplementedError('set function not implemented in this parameter class')
+        raise NotImplementedError('set function not implemented in this Parameter class')
 
     def get(self):
         # """ Read the value from the instrument"""
@@ -174,7 +174,7 @@ class parameter(object):
         # readVal = self.parent_instrument.read(self.read_command)
         # self.value = readVal
         # return readVal
-        raise NotImplementedError('set function not implemented in this parameter class')
+        raise NotImplementedError('set function not implemented in this Parameter class')
 
 
 
@@ -187,6 +187,3 @@ if __name__ == '__main__':
 
     inst.save_configuration('test')
 
-
-class NotConnectedError(Exception):
-    pass

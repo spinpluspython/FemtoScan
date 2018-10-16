@@ -639,108 +639,105 @@ class SR830_v2(LockInAmplifier):
     def __init__(self):
         super(SR830_v2, self).__init__()
 
-        self.deviceAddr = 8
+        self.GPIB_address = 8
         self.ser = serial.Serial()
         self.ser.baudrate = 19200
         self.ser.port = 'COM6'
+        self.COM_PORT_OPEN = False
+        self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
+                            'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
 
-        self.sensitivity = self.parSR830(self,
-                                         codex={'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3, '50nV/fA': 4,
-                                                '100nV/fA': 5,
-                                                '200nV/fA': 6, '500nV/fA': 7, '1uV/pA': 8, '2uV/pA': 9,
-                                                '5uV/pA': 10, '10uV/pA': 11,
-                                                '20uV/pA': 12,
-                                                '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15, '500uV/pA': 16,
-                                                '1mV/nA': 17,
-                                                '2mV/nA': 18,
-                                                '5mV/nA': 19, '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22,
-                                                '100mV/nA': 23,
-                                                '200mV/nA': 24,
-                                                '500mV/nA': 25, '1V/uA': 26},
-                                         value=0,
-                                         value_type=int,
-                                         cmd='SENS')
-        self.time_constant = self.parSR830(self,
-                                           codex={'10us': 0, '30us': 1, '100us': 2, '300us': 3, '1ms': 4, '3ms': 5,
-                                                  '10ms': 6, '30ms': 7, '100ms': 8, '300ms': 9, '1s': 10, '3s': 11,
-                                                  '10s': 12, '30s': 13, '100s': 14, '300s': 15, '1ks': 16,
-                                                  '3ks': 17,
-                                                  '10ks': 18, '30ks': 19},
-                                           value=0,
-                                           value_type=int,
-                                           cmd='OFLT')
-        self.low_pass_filter_slope = self.parSR830(self,
-                                                   codex={'6 dB': 0, '12 dB': 1, '18 dB': 2, '24 dB': 3},
-                                                   value=0,
-                                                   value_type=int,
-                                                   cmd='OFSL')
-        self.input_config = self.parSR830(self,
-                                          codex={'A': 0, 'A-B': 1, 'I(1mOm)': 2, 'I(100mOm)': 3},
-                                          value=0,
-                                          value_type=int,
-                                          cmd='ISRC')
-        self.input_shield = self.parSR830(self,
-                                          codex={'Float': 0, 'Ground': 1},
-                                          value=0,
-                                          value_type=int,
-                                          cmd='IGND')
-
-        self.input_coupling = self.parSR830(self,
-                                            codex={'AC': 0, 'DC': 1},
-                                            value=0,
-                                            value_type=int,
-                                            cmd='ICPL')
-
-        self.input_line_notch_filter = self.parSR830(self,
-                                                     codex={'no filters': 0, 'Line notch': 1, '2xLine notch': 2,
-                                                            'Both notch': 3},
-                                                     value=0,
-                                                     value_type=int,
-                                                     cmd='ILIN')
-        self.reserve_mode = self.parSR830(self,
-                                          codex={'Nigh Reserve': 0, 'Normal': 1, 'Low Noise': 2},
-                                          value=0,
-                                          value_type=int,
-                                          cmd='RMOD')
-
-        self.synchronous_filter = self.parSR830(self,
-                                                codex={'Off': 0, 'below 200Hz': 1},
-                                                value=0,
-                                                value_type=int,
-                                                cmd='SYNC')
-        self.phase = self.parSR830(self,
-                                   codex={},
-                                   value=0,
-                                   value_type=int,
-                                   cmd='PHAS')
-        self.reference_source = self.parSR830(self,
-                                              codex={'internal': 0, 'external': 1},
-                                              value=0,
-                                              value_type=int,
-                                              cmd='FMOD')
-
-        self.frequency = self.parSR830(self,
-                                       codex={},
-                                       value=1,
-                                       value_type=int,
-                                       cmd='FREQ')
-        self.reference_trigger = self.parSR830(self,
-                                               codex={'Zero crossing': 0, 'Rising edge': 1, 'Falling edge': 2},
+        self.sensitivity = self.SR830Parameter(self,
+                                               codex={'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3,
+                                                      '50nV/fA': 4, '100nV/fA': 5, '200nV/fA': 6, '500nV/fA': 7,
+                                                      '1uV/pA': 8, '2uV/pA': 9, '5uV/pA': 10, '10uV/pA': 11,
+                                                      '20uV/pA': 12, '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15,
+                                                      '500uV/pA': 16, '1mV/nA': 17, '2mV/nA': 18, '5mV/nA': 19,
+                                                      '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22, '100mV/nA': 23,
+                                                      '200mV/nA': 24, '500mV/nA': 25, '1V/uA': 26},
                                                value=0,
                                                value_type=int,
-                                               cmd='RSPL')
-        self.detection_harmonic = generic.parameter(self,
+                                               cmd='SENS')
+        self.time_constant = self.SR830Parameter(self,
+                                                 codex={'10us': 0, '30us': 1, '100us': 2, '300us': 3, '1ms': 4,
+                                                        '3ms': 5, '10ms': 6, '30ms': 7, '100ms': 8, '300ms': 9,
+                                                        '1s': 10, '3s': 11, '10s': 12, '30s': 13, '100s': 14,
+                                                        '300s': 15, '1ks': 16, '3ks': 17, '10ks': 18, '30ks': 19},
+                                                 value=0,
+                                                 value_type=int,
+                                                 cmd='OFLT')
+        self.low_pass_filter_slope = self.SR830Parameter(self,
+                                                         codex={'6 dB': 0, '12 dB': 1, '18 dB': 2, '24 dB': 3},
+                                                         value=0,
+                                                         value_type=int,
+                                                         cmd='OFSL')
+        self.input_config = self.SR830Parameter(self,
+                                                codex={'A': 0, 'A-B': 1, 'I(1mOm)': 2, 'I(100mOm)': 3},
+                                                value=0,
+                                                value_type=int,
+                                                cmd='ISRC')
+        self.input_shield = self.SR830Parameter(self,
+                                                codex={'Float': 0, 'Ground': 1},
+                                                value=0,
+                                                value_type=int,
+                                                cmd='IGND')
+
+        self.input_coupling = self.SR830Parameter(self,
+                                                  codex={'AC': 0, 'DC': 1},
+                                                  value=0,
+                                                  value_type=int,
+                                                  cmd='ICPL')
+
+        self.input_line_notch_filter = self.SR830Parameter(self,
+                                                           codex={'no filters': 0, 'Line notch': 1, '2xLine notch': 2,
+                                                                  'Both notch': 3},
+                                                           value=0,
+                                                           value_type=int,
+                                                           cmd='ILIN')
+        self.reserve_mode = self.SR830Parameter(self,
+                                                codex={'Nigh Reserve': 0, 'Normal': 1, 'Low Noise': 2},
+                                                value=0,
+                                                value_type=int,
+                                                cmd='RMOD')
+
+        self.synchronous_filter = self.SR830Parameter(self,
+                                                      codex={'Off': 0, 'below 200Hz': 1},
+                                                      value=0,
+                                                      value_type=int,
+                                                      cmd='SYNC')
+        self.phase = self.SR830Parameter(self,
+                                         codex={},
+                                         value=0,
+                                         value_type=int,
+                                         cmd='PHAS')
+        self.reference_source = self.SR830Parameter(self,
+                                                    codex={'internal': 0, 'external': 1},
+                                                    value=0,
+                                                    value_type=int,
+                                                    cmd='FMOD')
+
+        self.frequency = self.SR830Parameter(self,
+                                             codex={},
+                                             value=1,
+                                             value_type=int,
+                                             cmd='FREQ')
+        self.reference_trigger = self.SR830Parameter(self,
+                                                     codex={'Zero crossing': 0, 'Rising edge': 1, 'Falling edge': 2},
+                                                     value=0,
+                                                     value_type=int,
+                                                     cmd='RSPL')
+        self.detection_harmonic = self.SR830Parameter(self,
                                                     codex={},
                                                     value=1,
                                                     value_type=int,
                                                     cmd='HARM')
-        self.sine_output_amplitude = generic.parameter(self,
+        self.sine_output_amplitude = self.SR830Parameter(self,
                                                        codex={},
                                                        value=2,
                                                        value_type=int,
                                                        cmd='SLVL')
 
-    class parSR830(generic.parameter):
+    class SR830Parameter(generic.Parameter):
         """ Class for the internal parameters of the lock-in.
         This allows to get and set such parameters."""
 
@@ -749,11 +746,11 @@ class SR830_v2(LockInAmplifier):
             self.default_value = self.value
 
         def set(self, value):
-            """ set the given value to the parameter on the lock-in
+            """ set the given value to the Parameter on the lock-in
 
             :parameters:
                 value: str | int
-                    value to be set to the parameter
+                    value to be set to the Parameter
             """
             if isinstance(value, str):
                 command = self.cmd + self.codex[value]
@@ -777,3 +774,144 @@ class SR830_v2(LockInAmplifier):
 
             self.value = self.value_type(value)
             return self.value
+
+    def is_connected(self):
+        """ test if the lock-in amplifier is connected and read/write is allowed.
+
+        :return:
+            answer: bool
+                True: locking is connected. False: Locking is NOT connected
+        """
+        try:
+            self.ser.write(
+                '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
+            val = self.ser.readline()  # reads version
+            self.COM_PORT_OPEN = True
+            return True
+        except Exception:
+            self.COM_PORT_OPEN = False
+            return False
+
+    def connect(self):
+        """ connect to LockInAmplifier through Prologix USB-GPIB adapter
+
+        Set up the the connection with USB to GPIB adapter, opens port, sets up adater for communication with Lokin SR830m
+        After using LockInAmplifier use Disconnect function to close the port
+        """
+        try:
+            self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
+            self.ser.write(
+                '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
+            Value = self.ser.readline()  # reads version
+            print(Value)
+            # self.ser.close()
+            self.write('++eoi 1')  # enable the eoi signal mode, which signals about and of the line
+            self.write(
+                '++eos 2')  # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
+            self.COM_PORT_OPEN = True
+        except Exception as xui:
+            print('error' + str(xui))
+            self.ser.close()
+
+    def disconnect(self):
+        """Close com port
+        """
+        self.ser.close()
+        self.COM_PORT_OPEN = False
+
+    def write(self, Command):
+        """ Send any command to the opened port in right format.
+
+        Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
+        """
+        assert self.COM_PORT_OPEN is True, 'COM port closed.'
+        try:
+            self.ser.write((Command + '\r\n').encode('utf-8'))
+        except Exception as e:
+            self.disconnect()
+            print('writing aborted: error - {}\n COM port closed'.format(e))
+            # self.ser.close()
+
+    # %% Reading LockInAmplifier SR830 functions
+
+    def read(self, command):
+        """reads any information from lockin, input command should be query command for lockin, see manual.
+        : parameters :
+            command: str
+                command string to send to lockin
+        : return :
+            value:
+                answer from lockin as byte
+        """
+        assert self.COM_PORT_OPEN is True, 'COM port closed.'
+
+        try:
+            # self.ser.open()
+            self.ser.write((command + '\r\n').encode(
+                'utf-8'))  # query info from lockin. adapter reads answer automaticaly and store it
+            self.ser.write(('++read eoi\r\n').encode(
+                'utf-8'))  # query data stored in adapter, eoi means that readin will end as soon as special caracter will recieved. without it will read before timeout, which slow down reading
+            value = self.ser.readline()  # reads answer
+            # self.ser.close()
+            return value
+        except Exception as e:
+            self.disconnect()
+            print('Reading aborted: error - {}\n COM port closed'.format(e))
+
+    def read_value(self, parameter):
+        """Reads measured value from lockin.
+
+        Parametr is a string like in manual. except Theta. Che the dictionary of parametrs for Output
+
+        : parameters :
+            Parameter: str
+                string for communication as given in the manual.
+        : return :
+            value:
+                ???
+        """
+        Command = 'OUTP ?' + str(self.output_dict[parameter])
+        Value = float(self.read(Command))  # returns value as a float
+        print(str(Value) + ' V')
+        return Value
+
+    def readSnap(self, parametrs):
+        """Read chosen Values from LockInAmplifier simultaneously.
+
+        : parameters :
+            parameters: lsit of strings
+                Parametrs is a list of strings from outputDict. Sould be at least 2
+        :return:
+            output: dict
+                returns dictionary of values.
+        """
+        command = 'SNAP ? '
+        for item in parametrs:
+            command = command + str(self.output_dict[item]) + ', '  # compose command string with parametrs in input
+        command = command[:-2]  # cut last ', '
+        string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
+        values = string.split(',')  # split answer to separated values
+        output = {}
+        for idx, item in enumerate(parametrs):
+            output[item] = float(values[idx])  # compose dictionary of values(float)
+        print(output)
+        return output
+
+    def measure(self, avg=10, sleep=None, var='R'):
+        '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
+        if sleep == None:
+            sleeptime = self.sleep_time_dict[self.get_time_constant()]
+            sleep = 3 * float(sleeptime)
+
+        signal = []
+        time.sleep(sleep)
+        for i in range(avg):
+            signal.append(self.read_value(var))
+            val = sum(signal) / avg
+        return val
+
+    # %% Set parametrs functions
+
+    def set_to_default(self):
+        """ Hardware reset Lock-in Amplifier."""
+        self.write('*RST')

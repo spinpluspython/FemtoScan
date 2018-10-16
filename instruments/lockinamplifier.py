@@ -34,6 +34,7 @@ class LockInAmplifier(generic.Instrument):
         self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
                               'Frequency': 1, 'Reference trigger': 0}
         self.sensitivity = self.attribute()
+
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
 
@@ -111,51 +112,58 @@ class SR830(LockInAmplifier):
 
     def __init__(self):
         super(SR830, self).__init__()
-        self.COMPort='COM6'
-        self.Baud=19200
-        self.deviceAddr=8
-        self.ser=serial.Serial()
-        self.ser.baudrate=self.Baud
-        self.ser.port=self.COMPort
-        self.sensetivity_dict={'2nV/fA':0,'5nV/fA':1,'10nV/fA':2,'20nV/fA':3,'50nV/fA':4,'100nV/fA':5,
-                       '200nV/fA':6,'500nV/fA':7,'1uV/pA':8,'2uV/pA':9,'5uV/pA':10,'10uV/pA':11,'20uV/pA':12,
-                       '50uV/pA':13,'100uV/pA':14,'200uV/pA':15,'500uV/pA':16,'1mV/nA':17,'2mV/nA':18,
-                       '5mV/nA':19,'10mV/nA':20,'20mV/nA':21,'50mV/nA':22,'100mV/nA':23,'200mV/nA':24,
-                       '500mV/nA':25,'1V/uA':26}
-        
-        self.output_dict={'X':1,'Y':2,'R':3,'Theta':4,'Aux in 1':5,'Aux in 2':6,'Aux in 3':7,
-                    'Aux in 4':8,'Reference Frequency':9,'CH1 display': 10,'CH2 diplay': 11}
-        
-        self.time_constant_dict={'10us':0,'30us':1,'100us':2,'300us':3,'1ms':4,'3ms':5,
-                            '10ms':6,'30ms':7,'100ms':8,'300ms':9,'1s':10,'3s':11,
-                            '10s':12,'30s':13,'100s':14,'300s':15,'1ks':16,'3ks':17,
-                            '10ks':18,'30ks':19}
-                            
-        self.sleep_time_dict={0:0.00001, 1:0.00003, 2:0.0001, 3:0.0003, 4:0.001, 5:0.003, 6:0.01, 7:0.03, 8:0.1, 9:0.3, 10:1, 11:3, 12: 10, 13: 30, 14: 100, 15: 300, 16: 1000, 17:3000}
-        
-        self.low_pass_filter_slope_dict={'6 dB':0, '12 dB':1, '18 dB':2, '24 dB':3}
-        
-        self.input_config={'A':0,'A-B':1,'I(1mOm)':2,'I(100mOm)':3}
-        
-        self.input_shield={'Float':0,'Ground':1}
-        
-        self.input_coupling={'AC':0,'DC':1}
-        
-        self.input_line_notch_filter={'no filters':0,'Line notch':1,'2xLine notch':2,'Both notch':3}
-        
-        self.reserve_mode={'Nigh Reserve':0, 'Normal':1,'Low Noise':2}
-        
-        self.synchronous_filter={'Off':0,'below 200Hz':1}
-        
-        self.reference_source={'internal':0,'external':1}
-        
-        self.reference_trigger={'Zero crossing':0,'Rising edge':1,'Falling edge':2}
-        
-        self.configuration={'Sensitivity':0,'Time constant':0,'Low pass filter slope':0,'Input configuration':0,'Input shield':0,
-                            'Input coupling':0, 'Input notch filter':0, 'Reserve mode':0,'Synchronous filter':0,'Reference source':0,
-                            'Frequency':1,'Reference trigger':0,'Detection harmonic':1,'Sine output amplitude':2}
-        
-#%% conection to Prologix USB-GPIB adapter
+        self.COMPort = 'COM6'
+        self.Baud = 19200
+        self.deviceAddr = 8
+        self.ser = serial.Serial()
+        self.ser.baudrate = self.Baud
+        self.ser.port = self.COMPort
+        self.sensetivity_dict = {'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3, '50nV/fA': 4, '100nV/fA': 5,
+                                 '200nV/fA': 6, '500nV/fA': 7, '1uV/pA': 8, '2uV/pA': 9, '5uV/pA': 10, '10uV/pA': 11,
+                                 '20uV/pA': 12,
+                                 '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15, '500uV/pA': 16, '1mV/nA': 17,
+                                 '2mV/nA': 18,
+                                 '5mV/nA': 19, '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22, '100mV/nA': 23,
+                                 '200mV/nA': 24,
+                                 '500mV/nA': 25, '1V/uA': 26}
+
+        self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
+                            'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
+
+        self.time_constant_dict = {'10us': 0, '30us': 1, '100us': 2, '300us': 3, '1ms': 4, '3ms': 5,
+                                   '10ms': 6, '30ms': 7, '100ms': 8, '300ms': 9, '1s': 10, '3s': 11,
+                                   '10s': 12, '30s': 13, '100s': 14, '300s': 15, '1ks': 16, '3ks': 17,
+                                   '10ks': 18, '30ks': 19}
+
+        self.sleep_time_dict = {0: 0.00001, 1: 0.00003, 2: 0.0001, 3: 0.0003, 4: 0.001, 5: 0.003, 6: 0.01, 7: 0.03,
+                                8: 0.1, 9: 0.3, 10: 1, 11: 3, 12: 10, 13: 30, 14: 100, 15: 300, 16: 1000, 17: 3000}
+
+        self.low_pass_filter_slope_dict = {'6 dB': 0, '12 dB': 1, '18 dB': 2, '24 dB': 3}
+
+        self.input_config = {'A': 0, 'A-B': 1, 'I(1mOm)': 2, 'I(100mOm)': 3}
+
+        self.input_shield = {'Float': 0, 'Ground': 1}
+
+        self.input_coupling = {'AC': 0, 'DC': 1}
+
+        self.input_line_notch_filter = {'no filters': 0, 'Line notch': 1, '2xLine notch': 2, 'Both notch': 3}
+
+        self.reserve_mode = {'Nigh Reserve': 0, 'Normal': 1, 'Low Noise': 2}
+
+        self.synchronous_filter = {'Off': 0, 'below 200Hz': 1}
+
+        self.reference_source = {'internal': 0, 'external': 1}
+
+        self.reference_trigger = {'Zero crossing': 0, 'Rising edge': 1, 'Falling edge': 2}
+
+        self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Low pass filter slope': 0,
+                              'Input configuration': 0, 'Input shield': 0,
+                              'Input coupling': 0, 'Input notch filter': 0, 'Reserve mode': 0, 'Synchronous filter': 0,
+                              'Reference source': 0,
+                              'Frequency': 1, 'Reference trigger': 0, 'Detection harmonic': 1,
+                              'Sine output amplitude': 2}
+
+        # %% conection to Prologix USB-GPIB adapter
 
         self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
                             'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
@@ -204,13 +212,14 @@ class SR830(LockInAmplifier):
                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
             Value = self.ser.readline()  # reads version
             print(Value)
-            #self.ser.close()
-            self.write('++eoi 1') # enable the eoi signal mode, which signals about and of the line
-            self.write('++eos 2') # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
-        except Exception as xui: 
-            print('error'+str(xui))
-            self.ser.close()   
-            
+            # self.ser.close()
+            self.write('++eoi 1')  # enable the eoi signal mode, which signals about and of the line
+            self.write(
+                '++eos 2')  # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
+        except Exception as xui:
+            print('error' + str(xui))
+            self.ser.close()
+
     def disconnect(self):
         """Close com port
         """
@@ -291,29 +300,34 @@ class SR830(LockInAmplifier):
             output[item] = float(values[idx])  # compose dictionary of values(float)
         print(output)
         return output
-        
+
     def measure(self, avg=10, sleep=None, var='R'):
         '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
-        if sleep==None:
-            sleeptime=self.sleep_time_dict[self.get_time_constant()]
-            sleep=3*float(sleeptime)
-            
-        signal=[]
+        if sleep == None:
+            sleeptime = self.sleep_time_dict[self.get_time_constant()]
+            sleep = 3 * float(sleeptime)
+
+        signal = []
         time.sleep(sleep)
         for i in range(avg):
             signal.append(self.read_value(var))
-            val=sum(signal)/avg
+            val = sum(signal) / avg
         return val
-#%% Set parametrs functions
-        
+
+    # %% Set parametrs functions
+
     def set_to_default(self):
-        '''Reset lockin
-        '''
+        """ Hardware reset Lock-in Amplifier."""
         self.write('*RST')
 
     def set_sensitivity(self, sens):
-        '''Sets the sensitivity on SR830 Lock in. sens is string like on the front panel, mk=u
-        '''
+        """Sets the sensitivity on SR830 Lock in.
+
+        :parameters:
+            sens: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(sens) == str:
             command = 'SENS' + str(self.sensetivity_dict[sens])
         else:
@@ -322,8 +336,12 @@ class SR830(LockInAmplifier):
         self.get_sensitivity()
 
     def set_time_constant(self, timeConst):
-        '''Sets the Time Constant on SR830 Lock in. sens is string like on the front panel, mk=u
-        '''
+        """ Sets the Time Constant on SR830 Lock in.
+
+        :parameters:
+            timeConst: str | int
+                string like on the front panel, mk=u
+        """
         if type(timeConst) == str:
             command = 'OFLT' + str(self.time_constant_dict[timeConst])
         else:
@@ -332,8 +350,14 @@ class SR830(LockInAmplifier):
         self.get_time_constant()
 
     def set_low_pass_filter_slope(self, LPFilt):
-        '''Sets the low pass filter slope on SR830 Lock in. sens is string like on the front panel
-        '''
+        """ Sets the low pass filter slope on SR830 Lock in.
+
+        :parameters:
+            LPFilt: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
+
         if type(LPFilt) == str:
             command = 'OFSL' + str(self.low_pass_filter_slope_dict[LPFilt])
         else:
@@ -342,6 +366,13 @@ class SR830(LockInAmplifier):
         self.get_low_pass_filter_slope()
 
     def set_input_config(self, config):
+        """ Sets the input config on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            config: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(config) == str:
             command = 'ISRC' + str(self.input_config[config])
         else:
@@ -350,6 +381,13 @@ class SR830(LockInAmplifier):
         self.get_input_config()
 
     def set_input_shield(self, shield):
+        """ Sets the input shield on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            shield: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(shield) == str:
             command = 'IGND' + str(self.input_shield[shield])
         else:
@@ -358,6 +396,13 @@ class SR830(LockInAmplifier):
         self.get_input_shield()
 
     def set_input_coupling(self, coupling):
+        """ Sets the input coupling on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            coupling: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(coupling) == str:
             command = 'ICPL' + str(self.input_coupling[coupling])
         else:
@@ -366,6 +411,13 @@ class SR830(LockInAmplifier):
         self.get_input_coupling()
 
     def set_input_notch_filter(self, notchFilter):
+        """ Sets the input notch filter on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            notchFilter: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(notchFilter) == str:
             command = 'ILIN' + str(self.input_line_notch_filter[notchFilter])
         else:
@@ -374,6 +426,13 @@ class SR830(LockInAmplifier):
         self.get_input_notch_filter()
 
     def set_reserve_mode(self, mode):
+        """ Sets the reserve mode on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            mode: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(mode) == str:
             command = 'RMOD' + str(self.reserve_mode[mode])
         else:
@@ -382,6 +441,13 @@ class SR830(LockInAmplifier):
         self.get_reserve_mode()
 
     def set_synchronous_filter(self, synchronousFilter):
+        """ Sets the synchronous filter on SR830 Lock in.
+            # TODO: check this description
+        :parameters:
+            synchronousFilter: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(synchronousFilter) == str:
             command = 'SYNC' + str(self.synchronous_filter[synchronousFilter])
         else:
@@ -390,11 +456,25 @@ class SR830(LockInAmplifier):
         self.get_synchronous_filter()
 
     def set_phase(self, phase):
+        """ Sets the phase on SR830 Lock in.
+
+        :parameters:
+            phase: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         command = 'PHAS' + str(phase)
         self.write(command)
         self.get_phase()
 
     def set_reference_source(self, source):
+        """ Sets the reference source on SR830 Lock in.
+
+        :parameters:
+            source: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(source) == str:
             command = 'FMOD' + str(self.reference_source[source])
         else:
@@ -403,11 +483,25 @@ class SR830(LockInAmplifier):
         self.get_reference_source()
 
     def set_frequency(self, freq):
+        """ Sets the frequency on SR830 Lock in.
+
+        :parameters:
+            freq: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         command = 'FREQ' + str(freq)
         self.write(command)
         self.get_frequency()
 
     def set_reference_trigger(self, refTrigger):
+        """ Sets the reference trigger on SR830 Lock in.
+
+        :parameters:
+            refTrigger: str | int
+                string like on the front panel, mk=u.
+                int as the command number (see translation dictionary
+        """
         if type(refTrigger) == str:
             command = 'RSPL' + str(self.reference_trigger[refTrigger])
         else:
@@ -416,15 +510,27 @@ class SR830(LockInAmplifier):
         self.get_reference_trigger()
 
     def set_harmonic(self, harm):
-        '''sets detection harmonic, harm is integer drom 1 to 19999
-        '''
+        """ Sets the detection harmonic on SR830 Lock in.
+
+        :parameters:
+            harm: int
+                integer between 1 and 19999
+        """
+        assert isinstance(harm, int) & 0 < harm < 20000, 'harmonic needs to be a number between 1 and 19999'
         command = 'HARM' + str(harm)
         self.write(command)
         self.get_harmonic()
 
     def set_sine_output_amplitude(self, ampl):
-        '''setsthe amplitude of the sine output. Value of ampl is a voltage in Volts 0.004<=ampl<=5
+        """ Set amplitude of the sine output. on SR830 Lock in.
+
+            alue of ampl is a voltage in Volts 0.004<=ampl<=5
         '''
+        :parameters:
+            harm: float
+                a voltage in Volts 0.004<=ampl<=5
+        """
+        assert isinstance(ampl, float) & 0.004 <= ampl <= 5, 'Amplitude needs to be a number between 1 and 19999'
         command = 'SLVL' + str(ampl)
         self.write(command)
         self.get_sine_output_amplitude()
@@ -432,13 +538,22 @@ class SR830(LockInAmplifier):
     # %% Get parameters function
 
     def get_sensitivity(self):
-        self.configuration['Sensitivity'] = int(self.read('SENS ?'))
+        """ Read sensitivity from SR830 Lock-In Amplifier.
+
+        :returns:
+            value: value returned by the Lock-In Amplifier
+        """
+        val = int(self.read('SENS ?'))
+        self.configuration['Sensitivity'] = val
+        return val
 
     def get_time_constant(self):
         self.configuration['Time constant'] = int(self.read('OFLT ?'))
+        return self.configuration['Time constant']
 
     def get_low_pass_filter_slope(self):
         self.configuration['Low pass filter slope'] = int(self.read('OFSL ?'))
+        return self.configuration['Low pass filter slope']
 
     def get_input_config(self):
         self.configuration['Input configuration'] = int(self.read('ISRC ?'))
@@ -517,3 +632,148 @@ class SR830(LockInAmplifier):
 
     def laod_configuration(self):
         pass
+
+
+class SR830_v2(LockInAmplifier):
+
+    def __init__(self):
+        super(SR830_v2, self).__init__()
+
+        self.deviceAddr = 8
+        self.ser = serial.Serial()
+        self.ser.baudrate = 19200
+        self.ser.port = 'COM6'
+
+        self.sensitivity = self.parSR830(self,
+                                         codex={'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3, '50nV/fA': 4,
+                                                '100nV/fA': 5,
+                                                '200nV/fA': 6, '500nV/fA': 7, '1uV/pA': 8, '2uV/pA': 9,
+                                                '5uV/pA': 10, '10uV/pA': 11,
+                                                '20uV/pA': 12,
+                                                '50uV/pA': 13, '100uV/pA': 14, '200uV/pA': 15, '500uV/pA': 16,
+                                                '1mV/nA': 17,
+                                                '2mV/nA': 18,
+                                                '5mV/nA': 19, '10mV/nA': 20, '20mV/nA': 21, '50mV/nA': 22,
+                                                '100mV/nA': 23,
+                                                '200mV/nA': 24,
+                                                '500mV/nA': 25, '1V/uA': 26},
+                                         value=0,
+                                         value_type=int,
+                                         cmd='SENS')
+        self.time_constant = self.parSR830(self,
+                                           codex={'10us': 0, '30us': 1, '100us': 2, '300us': 3, '1ms': 4, '3ms': 5,
+                                                  '10ms': 6, '30ms': 7, '100ms': 8, '300ms': 9, '1s': 10, '3s': 11,
+                                                  '10s': 12, '30s': 13, '100s': 14, '300s': 15, '1ks': 16,
+                                                  '3ks': 17,
+                                                  '10ks': 18, '30ks': 19},
+                                           value=0,
+                                           value_type=int,
+                                           cmd='OFLT')
+        self.low_pass_filter_slope = self.parSR830(self,
+                                                   codex={'6 dB': 0, '12 dB': 1, '18 dB': 2, '24 dB': 3},
+                                                   value=0,
+                                                   value_type=int,
+                                                   cmd='OFSL')
+        self.input_config = self.parSR830(self,
+                                          codex={'A': 0, 'A-B': 1, 'I(1mOm)': 2, 'I(100mOm)': 3},
+                                          value=0,
+                                          value_type=int,
+                                          cmd='ISRC')
+        self.input_shield = self.parSR830(self,
+                                          codex={'Float': 0, 'Ground': 1},
+                                          value=0,
+                                          value_type=int,
+                                          cmd='IGND')
+
+        self.input_coupling = self.parSR830(self,
+                                            codex={'AC': 0, 'DC': 1},
+                                            value=0,
+                                            value_type=int,
+                                            cmd='ICPL')
+
+        self.input_line_notch_filter = self.parSR830(self,
+                                                     codex={'no filters': 0, 'Line notch': 1, '2xLine notch': 2,
+                                                            'Both notch': 3},
+                                                     value=0,
+                                                     value_type=int,
+                                                     cmd='ILIN')
+        self.reserve_mode = self.parSR830(self,
+                                          codex={'Nigh Reserve': 0, 'Normal': 1, 'Low Noise': 2},
+                                          value=0,
+                                          value_type=int,
+                                          cmd='RMOD')
+
+        self.synchronous_filter = self.parSR830(self,
+                                                codex={'Off': 0, 'below 200Hz': 1},
+                                                value=0,
+                                                value_type=int,
+                                                cmd='SYNC')
+        self.phase = self.parSR830(self,
+                                   codex={},
+                                   value=0,
+                                   value_type=int,
+                                   cmd='PHAS')
+        self.reference_source = self.parSR830(self,
+                                              codex={'internal': 0, 'external': 1},
+                                              value=0,
+                                              value_type=int,
+                                              cmd='FMOD')
+
+        self.frequency = self.parSR830(self,
+                                       codex={},
+                                       value=1,
+                                       value_type=int,
+                                       cmd='FREQ')
+        self.reference_trigger = self.parSR830(self,
+                                               codex={'Zero crossing': 0, 'Rising edge': 1, 'Falling edge': 2},
+                                               value=0,
+                                               value_type=int,
+                                               cmd='RSPL')
+        self.detection_harmonic = generic.parameter(self,
+                                                    codex={},
+                                                    value=1,
+                                                    value_type=int,
+                                                    cmd='HARM')
+        self.sine_output_amplitude = generic.parameter(self,
+                                                       codex={},
+                                                       value=2,
+                                                       value_type=int,
+                                                       cmd='SLVL')
+
+    class parSR830(generic.parameter):
+        """ Class for the internal parameters of the lock-in.
+        This allows to get and set such parameters."""
+
+        def __init__(self, parent_instrument, **kwargs):
+            super().__init__(parent_instrument, **kwargs)
+            self.default_value = self.value
+
+        def set(self, value):
+            """ set the given value to the parameter on the lock-in
+
+            :parameters:
+                value: str | int
+                    value to be set to the parameter
+            """
+            if isinstance(value, str):
+                command = self.cmd + self.codex[value]
+            elif isinstance(value, int) | isinstance(value, float):
+                command = self.cmd + str(value)
+            else:
+                raise ValueError
+            self.parent_instrument.write(command)
+
+            if self.CONFIRM_VALUE_IS_SET:
+                self.get()
+
+        def get(self):
+            """ Read the current set value on the Lock-in Amplifier
+
+            :Return:
+                value: value returned by the Lock-in Amplifier
+            """
+            read_cmd = self.cmd + ' ?'
+            value = self.parent_instrument.read(read_cmd)
+
+            self.value = self.value_type(value)
+            return self.value

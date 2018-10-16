@@ -95,8 +95,6 @@ class ExperimentalSetup(object):
             delattr(self, inst)
         self.instrument_list = []
 
-    def
-
 
 class Instrument(object):
     def __init__(self):
@@ -134,48 +132,50 @@ class Instrument(object):
     def get_configuration(self):
         raise NotImplementedError('method not implemented for the current model')
 
-    class parameter(object):
-        """ Value which can be set/read from the instrument."""
 
-        def __init__(self, parent_instrument, **kwargs):
-            assert isinstance(parent_instrument, Instrument)
-            # self.name
-            self.parent_instrument = parent_instrument
-            self.value = None
-            self.value_type = None
-            self.codex = {} # dictionary that converts humanly readable values into the instruments command value
-            self.read_cmd_head = None
-            self.write_cmd_head = None
-            self.read_cmd_tail = None
-            self.write_cmd_tail = None
+class parameter(object):
+    """ [DEPRECATED] Value which can be set/read from the instrument."""
 
-            self.default_value = 0
-            self.CONFIRM_SET_VALUE = True
+    def __init__(self, parent_instrument, **kwargs):
+        assert isinstance(parent_instrument, Instrument)
+        # self.name
+        self.parent_instrument = parent_instrument
+        self.value = None
+        self.value_type = None
+        self.codex = {}  # dictionary that converts humanly readable values into the instruments command value
 
-            for key, val in kwargs.items():
-                # if the kwarg passed is in the initialized list, assign the value,
-                # otherwise ignore it.
 
-                if hasattr(self, key):
-                    setattr(self, key, val)
-                else:
-                    pass
+        self.default_value = 0
+        self.CONFIRM_VALUE_IS_SET = True
 
-        def set(self, val):
-            assert type(val) in (str, self.value_type)
-            if type(val) == str:
-                val = self.codex[val]
-            command = self.write_cmd_head + str(val) + self.write_cmd_tail
-            self.parent_instrument.write(command)
-            if self.CONFIRM_SET_VALUE:
-                self.get()
+        for key, val in kwargs.items():
+            # if the kwarg passed is in the initialized list, assign the value,
+            # otherwise ignore it.
 
-        def get(self):
-            """ Read the value from the instrument"""
-            command = self.read_cmd_head + self.read_cmd_tail
-            readVal = self.parent_instrument.read(self.read_command)
-            self.value = readVal
-            return readVal
+            if hasattr(self, key):
+                setattr(self, key, val)
+            else:
+                pass
+
+    def set(self, val):
+
+        # assert type(val) in (str, self.value_type)
+        # if type(val) == str:
+        #     val = self.codex[val]
+        # command = self.write_cmd_head + str(val) + self.write_cmd_tail
+        # self.parent_instrument.write(command)
+        # if self.CONFIRM_VALUE_IS_SET:
+        #     self.get()
+        raise NotImplementedError('set function not implemented in this parameter class')
+
+    def get(self):
+        # """ Read the value from the instrument"""
+        # command = self.read_cmd_head + self.read_cmd_tail
+        # readVal = self.parent_instrument.read(self.read_command)
+        # self.value = readVal
+        # return readVal
+        raise NotImplementedError('set function not implemented in this parameter class')
+
 
 
 if __name__ == '__main__':

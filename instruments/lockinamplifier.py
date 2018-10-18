@@ -201,13 +201,14 @@ class SR830(LockInAmplifier):
         try:
             self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
             self.ser.write(
-                '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
+                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
             Value = self.ser.readline()  # reads version
             print(Value)
             #self.ser.close()
             self.write('++eoi 1') # enable the eoi signal mode, which signals about and of the line
             self.write('++eos 2') # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
             self.write('++addr '+str(self.deviceAddr))
+            self.read('*IDN?')
         except Exception as xui: 
             print('error'+str(xui))
             self.ser.close()   

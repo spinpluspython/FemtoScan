@@ -49,9 +49,9 @@ class DelayStage(generic.Instrument):
     def move_absolute(self, new_position):
         # pos=new_position-self.position_zero
         time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
-        if (new_position <= self.position_max) and (new_position >= self.position_min):
+        if (self.new_position <= self.position_max) and (new_position >= self.position_min):
             'here should be command for real stage; use pos for the real stage'
-            self.position_current = new_position
+            self.position_current = self.new_position
             time.sleep(time_to_sleep)
             print('Fake stage was moved to ' + str(new_position))
         else:

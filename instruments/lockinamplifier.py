@@ -25,6 +25,8 @@ import serial
 from instruments import generic
 import random
 import time
+import pandas as pd
+from configparser import ConfigParser
 
 
 class LockInAmplifier(generic.Instrument):
@@ -33,7 +35,7 @@ class LockInAmplifier(generic.Instrument):
 
         self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
                               'Frequency': 1, 'Reference trigger': 0}
-        self.sensitivity = self.attribute()
+        # self.sensitivity = self.attribute()
 
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
@@ -100,10 +102,10 @@ class LockInAmplifier(generic.Instrument):
         self.set_reference_source(self.configuration['Reference source'])
         self.set_reference_trigger(self.configuration['Reference trigger'])
 
-    def save_configuration(self):
+    def save_configuration(self,filepath):
         pass
 
-    def laod_configuration(self):
+    def laod_configuration(self,filepath):
         pass
 
 
@@ -637,13 +639,16 @@ class SR830(LockInAmplifier):
 class SR830_v2(LockInAmplifier):
 
     def __init__(self):
-        super(SR830_v2, self).__init__()
+        super().__init__()
 
         self.GPIB_address = 8
         self.ser = serial.Serial()
         self.ser.baudrate = 19200
         self.ser.port = 'COM6'
         self.COM_PORT_OPEN = False
+
+
+
         self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
                             'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
 
@@ -737,43 +742,77 @@ class SR830_v2(LockInAmplifier):
                                                        value_type=int,
                                                        cmd='SLVL')
 
-    class SR830Parameter(generic.Parameter):
-        """ Class for the internal parameters of the lock-in.
-        This allows to get and set such parameters."""
+        self.init_parameters()
 
-        def __init__(self, parent_instrument, **kwargs):
-            super().__init__(parent_instrument, **kwargs)
-            self.default_value = self.value
+    def init_parameters(self):
+        self.parameters = {}
+        for attr,val in self.__dict__.items():
+            if isinstance(getattr(self,attr),generic.Parameter):
+                self.parameters[attr] = val
 
-        def set(self, value):
-            """ set the given value to the Parameter on the lock-in
 
-            :parameters:
-                value: str | int
-                    value to be set to the Parameter
-            """
-            if isinstance(value, str):
-                command = self.cmd + self.codex[value]
-            elif isinstance(value, int) | isinstance(value, float):
-                command = self.cmd + str(value)
-            else:
-                raise ValueError
-            self.parent_instrument.write(command)
+    def get_configuration(self):
+        """ get the value of all parameters in current state.
 
-            if self.CONFIRM_VALUE_IS_SET:
-                self.get()
+        :returns:
+            configDict: dict
+                dictionary with as keys the parameter name and as values the
+                value in the current configuration.
+        """
+        configDict = {}
+        for item, value in self.parameters.items():
+            configDict[item] = value.value
+        return configDict
 
-        def get(self):
-            """ Read the current set value on the Lock-in Amplifier
+    def set_configuration(self,configDict):
+        """ get the value of all parameters in current state.
 
-            :Return:
-                value: value returned by the Lock-in Amplifier
-            """
-            read_cmd = self.cmd + ' ?'
-            value = self.parent_instrument.read(read_cmd)
+        :parameter:
+            configDict: dict
+                dictionary with as keys the parameter name and as values the
+                value in the current configuration.
+        """
+        for key, val in configDict.items():
+            assert isinstance(val,SR830_v2.SR830Parameter)
+            oldval = self.parameters[key].value
+            if oldval != val:
+                print('{} changed from {} to {}'.format(key,oldval,val))
+                self.parameters[key].value = val
 
-            self.value = self.value_type(value)
-            return self.value
+    def save_configuration(self,file):
+        """ Save the current configuration to ini file.
+
+        :parameters:
+            file: str
+                file name complete with absolute path
+        """
+        configDict = self.get_configuration()
+        config = ConfigParser()
+        config.add_section('SR830 - Lock-In Amplifier')
+        for key, val in configDict.items():
+            config.set('SR830 - Lock-In Amplifier', key, str(val))
+        if file[-4:] != '.ini':
+            file+='.ini'
+        with open(file, 'w') as configfile:  # save
+            config.write(configfile)
+
+    def load_configuration(self, file):
+        """ Load a configuration from a previously saved ini file.
+
+        :parameters:
+            file: str
+                file name complete with absolute path
+        """
+
+        config = ConfigParser()
+        config.read(file)
+        for name in config['SR830 - Lock-In Amplifier']:
+            try:
+                val = getattr(self,name).type(config['SR830 - Lock-In Amplifier'][name])
+                getattr(self,name).value = val
+            except AttributeError:
+                print('no parameter called {} in this device')
+
 
     def is_connected(self):
         """ test if the lock-in amplifier is connected and read/write is allowed.
@@ -832,8 +871,6 @@ class SR830_v2(LockInAmplifier):
             print('writing aborted: error - {}\n COM port closed'.format(e))
             # self.ser.close()
 
-    # %% Reading LockInAmplifier SR830 functions
-
     def read(self, command):
         """reads any information from lockin, input command should be query command for lockin, see manual.
         : parameters :
@@ -875,7 +912,7 @@ class SR830_v2(LockInAmplifier):
         print(str(Value) + ' V')
         return Value
 
-    def readSnap(self, parametrs):
+    def read_snap(self, parametrs, format='pandas'):
         """Read chosen Values from LockInAmplifier simultaneously.
 
         : parameters :
@@ -887,15 +924,24 @@ class SR830_v2(LockInAmplifier):
         """
         command = 'SNAP ? '
         for item in parametrs:
-            command = command + str(self.output_dict[item]) + ', '  # compose command string with parametrs in input
+            # compose command string with parametrs in input
+            command = command + str(self.output_dict[item]) + ', '
         command = command[:-2]  # cut last ', '
         string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
         values = string.split(',')  # split answer to separated values
-        output = {}
-        for idx, item in enumerate(parametrs):
-            output[item] = float(values[idx])  # compose dictionary of values(float)
-        print(output)
-        return output
+        if format == 'dict':
+            output = {}
+            for idx, item in enumerate(parametrs):
+                output[item] = float(values[idx])  # compose dictionary of values(float)
+            print(output)
+            return output
+        elif format == 'pandas':
+            output = pd.DataFrame(data=values, columns=parametrs)
+            return output
+        else:
+            print('unknown format {}'.format(format))
+
+
 
     def measure(self, avg=10, sleep=None, var='R'):
         '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
@@ -910,8 +956,45 @@ class SR830_v2(LockInAmplifier):
             val = sum(signal) / avg
         return val
 
-    # %% Set parametrs functions
-
     def set_to_default(self):
         """ Hardware reset Lock-in Amplifier."""
         self.write('*RST')
+
+    class SR830Parameter(generic.Parameter):
+        """ Class for the internal parameters of the lock-in.
+        This allows to get and set such parameters."""
+
+        def __init__(self, parent_instrument, **kwargs):
+            super().__init__(parent_instrument, **kwargs)
+            self.default_value = self.value
+
+        def set(self, value):
+            """ set the given value to the Parameter on the lock-in
+
+            :parameters:
+                value: str | int
+                    value to be set to the Parameter
+            """
+            if isinstance(value, str):
+                command = self.cmd + self.codex[value]
+            elif isinstance(value, int) | isinstance(value, float):
+                command = self.cmd + str(value)
+            else:
+                raise ValueError
+            self.parent_instrument.write(command)
+
+            if self.CONFIRM_VALUE_IS_SET:
+                self.get()
+
+        def get(self):
+            """ Read the current set value on the Lock-in Amplifier
+
+            :Return:
+                value: value returned by the Lock-in Amplifier
+            """
+            read_cmd = self.cmd + ' ?'
+            value = self.parent_instrument.read(read_cmd)
+
+            self.value = self.value_type(value)
+            return self.value
+

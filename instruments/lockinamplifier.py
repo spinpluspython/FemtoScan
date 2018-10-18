@@ -20,6 +20,8 @@ Created on Sat Apr 21 17:11:24 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+import sys
+sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')
 import serial
 
 from instruments import generic
@@ -115,7 +117,7 @@ class SR830(LockInAmplifier):
     def __init__(self):
         super(SR830, self).__init__()
         self.COMPort = 'COM6'
-        self.Baud = 19200
+        self.Baud = 9600
         self.deviceAddr = 8
         self.ser = serial.Serial()
         self.ser.baudrate = self.Baud
@@ -643,8 +645,9 @@ class SR830_v2(LockInAmplifier):
 
         self.GPIB_address = 8
         self.ser = serial.Serial()
-        self.ser.baudrate = 19200
+        self.ser.baudrate = 9600
         self.ser.port = 'COM6'
+        self.ser.timeout=1
         self.COM_PORT_OPEN = False
 
 
@@ -796,7 +799,7 @@ class SR830_v2(LockInAmplifier):
         with open(file, 'w') as configfile:  # save
             config.write(configfile)
 
-    def load_configuration(self, file):
+    def load_configuration(self, file): # TODO: fix this, its broken!!
         """ Load a configuration from a previously saved ini file.
 
         :parameters:
@@ -839,6 +842,8 @@ class SR830_v2(LockInAmplifier):
         """
         try:
             self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
+            self.COM_PORT_OPEN = True
+
             self.ser.write(
                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
             Value = self.ser.readline()  # reads version
@@ -847,9 +852,10 @@ class SR830_v2(LockInAmplifier):
             self.write('++eoi 1')  # enable the eoi signal mode, which signals about and of the line
             self.write(
                 '++eos 2')  # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
-            self.COM_PORT_OPEN = True
+            self.write('++addr'+str(self.GPIB_address))
+            self.read('*IDN?')
         except Exception as xui:
-            print('error' + str(xui))
+            print('error ' + str(xui))
             self.ser.close()
 
     def disconnect(self):
@@ -884,13 +890,14 @@ class SR830_v2(LockInAmplifier):
 
         try:
             # self.ser.open()
-            self.ser.write((command + '\r\n').encode(
-                'utf-8'))  # query info from lockin. adapter reads answer automaticaly and store it
+            self.write(command)  # query info from lockin. adapter reads answer automaticaly and store it
             self.ser.write(('++read eoi\r\n').encode(
                 'utf-8'))  # query data stored in adapter, eoi means that readin will end as soon as special caracter will recieved. without it will read before timeout, which slow down reading
             value = self.ser.readline()  # reads answer
             # self.ser.close()
+            print(value)
             return value
+            
         except Exception as e:
             self.disconnect()
             print('Reading aborted: error - {}\n COM port closed'.format(e))
@@ -998,3 +1005,5 @@ class SR830_v2(LockInAmplifier):
             self.value = self.value_type(value)
             return self.value
 
+if __name__ == '__main__':
+    sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')

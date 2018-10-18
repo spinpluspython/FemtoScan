@@ -134,7 +134,7 @@ class Instrument(object):
 
 
 class Parameter(object):
-    """ [DEPRECATED] Value which can be set/read from the instrument."""
+    """ Value which can be set/read from the instrument."""
 
     def __init__(self, parent_instrument, **kwargs):
         assert isinstance(parent_instrument, Instrument)

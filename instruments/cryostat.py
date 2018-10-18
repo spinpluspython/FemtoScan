@@ -31,23 +31,24 @@ class Cryostat(generic.Instrument):
     def __init__(self):
         super(Cryostat, self).__init__()
         self.temperature_current = 300
-        self.temperature_set = 300
+        self.temperature_target = 300
 
     def connect(self):
         print('connetcted to fake cryostat. current temperature=' + str(
-            self.temperature_current) + '; setted temperature' + str(self.temperature_set))
+            self.temperature_current) + '; setted temperature' + str(self.temperature_target))
 
     def disconnect(self):
         print('Fake cryostat has been disconnected')
 
     def get_temperature(self):
         self.temperature_current = self.temperature_current + (
-                self.temperature_set - self.temperature_current) / 2  # change current temperature closer to the setted.
+                self.temperature_target - self.temperature_current) / 2  # change current temperature closer to the setted.
         print('current temperature ' + str(self.temperature_current))
+        time.sleep(1)
         return (self.temperature_current)
 
     def set_temperature(self, temperature):
-        self.temperature_set = temperature
+        self.temperature_target = temperature
         print('temperature is setted to' + str(temperature) + '. Wait untill real temperature become desired')
 
     def change_temperature(self, temperature, tolerance=0.1):
@@ -55,27 +56,26 @@ class Cryostat(generic.Instrument):
         self.set_temperature(temperature)
 
         self.check_temp(tolerance)
-        temp = []
-
-        for i in range(1, 10):
-            temp.append(self.get_temperature())
-            time.sleep(0.1)
-        if max(temp) - min(temp) > tolerance:
-            self.check_temp
-        print('tamperature has reached desired value an stable. Current temperature is ' + str(
-            self.temperature_current + 'K'))
+        
 
     def check_temp(self, tolerance, sleep_time=0.1):
-        while abs(self.temperature_current - self.temperature_set) > tolerance:
+        temp=[]
+        diff = 100000.
+        while diff > tolerance:
             time.sleep(sleep_time)
-            self.get_temperature()
+            temp.append(self.get_temperature())
+            if len(temp)>10:
+                temp.pop(0)
+                diff = max([abs(x-self.temperature_target) for x in temp])
+                #diff = abs(self.temperature_current - self.temperature_set)
+                
+            
+    
 
 
 class MercuryITC(Cryostat):
     def __init__(self):
         super(MercuryITC, self).__init__()
-        self.temperature_current = 0
-        self.temperature_set = 0
         self.COMPort = 'COM8'
         self.Baud = 115200
         self.ser = serial.Serial()
@@ -176,8 +176,6 @@ class MercuryITC(Cryostat):
 class ITC503s(Cryostat):
     def __init__(self):
         super(ITC503s, self).__init__()
-        self.temperature_current = 0
-        self.temperature_set = 0
         self.COMPort = 'COM6'#set on the place
         self.Baud = 9600
         self.deviceAddr=24
@@ -260,7 +258,7 @@ class ITC503s(Cryostat):
             self.read(command)
             #self.ser.write(b'++read eoi\r\n')
             response = str(self.ser.readline())
-            self.temperature_set=temperature
+            self.temperature_target=temperature
             print(response)
             # if response.split(sep=':')[-1]='VALID':
 
@@ -278,7 +276,7 @@ class ITC503s(Cryostat):
             print(temperature)#todo: change translation procedure 
             self.temperature_current=temperature
             # if response.split(sep=':')[-1]='VALID':
-            return(response)
+            return(temperature)
 
 
         except Exception as xui:

@@ -67,10 +67,11 @@ class stepscan_measurements(object):
 
 # %%
 def main():
-    meas = stepscan_measurements()
-    meas.init_instruments()
-    file_name = 'test'
-    meas.stepscan_measure(file_name, -100, 0, 10)
+    pass
+    #meas = stepscan_measurements()
+    #meas.init_instruments()
+    #file_name = 'test'
+    #meas.stepscan_measure(file_name, -100, 0, 10)
 
 
 if __name__ == '__main__':

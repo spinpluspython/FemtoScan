@@ -7,3 +7,4 @@ gen
 
 /venv/
 *.pyc
+instruments/__pycache__/

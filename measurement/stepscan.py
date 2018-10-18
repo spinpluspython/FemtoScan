@@ -4,7 +4,7 @@
 @author: Steinn Ymir Agustsson
 """
 from PyQt5 import QtCore
-from measurement.workers import Worker
+from measurement.core import Worker
 from utilities.qt import raise_Qerror
 import time
 

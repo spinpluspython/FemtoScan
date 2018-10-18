@@ -81,14 +81,15 @@ class NewportXPS(DelayStage):
         super(NewportXPS, self).__init__()
 
         if 'CommandInterfaceXPS' not in sys.modules:  # TODO: fix imports for XPS stage
+                    # TODO: implement test and ask for correct path in case of faliure
+            self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'
+            sys.path.append(self.NETAssemblyPath)
+            clr.AddReference("Newport.XPS.CommandInterface")
             import CommandInterfaceXPS
         if 'System' not in sys.modules:
             import System
 
-        # TODO: implement test and ask for correct path in case of faliure
-        self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'
-        sys.path.append(self.NETAssemblyPath)
-        clr.AddReference("Newport.XPS.CommandInterface")
+
 
         self.myXPS = CommandInterfaceXPS.XPS()
         self.Address = '192.168.254.254'

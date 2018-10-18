@@ -4,7 +4,7 @@ Created on Nov 22 09:57:29 2017
 
 @author: S.Y. Agustsson
 """
-
+from instruments import generic
 import time
 from PyQt5 import QtCore
 from utilities.qt import raise_Qerror
@@ -12,10 +12,14 @@ from utilities.qt import raise_Qerror
 
 class Experiment(QtCore.QObject):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Experiment, self).__init__()
+        pass
+        # self.stuff = args
+        self.setup = generic.ExperimentalSetup(kwargs)
 
-        self.instruments =1
+
+
 
 class Worker(QtCore.QObject):
     """ Parent class for all workers.

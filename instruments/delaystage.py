@@ -79,24 +79,28 @@ class NewportXPS(DelayStage):
 
     def __init__(self):
         super(NewportXPS, self).__init__()
-        # TODO: implement test and ask for correct path in case of faliure
 
+        if 'CommandInterfaceXPS' not in sys.modules:  # TODO: fix imports for XPS stage
+            import CommandInterfaceXPS
+        if 'System' not in sys.modules:
+            import System
+
+        # TODO: implement test and ask for correct path in case of faliure
         self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'
         sys.path.append(self.NETAssemblyPath)
         clr.AddReference("Newport.XPS.CommandInterface")
-        import CommandInterfaceXPS
 
-        self.myXPS=CommandInterfaceXPS.XPS()
-        self.Address='192.168.254.254'
-        self.Port=5001
-        self.StageName="CykBlyat"
-        self.velocity=500
-        self.position_zero=-100
-        self.position_current=0
-        self.position_max=150
-        self.position_min=-150
+        self.myXPS = CommandInterfaceXPS.XPS()
+        self.Address = '192.168.254.254'
+        self.Port = 5001
+        self.StageName = "CykBlyat"
+        self.velocity = 500
+        self.position_zero = -100
+        self.position_current = 0
+        self.position_max = 150
+        self.position_min = -150
 
-    def XPS_Open (self):
+    def XPS_Open(self):
         # Create XPS interface
         # Open a socket
         timeout = 1000
@@ -117,10 +121,11 @@ class NewportXPS(DelayStage):
     def move_absolute(self, new_position):
         '''Moves stage to the given position in range of +/- 150 mm '''
 
-        time_to_sleep=(abs(self.position_current-new_position))/self.velocity
-        if (new_position<self.position_max)and(new_position>self.position_min):
-            self.myXPS.GroupMoveAbsolute(System.String(self.StageName),[System.Double(new_position)],System.Int32(1),System.String(""))
-            self.position_current=new_position
+        time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
+        if (new_position < self.position_max) and (new_position > self.position_min):
+            self.myXPS.GroupMoveAbsolute(System.String(self.StageName), [System.Double(new_position)], System.Int32(1),
+                                         System.String(""))
+            self.position_current = new_position
             time.sleep(time_to_sleep)
             print('DelayStage was moved to ' + str(new_position))
         else:

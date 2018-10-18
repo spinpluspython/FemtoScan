@@ -25,8 +25,12 @@ from configparser import ConfigParser
 
 class ExperimentalSetup(object):
     """ WARNING: WORK IN PROGRESS"""
-    def __init__(self):
+
+    def __init__(self, **kwargs):
         self.instrument_list = []
+
+        for key, val in kwargs.items():
+            self.add_instrument(key, val)
 
     def add_instrument(self, name, model):
         """ Add an instrument to the experimental setup
@@ -34,7 +38,7 @@ class ExperimentalSetup(object):
         adds as a class attribute an instance of a given model of an instrument,
         with a name of choice.
 
-        This is intended to use by calling ExpSetup.<instrument name>
+        This is intended to use by calling ExperimentalSetup.<instrument name>
 
         : parameters :
             name: str
@@ -42,14 +46,54 @@ class ExperimentalSetup(object):
             model: Instrument
                 instance of the class corresponding to the model of this instrument
         """
-        assert isinstance(model,Instrument), '{} is not a recognized instrument type'.format(model)
-        setattr(self,name,model)
+        assert isinstance(model, Instrument), '{} is not a recognized instrument type'.format(model)
+        setattr(self, name, model)
         self.instrument_list.append(name)
 
     def print_setup(self):
         for name in self.instrument_list:
-            print('{}: type:{}'.format(name,type(getattr(self,name))))
+            print('{}: type:{}'.format(name, type(getattr(self, name))))
 
+    def connect_all(self, *args):
+        """ Connect to the instruments.
+
+        Connects to all instruments, unless the name of one or multiple specific
+        isntruments is passed, in which case it only connects to these.
+
+        :parameters:
+            *args: str
+                name of the instrument(s) to be connected
+        """
+        if len(args) == 0:
+            connect_list = tuple(self.instrument_list)
+        else:
+            connect_list = args
+        for name in connect_list:
+            getattr(self, name).connect()
+
+    def disconnect_all(self, *args):
+        """ Connect to the instruments.
+
+        Connects to all instruments, unless the name of one or multiple specific
+        instruments is passed, in which case it only connects to these.
+
+        :parameters:
+            *args: str
+                name of the instrument(s) to be connected
+        """
+        if len(args) == 0:
+            disconnect_list = tuple(self.instrument_list)
+        else:
+            disconnect_list = args
+        for name in disconnect_list:
+            assert hasattr(self, name), 'No instrument named {} found.'.format(name)
+            getattr(self, name).disconnect()
+
+    def clear_instrument_list(self):
+        """ Remove all instruments from the current instance."""
+        for inst in self.instrument_list:
+            delattr(self, inst)
+        self.instrument_list = []
 
 
 class Instrument(object):
@@ -57,40 +101,82 @@ class Instrument(object):
         self.connection_type = 'COM'
         self.configuration = {}
         self.instrument_name = 'Test'
-        # self.load_configurution()
+
+        # self.load_configuration()
 
     def connect(self):
-        print('unable to connect to the real instrument, function is not yet implemented')
-        pass
+        raise NotImplementedError('method not implemented for the current model')
 
     def disconnect(self):
-        print('unable to disconnect from the real instrument, function is not yet implemented')
-        pass
+        raise NotImplementedError('method not implemented for the current model')
 
     def read(self, command):
-        print('unable to read from the real instrument, function is not yet implemented')
-        pass
+        raise NotImplementedError('method not implemented for the current model')
 
     def write(self, command):
-        print('unable to write to the real instrument, function is not yet implemented')
-        pass
+        raise NotImplementedError('method not implemented for the current model')
 
-    def save_configurution(self, file):
-        cfg = ConfigParser()
-        cfg.read_dict(self.configuration)
-        with open('{}.ini'.format(file), 'wb') as f:
-            print('saving')
-            cfg.write(f)
+    def version(self):
+        """ return the version of the instrument"""
+        return 'test Instrument 0.0'
+
+    def save_configuration(self, file):
+        raise NotImplementedError('method not implemented for the current model')
+
+    def load_configuration(self, file):
+        raise NotImplementedError('method not implemented for the current model')
+
+    def set_configuration(self):
+        raise NotImplementedError('method not implemented for the current model')
+
+    def get_configuration(self):
+        raise NotImplementedError('method not implemented for the current model')
 
 
-    def load_configurution(self, file):
-        pass
+class Parameter(object):
+    """ [DEPRECATED] Value which can be set/read from the instrument."""
 
-    def set_configurution(self):
-        pass
+    def __init__(self, parent_instrument, **kwargs):
+        assert isinstance(parent_instrument, Instrument)
+        # self.name
+        self.parent_instrument = parent_instrument
+        self.value = None
+        self.value_type = None
+        self.codex = {}  # dictionary that converts humanly readable values into the instruments command value
+        self.cmd = None
 
-    def get_configurution(self):
-        pass
+        self.default_value = 0
+        self.CONFIRM_VALUE_IS_SET = True
+
+        for key, val in kwargs.items():
+            # if the kwarg passed is in the initialized list, assign the value,
+            # otherwise ignore it.
+
+            if hasattr(self, key):
+                setattr(self, key, val)
+            else:
+                pass
+
+    def set(self, val):
+
+        # assert type(val) in (str, self.value_type)
+        # if type(val) == str:
+        #     val = self.codex[val]
+        # command = self.write_cmd_head + str(val) + self.write_cmd_tail
+        # self.parent_instrument.write(command)
+        # if self.CONFIRM_VALUE_IS_SET:
+        #     self.get()
+        raise NotImplementedError('set function not implemented in this Parameter class')
+
+    def get(self):
+        # """ Read the value from the instrument"""
+        # command = self.read_cmd_head + self.read_cmd_tail
+        # readVal = self.parent_instrument.read(self.read_command)
+        # self.value = readVal
+        # return readVal
+        raise NotImplementedError('set function not implemented in this Parameter class')
+
+
 
 if __name__ == '__main__':
     inst = Instrument()
@@ -99,4 +185,5 @@ if __name__ == '__main__':
     inst.configuration['set3'] = '3'
     print(inst.configuration)
 
-    inst.save_configurution('test')
+    inst.save_configuration('test')
+

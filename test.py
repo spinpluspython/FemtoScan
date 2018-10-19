@@ -4,17 +4,13 @@ Created on Sat Apr 21 18:40:06 2018
 
 @author: t869
 """
-from instruments import delaystage, lockinamplifier
+from instruments.lockinamplifier import LockInAmplifier
+from instruments.delaystage import DelayStage
+from measurement.core import Experiment
 
-stage= delaystage.DelayStage()
-lockin= lockinamplifier.LockInAmplifier()
-stage.connect()
-lockin.connect()
-for i in range(0,10):
-    stage.move_relative(16)
-    lockin.read_value('R')
-    
-stage.set_zero_position()
-stage.move_relative(-10)
-lockin.disconnect()
-stage.disconnect()
+exp=Experiment()
+exp.add_instrument('lockin',LockInAmplifier())
+exp.add_instrument('stage',DelayStage())
+import time
+time.sleep(2)
+exp.measure([exp.lockin.read_value('R'),exp.lockin.read_value('T')],[exp.stage.move_absolute],[[0,1,2,3,4,5,6,7,8,9,10]])

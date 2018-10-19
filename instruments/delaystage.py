@@ -20,9 +20,9 @@ Created on Sat Apr 21 16:22:35 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import clr
+
+
 import sys
-import System
 from instruments import generic
 import time
 
@@ -49,9 +49,9 @@ class DelayStage(generic.Instrument):
     def move_absolute(self, new_position):
         # pos=new_position-self.position_zero
         time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
-        if (self.new_position <= self.position_max) and (new_position >= self.position_min):
+        if (new_position <= self.position_max) and (new_position >= self.position_min):
             'here should be command for real stage; use pos for the real stage'
-            self.position_current = self.new_position
+            self.position_current = new_position
             time.sleep(time_to_sleep)
             print('Fake stage was moved to ' + str(new_position))
         else:
@@ -79,7 +79,7 @@ class NewportXPS(DelayStage):
 
     def __init__(self):
         super(NewportXPS, self).__init__()
-
+        import clr
         if 'CommandInterfaceXPS' not in sys.modules:  # TODO: fix imports for XPS stage
                     # TODO: implement test and ask for correct path in case of faliure
             self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'

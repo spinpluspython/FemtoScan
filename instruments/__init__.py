@@ -3,7 +3,6 @@
 
 @author: Steinn Ymir Agustsson
 """
-from instruments.generic import ExperimentalSetup
 
 def main():
     pass

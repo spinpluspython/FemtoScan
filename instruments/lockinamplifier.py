@@ -226,6 +226,9 @@ class SR830(LockInAmplifier):
             if isinstance(getattr(self,attr),generic.Parameter):
                 self.parameters[attr] = val
 
+    def get_measurables(self):
+        """ return a list of methods which can be used to measure some quantity."""
+        return [self.read_snap, self.read_value]
 
     def get_configuration(self):
         """ get the value of all parameters in current state.

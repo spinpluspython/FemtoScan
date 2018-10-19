@@ -436,7 +436,7 @@ class SR830(LockInAmplifier):
     def measure(self, avg=10, sleep=None, var='R'):
         '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
         if sleep == None:
-            sleeptime = self.time_constant.get()
+            sleeptime = self.sleep_time_dict[self.time_constant.get()]#TODO 
             sleep = 3 * float(sleeptime)
 
         signal = []
@@ -476,6 +476,26 @@ class SR830(LockInAmplifier):
             if self.CONFIRM_VALUE_IS_SET:
                 self.get()
 
+        def get_value(self):
+            """ Read the current set value on the Lock-in Amplifier
+
+            :Return:
+                value: value returned by the Lock-in Amplifier
+            """
+            read_cmd = self.cmd + ' ?'
+            value = self.parent_instrument.read(read_cmd)
+
+            self.value = self.value_type(value)
+            val_str = self.codex[self.value]
+            goodstr = ''
+            for char in val_str:
+                try:
+                    int(char)
+                    goodstr += char
+                except:
+                    pass
+            return float(goodstr)
+            
         def get(self):
             """ Read the current set value on the Lock-in Amplifier
 
@@ -487,7 +507,6 @@ class SR830(LockInAmplifier):
 
             self.value = self.value_type(value)
             return self.value
-
 if __name__ == '__main__':
     # sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')
 

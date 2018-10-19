@@ -15,12 +15,12 @@ import h5py
 
 class stepscan_measurements(object):
     def __init__(self):
-        self.lockin_amplifier = lockinamplifier.SR830_v2()
+        self.lockin_amplifier = lockinamplifier.SR830()
         self.delay_stage = delaystage.NewportXPS()
-        self.cryostat = cryostat.MercuryITC()
+        self.cryostat = cryostat.ITC503s()
 
     def init_instruments(self):
-        self.lockin_amplifier.connect()
+        #self.lockin_amplifier.connect()
         #self.cryostat.connect()
         # Magnet=CurrentSupplyLib.CurrentSUP()
         # Magnet.initcurrentsupply()
@@ -40,13 +40,14 @@ class stepscan_measurements(object):
 
     @staticmethod
     def save(name, X, Y):
-        File = h5py.File(name + ".hdf5", "w")
+        File = h5py.File(name + time.ctime().replace(':','-') + ".h5", "w")
         data = np.array([X, Y])
         dset = File.create_dataset("stepscan", (len(X), 2))
         dset[...] = data.T
         File.close()
 
     def stepscan_measure(self, name, start, stop, N):
+        self.lockin_amplifier.connect()
         self.delay_stage.move_absolute(start)
         time.sleep(3)
         X = self.create_points(start, stop, N)
@@ -55,6 +56,7 @@ class stepscan_measurements(object):
             self.delay_stage.move_absolute(item)
             # time.sleep(0.0)
             Y.append(self.lockin_amplifier.measure())
+        self.lockin_amplifier.disconnect()
         matplotlib.pyplot.plot(X, Y)
         self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
         return X, Y
@@ -68,10 +70,16 @@ class stepscan_measurements(object):
 # %%
 def main():
 
+        
     meas = stepscan_measurements()
     meas.init_instruments()
-    file_name = 'test'
-    meas.stepscan_measure(file_name, -100, 0, 10)
+    for temperature in range(297,305):
+        meas.cryostat.connect()
+        meas.cryostat.change_temperature(temperature)
+        meas.cryostat.disconnect()
+        file_name = 'test'+str(temperature)
+        meas.stepscan_measure(file_name, -100, 0, 10)
+    meas.finish()
 
 
 if __name__ == '__main__':

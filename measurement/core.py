@@ -9,6 +9,7 @@ import time
 from PyQt5 import QtCore
 from utilities.qt import raise_Qerror
 from utilities.misc import nested_for
+import pandas as pd
 
 class Experiment(QtCore.QObject):
 
@@ -142,7 +143,7 @@ class Experiment(QtCore.QObject):
         """
         def measurement_step(indexes, parameter_methods, values):
             """ set the correct parameters and start a measurement step"""
-            result = []
+            result = pd.DataFrame()
             for i,func in enumerate(parameter_methods):
                 func(values[i][indexes[i]]) # set all parameters
 

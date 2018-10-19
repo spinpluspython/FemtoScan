@@ -29,7 +29,6 @@ class Instrument(object):
         self.configuration = {}
         self.instrument_name = 'Test'
 
-
         # self.load_configuration()
 
     def connect(self):
@@ -51,14 +50,13 @@ class Instrument(object):
     def init_parameters(self):
         self.parameters = {}
         for attr, val in self.__dict__.items():
-            if isinstance(getattr(self,attr),Parameter):
+            if isinstance(getattr(self, attr), Parameter):
                 # TODO: implement value initialization to read value from device, or default.
                 self.parameters[attr] = val
 
     def get_measurables(self):
         """ Function should return the methods which can be used to record some data."""
         raise NotImplementedError('method not implemented for the current model')
-
 
     def get_configuration(self):
         """ get the value of all parameters in current state.
@@ -73,7 +71,7 @@ class Instrument(object):
             configDict[item] = value.value
         return configDict
 
-    def set_configuration(self,configDict):
+    def set_configuration(self, configDict):
         """ get the value of all parameters in current state.
 
         :parameter:
@@ -82,13 +80,13 @@ class Instrument(object):
                 value in the current configuration.
         """
         for key, val in configDict.items():
-            assert isinstance(val,SR830_v2.SR830Parameter)
+            assert isinstance(val, Parameter)
             oldval = self.parameters[key].value
             if oldval != val:
-                print('{} changed from {} to {}'.format(key,oldval,val))
+                print('{} changed from {} to {}'.format(key, oldval, val))
                 self.parameters[key].value = val
 
-    def save_configuration(self,file):
+    def save_configuration(self, file):
         """ Save the current configuration to ini file.
 
         :parameters:
@@ -99,13 +97,13 @@ class Instrument(object):
         config = ConfigParser()
         config.add_section('SR830 - Lock-In Amplifier')
         for key, val in configDict.items():
-            config.set('SR830 - Lock-In Amplifier', key, str(val)) #TODO: change name to generic
+            config.set('SR830 - Lock-In Amplifier', key, str(val))  # TODO: change name to generic
         if file[-4:] != '.ini':
-            file+='.ini'
+            file += '.ini'
         with open(file, 'w') as configfile:  # save
             config.write(configfile)
 
-    def load_configuration(self, file): # TODO: fix this, its broken!!
+    def load_configuration(self, file):  # TODO: fix this, its broken!!
         """ Load a configuration from a previously saved ini file.
 
         :parameters:
@@ -117,18 +115,15 @@ class Instrument(object):
         config.read(file)
         for name in config['SR830 - Lock-In Amplifier']:
             try:
-                val = getattr(self,name).type(config['SR830 - Lock-In Amplifier'][name])
-                getattr(self,name).value = val
+                val = getattr(self, name).type(config['SR830 - Lock-In Amplifier'][name])
+                getattr(self, name).value = val
             except AttributeError:
                 print('no parameter called {} in this device')
 
-#%% the danger zone:
+    # %% the danger zone:
     def __del__(self):
         """ Disconnect device before loosing it's instance."""
         self.disconnect()
-
-
-
 
 
 class Parameter(object):
@@ -175,7 +170,6 @@ class Parameter(object):
         raise NotImplementedError('set function not implemented in this Parameter class')
 
 
-
 if __name__ == '__main__':
     inst = Instrument()
     inst.configuration['set1'] = '1'
@@ -184,4 +178,3 @@ if __name__ == '__main__':
     print(inst.configuration)
 
     inst.save_configuration('test')
-

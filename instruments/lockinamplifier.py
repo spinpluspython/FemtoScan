@@ -25,7 +25,7 @@ Created on Sat Apr 21 17:11:24 2018
 import serial
 
 from instruments import generic
-import random
+import numpy as np
 import time
 import pandas as pd
 from configparser import ConfigParser
@@ -49,7 +49,7 @@ class LockInAmplifier(generic.Instrument):
         '''Reads measured value from lockin. Parametr is a string like in manual. 
         except Theta. Che the dictionary of parametrs for Output
         '''
-        Value = random.random()  # returns value as a float
+        Value = np.random.rand() # returns value as a string, like the lockin does
         print(parameter + ' = ' + str(Value) + ' V')
         time.sleep(0.1)
         return Value

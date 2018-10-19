@@ -80,8 +80,12 @@ class Experiment(QtCore.QObject):
         self.instrument_list.append(name)
 
     def print_setup(self):
-        for name in self.instrument_list:
-            print('{}: type:{}'.format(name, type(getattr(self, name))))
+        if len(self.instrument_list) == 0:
+            print('No instruments loaded.')
+        else:
+            for name in self.instrument_list:
+                print('{}: type:{}'.format(name, type(getattr(self, name))))
+
 
     def connect_all(self, *args):
         """ Connect to the instruments.
@@ -128,7 +132,7 @@ class Experiment(QtCore.QObject):
     def measure(self, measurables, parameter_methods, values):
         """ perform a measurement.
 
-        this is a demon.. I hope it works!
+
 
         :parameters:
             measurables:
@@ -143,12 +147,13 @@ class Experiment(QtCore.QObject):
         """
         def measurement_step(indexes, parameter_methods, values):
             """ set the correct parameters and start a measurement step"""
-            result = pd.DataFrame()
+            result = []#pd.DataFrame()
             for i,func in enumerate(parameter_methods):
                 func(values[i][indexes[i]]) # set all parameters
 
             for func in measurables:
-                result.append(func())# todo: replace with actual measurement routine (worker)
+                # out = func
+                result.append(func)# todo: replace with actual measurement routine (worker)
             return result
 
         ranges=[]

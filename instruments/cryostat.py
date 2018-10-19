@@ -20,8 +20,8 @@ Created on Tue Oct  9 22:30:31 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from instruments import generic
 import serial
-import generic
 import time
 
 

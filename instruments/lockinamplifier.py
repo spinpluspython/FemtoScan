@@ -744,7 +744,10 @@ class SR830_v2(LockInAmplifier):
                                                        value=2,
                                                        value_type=int,
                                                        cmd='SLVL')
-
+        
+        self.sleep_time_dict = {0: 0.00001, 1: 0.00003, 2: 0.0001, 3: 0.0003, 4: 0.001, 5: 0.003, 6: 0.01, 7: 0.03,
+                                8: 0.1, 9: 0.3, 10: 1, 11: 3, 12: 10, 13: 30, 14: 100, 15: 300, 16: 1000, 17: 3000}
+                                
         self.init_parameters()
 
     def init_parameters(self):

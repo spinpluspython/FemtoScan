@@ -15,7 +15,7 @@ import h5py
 
 class stepscan_measurements(object):
     def __init__(self):
-        self.lockin_amplifier = lockinamplifier.SR830()
+        self.lockin_amplifier = lockinamplifier.SR830_v2()
         self.delay_stage = delaystage.NewportXPS()
         self.cryostat = cryostat.MercuryITC()
 
@@ -54,7 +54,7 @@ class stepscan_measurements(object):
         for item in X:
             self.delay_stage.move_absolute(item)
             # time.sleep(0.0)
-            Y.append(self.lockin_amplifier.read_value('R'))
+            Y.append(self.lockin_amplifier.measure())
         matplotlib.pyplot.plot(X, Y)
         self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
         return X, Y
@@ -67,11 +67,11 @@ class stepscan_measurements(object):
 
 # %%
 def main():
-    pass
-    #meas = stepscan_measurements()
-    #meas.init_instruments()
-    #file_name = 'test'
-    #meas.stepscan_measure(file_name, -100, 0, 10)
+
+    meas = stepscan_measurements()
+    meas.init_instruments()
+    file_name = 'test'
+    meas.stepscan_measure(file_name, -100, 0, 10)
 
 
 if __name__ == '__main__':

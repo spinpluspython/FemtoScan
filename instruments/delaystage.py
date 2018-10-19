@@ -115,6 +115,7 @@ class NewportXPS(DelayStage):
         self.XPS_Open()
         self.myXPS.GroupKill(System.String(self.StageName), System.String(""))
         self.myXPS.GroupInitialize(System.String(self.StageName), System.String(""))
+        time.sleep(10)
         self.myXPS.GroupHomeSearch(System.String(self.StageName), System.String(""))
         self.myXPS.GroupMotionEnable(System.String(self.StageName), System.String(""))
         self.move_absolute(self.position_zero)

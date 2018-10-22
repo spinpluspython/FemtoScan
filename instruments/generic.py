@@ -101,9 +101,10 @@ class Instrument(object):
         """
         configDict = self.get_configuration()
         config = ConfigParser()
-        config.add_section('SR830 - Lock-In Amplifier')
+
+        config.add_section(self.name)
         for key, val in configDict.items():
-            config.set('SR830 - Lock-In Amplifier', key, str(val))  # TODO: change name to generic
+            config.set(self.name, key, str(val))  # TODO: change name to generic
         if file[-4:] != '.ini':
             file += '.ini'
         with open(file, 'w') as configfile:  # save
@@ -119,9 +120,9 @@ class Instrument(object):
 
         config = ConfigParser()
         config.read(file)
-        for name in config['SR830 - Lock-In Amplifier']:
+        for name in config[self.name]:
             try:
-                val = getattr(self, name).type(config['SR830 - Lock-In Amplifier'][name])
+                val = getattr(self, name).type(config[self.name][name])
                 getattr(self, name).value = val
             except AttributeError:
                 print('no parameter called {} in this device')

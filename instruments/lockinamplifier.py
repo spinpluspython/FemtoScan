@@ -25,6 +25,7 @@ Created on Sat Apr 21 17:11:24 2018
 import serial
 
 from instruments import generic
+from utilities.units import ureg as u
 import numpy as np
 import time
 import pandas as pd
@@ -35,8 +36,13 @@ class LockInAmplifier(generic.Instrument):
     def __init__(self):
         super(LockInAmplifier, self).__init__()
 
-        self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
-                              'Frequency': 1, 'Reference trigger': 0}
+        self.name = 'Fake LockIn Apmlifier'
+        self.measurables = [self.read_value]
+        self.sensitivity = generic.Parameter(self, value=1, unit=None)
+        self.time_constant = generic.Parameter(self, value=0.3, unit=u.second)
+        self.sleep_multiplier = 3
+        # self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
+        #                       'Frequency': 1, 'Reference trigger': 0}
         # self.sensitivity = self.attribute()
 
     def connect(self):
@@ -49,66 +55,10 @@ class LockInAmplifier(generic.Instrument):
         '''Reads measured value from lockin. Parametr is a string like in manual. 
         except Theta. Che the dictionary of parametrs for Output
         '''
-        Value = np.random.rand() # returns value as a string, like the lockin does
+        Value = np.random.rand() # returns value as a string, like the lock-in does
         print(parameter + ' = ' + str(Value) + ' V')
-        time.sleep(0.1)
+        time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
-
-    # %% set parameters
-
-    def set_sensitivity(self, sens):
-        self.configuration['Sensetivity'] = sens
-
-    def set_time_constant(self, const):
-        self.configuration['Time constant'] = const
-
-    def set_frequency(self, freq):
-        self.configuration['Frequency'] = freq
-
-    def set_reference_source(self, ref):
-        self.configuration['Reference source'] = ref
-
-    def set_reference_trigger(self, reftrig):
-        self.configuration['Reference trigger'] = reftrig
-
-    # %% get parameters
-
-    def get_sensitivity(self):
-        pass
-
-    def get_time_constant(self):
-        pass
-
-    def get_frequency(self):
-        pass
-
-    def get_reference_source(self):
-        pass
-
-    def get_reference_trigger(self):
-        pass
-
-    # %% Configuration of lockin functions
-
-    def get_configuration(self):
-        self.get_sensitivity()
-        self.get_time_constant()
-        self.get_frequency()
-        self.get_reference_source()
-        self.get_reference_trigger()
-
-    def set_configuration(self):
-        self.set_sensitivity(self.configuration['Sensitivity'])
-        self.set_time_constant(self.configuration['Time constant'])
-        self.set_frequency(self.configuration['Frequency'])
-        self.set_reference_source(self.configuration['Reference source'])
-        self.set_reference_trigger(self.configuration['Reference trigger'])
-
-    def save_configuration(self,filepath):
-        pass
-
-    def load_configuration(self,filepath):
-        pass
 
 
 class SR830(LockInAmplifier):
@@ -253,7 +203,7 @@ class SR830(LockInAmplifier):
                 value in the current configuration.
         """
         for key, val in configDict.items():
-            assert isinstance(val,SR830_v2.SR830Parameter)
+            assert isinstance(val,SR830.SR830Parameter)
             oldval = self.parameters[key].value
             if oldval != val:
                 print('{} changed from {} to {}'.format(key,oldval,val))

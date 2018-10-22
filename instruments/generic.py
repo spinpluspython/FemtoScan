@@ -26,7 +26,11 @@ from configparser import ConfigParser
 class Instrument(object):
 
     def __init__(self):
-        pass
+
+        self.measurables = [None]
+        self.parameters = {}
+        self.name = 'Generic Instrument'
+
         #self.connection_type = None
         #self.configuration = {}
         #self.instrument_model_name = 'Dummy'

@@ -24,10 +24,12 @@ from configparser import ConfigParser
 
 
 class Instrument(object):
+
     def __init__(self):
-        self.connection_type = 'COM'
-        self.configuration = {}
-        self.instrument_name = 'Test'
+        pass
+        #self.connection_type = None
+        #self.configuration = {}
+        #self.instrument_model_name = 'Dummy'
 
         # self.load_configuration()
 

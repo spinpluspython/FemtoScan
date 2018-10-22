@@ -4,6 +4,7 @@
 @author: Steinn Ymir Agustsson
 """
 
+from PyQt5 import QtWidgets
 
 def raise_Qerror(self, doingWhat, errorHandle, type='Warning', popup=True):
     """ opens a dialog window showing the error"""

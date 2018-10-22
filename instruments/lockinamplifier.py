@@ -120,9 +120,7 @@ class SR830(LockInAmplifier):
         self.ser = serial.Serial()
         self.ser.baudrate = 9600
         self.ser.port = 'COM6'
-        self.ser.timeout=1
-        self.COM_PORT_OPEN = False
-
+        self.ser.timeout = 1
 
 
         self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
@@ -307,10 +305,8 @@ class SR830(LockInAmplifier):
             self.ser.write(
                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
             val = self.ser.readline()  # reads version
-            self.COM_PORT_OPEN = True
             return True
         except Exception:
-            self.COM_PORT_OPEN = False
             return False
 
     def connect(self):
@@ -321,7 +317,6 @@ class SR830(LockInAmplifier):
         """
         try:
             self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
-            self.COM_PORT_OPEN = True
 
             self.ser.write(
                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
@@ -341,14 +336,13 @@ class SR830(LockInAmplifier):
         """Close com port
         """
         self.ser.close()
-        self.COM_PORT_OPEN = False
 
     def write(self, Command):
         """ Send any command to the opened port in right format.
 
         Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
         """
-        assert self.COM_PORT_OPEN is True, 'COM port closed.'
+        assert self.ser.is_open is True, 'COM port closed.'
         try:
             self.ser.write((Command + '\r\n').encode('utf-8'))
         except Exception as e:
@@ -365,7 +359,7 @@ class SR830(LockInAmplifier):
             value:
                 answer from lockin as byte
         """
-        assert self.COM_PORT_OPEN is True, 'COM port closed.'
+        assert self.ser.is_open is True, 'COM port closed.'
 
         try:
             # self.ser.open()

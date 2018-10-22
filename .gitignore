@@ -8,3 +8,6 @@ gen
 /venv/
 *.pyc
 instruments/__pycache__/
+
+*.h5
+*.hdf5

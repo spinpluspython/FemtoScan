@@ -38,12 +38,10 @@ class LockInAmplifier(generic.Instrument):
 
         self.name = 'Fake LockIn Apmlifier'
         self.measurables = [self.read_value]
+        self.sleep_multiplier = 3
+
         self.sensitivity = generic.Parameter(self, value=1, unit=None)
         self.time_constant = generic.Parameter(self, value=0.3, unit=u.second)
-        self.sleep_multiplier = 3
-        # self.configuration = {'Sensitivity': 0, 'Time constant': 0, 'Reference source': 0,
-        #                       'Frequency': 1, 'Reference trigger': 0}
-        # self.sensitivity = self.attribute()
 
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
@@ -55,7 +53,7 @@ class LockInAmplifier(generic.Instrument):
         '''Reads measured value from lockin. Parametr is a string like in manual. 
         except Theta. Che the dictionary of parametrs for Output
         '''
-        Value = np.random.rand() # returns value as a string, like the lock-in does
+        Value = np.random.rand()  # returns value as a string, like the lock-in does
         print(parameter + ' = ' + str(Value) + ' V')
         time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
@@ -65,16 +63,22 @@ class SR830(LockInAmplifier):
 
     def __init__(self):
         super().__init__()
+        self.name = 'Fake LockIn Apmlifier'
+        self.measurables = [self.read_snap, self.read_value]
 
+        self.sleep_multiplier = 3
+
+        # Connectivity:
         self.GPIB_address = 8
         self.ser = serial.Serial()
         self.ser.baudrate = 9600
         self.ser.port = 'COM6'
         self.ser.timeout = 1
 
-
         self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
                             'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
+
+        # parameters:
 
         self.sensitivity = self.SR830Parameter(self,
                                                codex={'2nV/fA': 0, '5nV/fA': 1, '10nV/fA': 2, '20nV/fA': 3,
@@ -156,93 +160,26 @@ class SR830(LockInAmplifier):
                                                      value_type=int,
                                                      cmd='RSPL')
         self.detection_harmonic = self.SR830Parameter(self,
-                                                    codex={},
-                                                    value=1,
-                                                    value_type=int,
-                                                    cmd='HARM')
+                                                      codex={},
+                                                      value=1,
+                                                      value_type=int,
+                                                      cmd='HARM')
         self.sine_output_amplitude = self.SR830Parameter(self,
-                                                       codex={},
-                                                       value=2,
-                                                       value_type=int,
-                                                       cmd='SLVL')
-        
+                                                         codex={},
+                                                         value=2,
+                                                         value_type=int,
+                                                         cmd='SLVL')
+
         self.sleep_time_dict = {0: 0.00001, 1: 0.00003, 2: 0.0001, 3: 0.0003, 4: 0.001, 5: 0.003, 6: 0.01, 7: 0.03,
                                 8: 0.1, 9: 0.3, 10: 1, 11: 3, 12: 10, 13: 30, 14: 100, 15: 300, 16: 1000, 17: 3000}
-                                
+
         self.init_parameters()
 
     def init_parameters(self):
         self.parameters = {}
-        for attr,val in self.__dict__.items():
-            if isinstance(getattr(self,attr),generic.Parameter):
+        for attr, val in self.__dict__.items():
+            if isinstance(getattr(self, attr), generic.Parameter):
                 self.parameters[attr] = val
-
-    def get_measurables(self):
-        """ return a list of methods which can be used to measure some quantity."""
-        return [self.read_snap, self.read_value]
-
-    def get_configuration(self):
-        """ get the value of all parameters in current state.
-
-        :returns:
-            configDict: dict
-                dictionary with as keys the parameter name and as values the
-                value in the current configuration.
-        """
-        configDict = {}
-        for item, value in self.parameters.items():
-            configDict[item] = value.value
-        return configDict
-
-    def set_configuration(self,configDict):
-        """ get the value of all parameters in current state.
-
-        :parameter:
-            configDict: dict
-                dictionary with as keys the parameter name and as values the
-                value in the current configuration.
-        """
-        for key, val in configDict.items():
-            assert isinstance(val,SR830.SR830Parameter)
-            oldval = self.parameters[key].value
-            if oldval != val:
-                print('{} changed from {} to {}'.format(key,oldval,val))
-                self.parameters[key].value = val
-
-    def save_configuration(self,file):
-        """ Save the current configuration to ini file.
-
-        :parameters:
-            file: str
-                file name complete with absolute path
-        """
-        configDict = self.get_configuration()
-        config = ConfigParser()
-        config.add_section('SR830 - Lock-In Amplifier')
-        for key, val in configDict.items():
-            config.set('SR830 - Lock-In Amplifier', key, str(val))
-        if file[-4:] != '.ini':
-            file+='.ini'
-        with open(file, 'w') as configfile:  # save
-            config.write(configfile)
-
-    def load_configuration(self, file): # TODO: fix this, its broken!!
-        """ Load a configuration from a previously saved ini file.
-
-        :parameters:
-            file: str
-                file name complete with absolute path
-        """
-
-        config = ConfigParser()
-        config.read(file)
-        for name in config['SR830 - Lock-In Amplifier']:
-            try:
-                val = getattr(self,name).type(config['SR830 - Lock-In Amplifier'][name])
-                getattr(self,name).value = val
-            except AttributeError:
-                print('no parameter called {} in this device')
-
 
     def is_connected(self):
         """ test if the lock-in amplifier is connected and read/write is allowed.
@@ -276,7 +213,7 @@ class SR830(LockInAmplifier):
             self.write('++eoi 1')  # enable the eoi signal mode, which signals about and of the line
             self.write(
                 '++eos 2')  # sets up the terminator <lf> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
-            self.write('++addr'+str(self.GPIB_address))
+            self.write('++addr' + str(self.GPIB_address))
             self.read('*IDN?')
         except Exception as xui:
             print('error ' + str(xui))
@@ -320,11 +257,12 @@ class SR830(LockInAmplifier):
             # self.ser.close()
             print(value)
             return value
-            
+
         except Exception as e:
             self.disconnect()
             print('Reading aborted: error - {}\n COM port closed'.format(e))
 
+    # %% lockin specific functions
     def read_value(self, parameter):
         """Reads measured value from lockin.
 
@@ -375,12 +313,10 @@ class SR830(LockInAmplifier):
         else:
             print('unknown format {}'.format(format))
 
-
-
     def measure(self, avg=10, sleep=None, var='R'):
         '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
         if sleep == None:
-            sleeptime = self.sleep_time_dict[self.time_constant.get()]#TODO 
+            sleeptime = self.sleep_time_dict[self.time_constant.get()]  # TODO
             sleep = 3 * float(sleeptime)
 
         signal = []
@@ -401,6 +337,7 @@ class SR830(LockInAmplifier):
         def __init__(self, parent_instrument, **kwargs):
             super().__init__(parent_instrument, **kwargs)
             self.default_value = self.value
+
 
         def set(self, value):
             """ set the given value to the Parameter on the lock-in
@@ -439,7 +376,7 @@ class SR830(LockInAmplifier):
                 except:
                     pass
             return float(goodstr)
-            
+
         def get(self):
             """ Read the current set value on the Lock-in Amplifier
 
@@ -451,6 +388,8 @@ class SR830(LockInAmplifier):
 
             self.value = self.value_type(value)
             return self.value
+
+
 if __name__ == '__main__':
     # sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')
 

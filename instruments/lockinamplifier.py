@@ -37,7 +37,8 @@ class LockInAmplifier(generic.Instrument):
         super(LockInAmplifier, self).__init__()
 
         self.name = 'Fake LockIn Apmlifier'
-        self.measurables = [self.read_value]
+        # list all methods which can be used as measurement functions
+        self.measurables = ['read_value']
         self.sleep_multiplier = 3
 
         self.sensitivity = generic.Parameter(self, value=1, unit=None)
@@ -63,8 +64,13 @@ class SR830(LockInAmplifier):
 
     def __init__(self):
         super().__init__()
-        self.name = 'Fake LockIn Apmlifier'
-        self.measurables = [self.read_snap, self.read_value]
+        self.name = 'SR830 Lockin Amplifier'
+        # list all methods which can be used as measurement functions
+        self.measurables = {'read_snap':{'input':'',
+                                         'output':None},
+                            'read_value':{'input':'Parameter: a string like in manual. except Theta. Che the dictionary of parametrs for Output',
+                                          'output':None}
+                            }
 
         self.sleep_multiplier = 3
 

@@ -16,8 +16,9 @@ def gaussian(x, mu, sig):
 
 def globalcounter(idx,M):
     counterlist = idx[::-1]
+    maxlist = M[::-1]
     for i in range(len(counterlist)):
-        counterlist[i] = counterlist[i]*np.prod(M[:i])
+        counterlist[i] = counterlist[i]*np.prod(maxlist[:i])
     return int(np.sum(counterlist))
 
 

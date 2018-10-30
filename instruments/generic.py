@@ -104,7 +104,7 @@ class Instrument(object):
 
         config.add_section(self.name)
         for key, val in configDict.items():
-            config.set(self.name, key, str(val))  # TODO: change name to generic
+            config.set(self.name, key, str(val))
         if file[-4:] != '.ini':
             file += '.ini'
         with open(file, 'w') as configfile:  # save

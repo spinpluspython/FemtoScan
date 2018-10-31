@@ -21,14 +21,15 @@ Created on Sat Apr 21 16:22:35 2018
 
 """
 
-
 import sys
 from instruments import generic
 import time
-import clr
-import System
 
-
+try:
+    import clr
+    import System
+except ImportError:
+    print('missing packages for Newport stage.')
 
 
 class DelayStage(generic.Instrument):
@@ -84,14 +85,11 @@ class NewportXPS(DelayStage):
     def __init__(self):
         super(NewportXPS, self).__init__()
         if 'CommandInterfaceXPS' not in sys.modules:  # TODO: fix imports for XPS stage
-                    # TODO: implement test and ask for correct path in case of faliure
+            # TODO: implement test and ask for correct path in case of faliure
             self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'
             sys.path.append(self.NETAssemblyPath)
             clr.AddReference("Newport.XPS.CommandInterface")
             import CommandInterfaceXPS
-            
-
-
 
         self.myXPS = CommandInterfaceXPS.XPS()
         self.Address = '192.168.254.254'

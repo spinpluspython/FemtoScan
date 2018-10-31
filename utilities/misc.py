@@ -33,7 +33,7 @@ def nested_for(ranges, operation, *args, **kwargs):
     pos = len(ranges) - 1
     increments = 0
 
-    operation(indexes,*args, **kwargs)
+    operation(indexes, *args, **kwargs)
     while increments < operations:
         if indexes[pos] == ranges[pos][1] - 1:
             indexes[pos] = ranges[pos][0]
@@ -42,7 +42,8 @@ def nested_for(ranges, operation, *args, **kwargs):
             indexes[pos] += 1
             increments += 1
             pos = len(ranges) - 1  # increment the innermost loop
-            operation(indexes,*args, **kwargs)
+            operation(indexes, *args, **kwargs)
+
 
 def iterate_ranges(ranges):
     """this is some magic iteration script. it creates a nested for loop
@@ -63,7 +64,7 @@ def iterate_ranges(ranges):
     pos = len(ranges) - 1
     increments = 0
 
-    yield(ranges)
+    yield (ranges)
     while increments < operations:
         if indexes[pos] == ranges[pos][1] - 1:
             indexes[pos] = ranges[pos][0]
@@ -77,6 +78,7 @@ def iterate_ranges(ranges):
 
 class TwoWayDict(dict):
     """dictionary which can be read as key: val or val: key."""
+
     def __setitem__(self, key, value):
         # Remove any previous connections with these values
         if key in self:
@@ -93,6 +95,11 @@ class TwoWayDict(dict):
     def __len__(self):
         """Returns the number of connections"""
         return dict.__len__(self) // 2
+
+
+class RequirementError(Exception):
+    pass
+
 
 def main():
     pass

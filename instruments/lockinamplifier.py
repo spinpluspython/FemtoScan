@@ -40,7 +40,7 @@ class LockInAmplifier(generic.Instrument):
         # list all methods which can be used as measurement functions
         self.measurables = ['read_value']
         self.sleep_multiplier = 3
-
+        self.dwelltime = 1  # TODO: set dwelltime based on lockin settings, maybe as property
         self.sensitivity = generic.Parameter(self, value=1, unit=None)
         self.time_constant = generic.Parameter(self, value=0.3, unit=u.second)
 
@@ -66,10 +66,11 @@ class SR830(LockInAmplifier):
         super().__init__()
         self.name = 'SR830 Lockin Amplifier'
         # list all methods which can be used as measurement functions
-        self.measurables = {'read_snap':{'input':'',
-                                         'output':None},
-                            'read_value':{'input':'Parameter: a string like in manual. except Theta. Che the dictionary of parametrs for Output',
-                                          'output':None}
+        self.measurables = {'read_snap': {'input': '',
+                                          'output': None},
+                            'read_value': {
+                                'input': 'Parameter: a string like in manual. except Theta. Che the dictionary of parametrs for Output',
+                                'output': None}
                             }
 
         self.sleep_multiplier = 3
@@ -343,7 +344,6 @@ class SR830(LockInAmplifier):
         def __init__(self, parent_instrument, **kwargs):
             super().__init__(parent_instrument, **kwargs)
             self.default_value = self.value
-
 
         def set(self, value):
             """ set the given value to the Parameter on the lock-in

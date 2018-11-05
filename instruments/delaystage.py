@@ -2,9 +2,9 @@
 """
 Created on Sat Apr 21 16:22:35 2018
 
-@author: GVolM
+@author: Vladimir Grigorev, Steinn Ymir Agustsson
 
-    Copyright (C) 2018 Vladimir Grigorev, Steinn Ymir Agustsson
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ Created on Sat Apr 21 16:22:35 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
 import sys
 from instruments import generic
 import time

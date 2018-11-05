@@ -2,9 +2,9 @@
 """
 Created on Sat Apr 21 16:08:39 2018
 
-@author: GVolM
+@author: Steinn Ymir Agustsson
 
-    Copyright (C) 2018 Vladimir Grigorev, Steinn Ymir Agustsson
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

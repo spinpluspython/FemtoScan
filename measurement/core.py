@@ -27,29 +27,71 @@ def main():
 
 
 class Experiment(QtCore.QObject):
+    """ Experiment manager class.
+
+    An object of this class is intended to control an experiment.
+
+    This is done by adding to it instruments, via the :obj:add_instrument* method.
+
+    A measurement sesion can be defined by adding parameter iterations.
+    This is done by using the method `add_parameter_iteration`, which creates a
+    tuple of 3 objects: the *instrument*, the *parameter* and *values*.
+    **Instrument**: is an instance of the instrumentwhich will be used to
+    control this parameter.
+    **parameter** is the name under which this parameter can be found in the
+    insutrment object instance
+    **value** is a tuple or list of values. These are in order the values at
+    which this parameter will be set. Each value will generate a measurement loop.
+
+    This measurement loop can consist of multiple parameter iterations, meaning
+    a measurement session can perform a measurement iterating over multiple
+    parameters, resulting in n-dimensional measurements.
+
+    Examples:
+        # TODO: write some nice examples.
+    Signals:
+        finished (): at end of the scan. Bounced from worker.
+        newData (): emitted at each measurement point.Bounced from worker.
+            together with scan progress information.
+        stateChanged (str): emitted when the state of the worker changes.
+            Allowed state values are defined in STATE_VALUES. Bounced from worker.
+
+    """
     __TYPE = 'generic'
+    # Signals
     finished = QtCore.pyqtSignal(dict)
     newData = QtCore.pyqtSignal(dict)
-    progress = QtCore.pyqtSignal(float)  # TODO: implement
+    progressChanged = QtCore.pyqtSignal(float)
+    stateChanged = QtCore.pyqtSignal(str)
+
 
     def __init__(self, file=None, **kwargs):
-        """ create an instance of the Experiment
+        """ Create an instance of the Experiment
 
-        This is initialized by creating adding all the passed arguments as instrument instances, and creates a
-        list of names of them in self.instrument_list. Then, all methods which can be used to measure some quantity
-        and all parameters which can be set for each instruments are collected in self.measurable_methods and self.parameters
-        respectively.
+        This is initialized by creating adding all the passed arguments as
+        instrument instances, and creates a list of names of them in
+        self.instrument_list.
+        Then, all methods which can be used to measure some quantity and all
+        parameters which can be set for each instruments are collected in
+        self.measurable_methods and self.parameters respectively.
 
-        self.measurable_methods is therefore a list of methods which can be directly called. These methods must have a test on
-        the parent instrument being connected, or might fail.
-        self. parameters is a dictionary, where keys are the names of the instruments to which they belong. Each value
-        is then a dictionary containing the name of the parameter as keys and a pointer to the parameter instance in the
-        value.
+        self.measurable_methods is therefore a list of methods which can be
+        directly called. These methods must have a test on the parent
+        instrument being connected, or might fail.
 
-        :parameters:
-            kwargs: generic.Instrument
-                The names ofn given keyword arguments will be the specific name of the insturment (example: probe_stage)
-                and the value must be an instance of the specific instrument (example: delaystage.NewportXPS)
+        the class attribute *parameters* is a dictionary, where keys are the
+        names of the instruments to which they belong. Each value is then a
+        dictionary containing the name of the parameter as keys and a pointer
+        to the parameter instance in the value.
+
+        Args:
+            file (:obj:str): file where to store experiment data. Defaults to
+                :obj:None. If an existing file is passed, all settings stored
+                in such file are loaded to the instance.
+            kwargs (:obj:generic.Instrument): The names ofn given keyword
+                arguments will be the specific name of the instrument
+                (example: probe_stage) and the value must be an instance of the
+                specific instrument (example: delaystage.NewportXPS)
 
         """
         super().__init__()
@@ -64,12 +106,6 @@ class Experiment(QtCore.QObject):
         self.measurement_settings = {}
         # define which worker to use:
         self.worker = None
-
-        #
-        # #TODO: make measurables and parameter setters look something like this:
-        # self.measurables = {'readvalue':{'instrument_name':'lockinamplifier',
-        #                                       'method':'read_value',
-        #                                       'args':'X',}}
 
         if self.measurement_file is not None:
             self.load_settings_from_h5()
@@ -197,8 +233,14 @@ class Experiment(QtCore.QObject):
         self.instrument_list = []
 
     def initialize_experiment(self):
-        """ Experiment type specific method."""
-        raise NotImplementedError('no initialization method in this experiment (sub)class')
+        """ Initialize experiment.
+
+        Check basic requirements, test any needed options or settings.
+        This method is experiment type dependent and should be reimplemented in
+        each subclass of Experiment.
+        """
+        self.check_requirements()
+        # raise NotImplementedError('no initialization method in this experiment (sub)class')
 
     def start_measurement(self):
         """ start a measurement"""
@@ -212,7 +254,8 @@ class Experiment(QtCore.QObject):
 
         self.w.finished.connect(self.on_finished)
         self.w.newData.connect(self.on_newData)
-        self.w.progress[float].connect(self.on_progress)
+        self.w.progressCanged[float].connect(self.on_progressCanged)
+        self.w.stateChanged[str].connect(self.on_stageCanged)
 
         self.w.moveToThread(self.scan_thread)
         self.scan_thread.started.connect(self.w.work)
@@ -283,9 +326,12 @@ class Experiment(QtCore.QObject):
         self.newData.emit(signal)
 
     @QtCore.pyqtSlot(float)
-    def on_progress(self, signal):
-        self.progress.emit(signal)
+    def on_progressCanged(self, signal):
+        self.progressChanged.emit(signal)
 
+    @QtCore.pyqtSlot(str)
+    def on_stateCanged(self, signal):
+        self.stateCanged.emit(signal)
 
 class Worker(QtCore.QObject):
     """ Parent class for all workers.
@@ -297,10 +343,11 @@ class Worker(QtCore.QObject):
         perform a measurement.
 
     signals emitted:
-        finished (dict): at end of the scan, emits the results stored over the whole scan.
-        newData (dict): emitted at each measurement point. Usually contains a dictionary with the last measured values
+        finished (): at end of the scan.
+        newData (): emitted at each measurement point.
             together with scan progress information.
-        _state (str): emitted when _state of the worker changes. Allowed values of _state are defined in STATE_VALUES.
+        stateChanged (str): emitted when the state of the worker changes.
+            Allowed state values are defined in STATE_VALUES.
     """
 
     finished = QtCore.pyqtSignal()
@@ -310,25 +357,31 @@ class Worker(QtCore.QObject):
     STATE_VALUES = ['loading', 'idle', 'changing parameters', 'running', 'failed', 'complete']
 
     def __init__(self, file, base_instruments, parameters,
-                 disconnect_on_paramter_change=True, **kwargs):
-        """
+                 disconnect_on_parameter_change=True, **kwargs):
+        """ Initialize worker instance.
+
+
 
         Args:
             file:
             base_instruments(:obj:tuple of :obj:str and :obj:generic.Instrument):
-                name and instance of the main instruments requried
-            parameters:
-            disconnect_on_paramter_change:
-            **kwargs:
+                name and instance of the main instruments required
+            parameters (list of :obj:`generic.Parameter): parameters to be
+                changed throughout this measurement session.
+            disconnect_on_parameter_change (bool): if True, it connects and
+                disconnects the required instrument every time a parameter needs
+                to be set.
+            **kwargs: all kwargs are passed as class attributes.
         """
         super().__init__()
 
         self.file = file
         for inst in base_instruments:
-            setattr(self, )
+            setattr(self, inst)
         self.instruments = []  # instruments which controls the parameters
         self.parameters = []  # parameters to be changed
         self.values = []  # list of values at which to set the parameters
+
         for param in parameters:
             self.instruments.append(param[0])
             self.parameters.append(param[1])
@@ -340,11 +393,11 @@ class Worker(QtCore.QObject):
         # Flags
         self.__shouldStop = False  # soft stop, for interrupting at end of cycle.
         self.__state = 'none'
-        self.__disconnect_on_paramter_change = disconnect_on_paramter_change
-        self.__last_index = None
-        self.__progress = 0
-        self.__max_progress = 0
-        self.__single_measurement_steps = 1
+        self.__disconnect_on_paramter_change = disconnect_on_parameter_change
+        self.__last_index = None # used to keep track of which parameter to change at each iteration
+        self.__progress = 0 # keep track of the progress of the scan
+        self.__max_progress = 0 # total number of steps of __progress to increment
+        self.__single_measurement_steps = 1 # number of steps in each measurement procedure
 
     #
     # def check_requirements(self):
@@ -484,28 +537,6 @@ class Worker(QtCore.QObject):
         assert value in self.STATE_VALUES, 'invalid status: {}'.format(value)
         self.__state = value
         self.stateChanged.emit(value)
-
-    # @property
-    # def progress(self):
-    #     """ Get the current worker _state:
-    #
-    #     Allowed States:
-    #         loading: worker is setting up initial conditions.
-    #         idle: ready to run, awaiting starting condition.
-    #         running: obvious.
-    #         error: worker stuck because of error or something.
-    #     """
-    #     return self.__state
-    #
-    # @progress.setter
-    # def progress(self, value):
-    #     """ set new _state flag.
-    #
-    #     sets a new value of progress, and emits a signal
-    #     """
-    #     assert 0 <= value <= 1
-    #     self.__progress = value
-    #     self.progressChanged.emit(value)
 
     @QtCore.pyqtSlot(bool)
     def should_stop(self, flag):

@@ -6,7 +6,7 @@
 
 from PyQt5 import QtWidgets
 
-def raise_Qerror(self, doingWhat, errorHandle, type='Warning', popup=True):
+def raise_Qerror(doingWhat, errorHandle, type='Warning', popup=True):
     """ opens a dialog window showing the error"""
     errorMessage = 'Thread Error while {0}:\n{1}'.format(doingWhat, errorHandle)
     print(errorMessage)

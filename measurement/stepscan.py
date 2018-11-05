@@ -33,17 +33,19 @@ class StepScan(Experiment):
                               'stage_positions': [],
                               }
 
-    def initialize_experiment(self):
-        """ set up all what is needed for a measurement session.
+    # def initialize_experiment(self): # TODO: implement stepscan specific requirements test
+    #     """ set up all what is needed for a measurement session.
+    #
+    #     - check if parameter iteration methods, and relative values are present
+    #     - check if the file name chosen is already present, otherwise append number
+    #     - write file structure in the h5 file chosen
+    #     - preallocate data file structures
+    #     - disconnect all devices
+    #     """
+    #
+    #     self.check_requirements()
 
-        - check if parameter iteration methods, and relative values are present
-        - check if the file name chosen is already present, otherwise append number
-        - write file structure in the h5 file chosen
-        - preallocate data file structures
-        - disconnect all devices
-        """
 
-        pass
 
 
 class StepScanWorker(Worker):

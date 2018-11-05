@@ -97,8 +97,7 @@ class TwoWayDict(dict):
         return dict.__len__(self) // 2
 
 
-class RequirementError(Exception):
-    pass
+
 
 
 def main():

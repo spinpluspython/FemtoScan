@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QLineEdit, QApplication, QComboBox, QDoubleSpinBox
-import  PyQt5.QtWidgets
+import  PyQt5.QtGui as QtGui
 
 import PyQt5.QtCore as QtCore
 
@@ -53,7 +53,8 @@ class StackedExample(QWidget):
             self.lay.addWidget(self.widgetList[i][0], i+500, 0)
             self.lay.addWidget(self.widgetList[i][1], i+500, 1)
 
-
+        verticalSpacer = QtGui.QSpacerItem(30, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.lay.addItem(verticalSpacer, 1000, 0)
 
 
     def setValues(self):

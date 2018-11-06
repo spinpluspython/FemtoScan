@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QPushButton, QDoubleSpinBox, QRadioButton, QLineEdit, QVBoxLayout, QStackedWidget, QHBoxLayout, QApplication, QComboBox, QFrame
 from PyQt5 import QtCore
+import PyQt5.QtGui as QtGui
 from  PyQt5.QtGui import QColor
 from functools import partial
 
@@ -24,13 +25,13 @@ class DelayStageWidget(QWidget):
         self.setCurPosAsZero = QPushButton("Set current position as zero")
 
         self.stepsizeSpinner = QDoubleSpinBox()
-        self.stepsizeSpinner.setRange(0, 150)
+        self.stepsizeSpinner.setRange(0, 100000)
         self.stepsizeSpinner.setValue(0.0)
         self.stepsizeSpinner.setDecimals(3)
 
 
         self.moveToSpinner = QDoubleSpinBox()
-        self.moveToSpinner.setRange(-150, 150)
+        self.moveToSpinner.setRange(-100000, 100000)
         self.moveToSpinner.setValue(0.0)
         self.moveToSpinner.setDecimals
 
@@ -165,9 +166,9 @@ class CryostatWidget(QWidget):
                                   self.col.name())
 
         self.disConnectButton = QPushButton("connect")
-        self.currentTemp = QLabel("Current Temperature:   0.00")
+        self.currentTemp = QLabel("Current Temperature:   0.00K")
         self.setTempSpinner = QDoubleSpinBox()
-        self.setTempSpinner.setRange(-150, 150)
+        self.setTempSpinner.setRange(0, 400)
         self.setTempSpinner.setValue(0.0)
         self.setTempSpinner.setDecimals(3)
         self.setTempButton = QPushButton("Set Temperature")
@@ -199,7 +200,7 @@ class CryostatWidget(QWidget):
             self.disConnectButton.setText("connect")
 
     def set_Temp(self):
-        self.currentTemp.setText("Current Temperature:   " + str(self.setTempSpinner.value()))
+        self.currentTemp.setText("Current Temperature:   " + str(self.setTempSpinner.value())+"K")
 
 class StackedExample2(QWidget):
     def __init__(self, parent=None):
@@ -229,6 +230,9 @@ class StackedExample2(QWidget):
 
         self.lay.addWidget(self.Stack)
         self.lay.addLayout(btnLayout)
+
+        verticalSpacer = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.lay.addItem(verticalSpacer)
 
     def goTo(self, i):
         self.Stack.setCurrentIndex(i)

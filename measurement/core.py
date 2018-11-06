@@ -27,19 +27,26 @@ import h5py
 
 from instruments import generic
 from utilities.qt import raise_Qerror
-from utilities.misc import nested_for, iterate_ranges
+from utilities.misc import nested_for, iterate_ranges, parse_setting
 from utilities.exceptions import RequirementError
 from utilities.math import globalcounter
 
 
 def main():
+    import time
     from instruments.lockinamplifier import SR830
-
+    from instruments.delaystage import DelayStage
+    from instruments.cryostat import Cryostat
+    time.sleep(2)
     exp = Experiment()
-    exp.add_instrument('lockin', SR830())
-
-    print(os.getcwd())
-    pass
+    lockin = exp.add_instrument('lockin', SR830())
+    stage = exp.add_instrument('stage', DelayStage())
+    cryo = exp.add_instrument('cryo', Cryostat())
+    exp.print_setup()
+    time.sleep(1)
+    exp.create_file()
+    exp.add_parameter_iteration(cryo, 'change_temperature', [10, 20, 30, 40, 50])
+    exp.start_measurement()
 
 
 class Experiment(QtCore.QObject):
@@ -68,18 +75,18 @@ class Experiment(QtCore.QObject):
     Signals:
         finished (): at end of the scan. Bounced from worker.
         newData (): emitted at each measurement point.Bounced from worker.
-            together with scan progress information.
+            together with scan current_step information.
         stateChanged (str): emitted when the state of the worker changes.
             Allowed state values are defined in STATE_VALUES. Bounced from worker.
 
     """
+    __verbose = parse_setting('general', 'verbose')
     __TYPE = 'generic'
     # Signals
     finished = QtCore.pyqtSignal(dict)
     newData = QtCore.pyqtSignal(dict)
     progressChanged = QtCore.pyqtSignal(float)
     stateChanged = QtCore.pyqtSignal(str)
-
 
     def __init__(self, file=None, **kwargs):
         """ Create an instance of the Experiment
@@ -120,6 +127,7 @@ class Experiment(QtCore.QObject):
         self.measurement_name = 'unknown measurement ' + time.asctime().replace(':', '-')
         self.measurement_parameters = []
         self.measurement_settings = {}
+        self.base_instruments = []
         # define which worker to use:
         self.worker = None
 
@@ -132,24 +140,26 @@ class Experiment(QtCore.QObject):
                 setattr(self, key, val)
         self.get_parameters()
 
-    def add_parameter_iteration(self, instrument, parameter, values):
+    def add_parameter_iteration(self, instrument, method, values):
         """ adds a measurement loop to the measurement plan.
 
         Args:
             instrument (generic.Instrument): instance of an instrument.
-            parameter (str): name of a parameter belonging to instrument, to
-                be iterated on.
+            parameter (str): method to be called to change the intended quantity
             values(:obj:list or :obj:tuple): list of parameters to be set, in
                 the order in which they will be iterated.
         Raises:
             AssertionError: when any of the types are not respected.
         """
         assert isinstance(instrument, generic.Instrument)
-        assert isinstance(parameter, str)
-        assert hasattr(instrument, parameter)
+        assert isinstance(method, str)
+        assert hasattr(instrument, method)
         assert isinstance(values, (list, tuple))
-
-        self.measurement_parameters.append((instrument, parameter, values))
+        if self.__verbose:
+            print('Added parameter iteration:\n\t- Instrument: {}\n\t- Method: {}\n\t- Values: {}'.format(instrument,
+                                                                                                          method,
+                                                                                                          values))
+        self.measurement_parameters.append((instrument, method, values))
 
     def check_requirements(self):
         """ check if the minimum requirements are fulfilled.
@@ -157,31 +167,36 @@ class Experiment(QtCore.QObject):
         Raises:
             RequirementError: if any requirement is not fulfilled.
         """
-        missing = [x for x in self.required_instruments]
+        try:
+            missing = [x for x in self.required_instruments]
+            for instrument in self.instrument_list:
 
-        for instrument in self.instrument_list:
-
-            for i, inst_type in enumerate(self.required_instruments):
-                if isinstance(getattr(self, instrument), inst_type):
-                    print('found {} as {}'.format(instrument, inst_type))
-                    missing.remove(inst_type)
-                    break
-        if len(missing) > 0:
-            raise RequirementError('no instrument of type {} present.'.format(missing))
-        elif not os.path.isfile(self.measurement_file):
-            raise FileNotFoundError('no File defined for this measurement.')
-        else:
-            print('all requrements met. Good to go!')
+                for i, inst_type in enumerate(self.required_instruments):
+                    if isinstance(getattr(self, instrument), inst_type):
+                        if self.__verbose: print('found {} as {}'.format(instrument, inst_type))
+                        self.base_instruments.append((instrument, getattr(self, instrument)))
+                        missing.remove(inst_type)
+                        break
+            if len(missing) > 0:
+                raise RequirementError('no instrument of type {} present.'.format(missing))
+            elif not os.path.isfile(self.measurement_file):
+                raise FileNotFoundError('no File defined for this measurement.')
+            else:
+                print('all requrements met. Good to go!')
+        except TypeError:
+            print('No requirements set. Nothing to check!')
 
     def get_parameters(self):
         """ Find all parameters which can be set and write them to a dictionary in self.parameters"""
+        if self.__verbose: print('Retreaving parameters\n')
         for instrument in self.instrument_list:
             instrument_instance = getattr(self, instrument)
             for attr, val in instrument_instance.__dict__.items():
-                if isinstance(getattr(self.instrument_instance, attr), generic.Parameter):
-                    self.parameters[instrument][attr] = getattr(self.instrument_instance, attr)
+                if isinstance(getattr(instrument_instance, attr), generic.Parameter):
+                    if self.__verbose: print('\t- Found {} in {}'.format(attr, instrument))
+                    self.parameters[instrument][attr] = getattr(instrument_instance, attr)
 
-    def add_instrument(self, name, model):
+    def add_instrument(self, name, model, return_=True):
         """ Add an instrument to the experimental setup.
 
         adds as a class attribute an instance of a given model of an instrument,
@@ -198,6 +213,8 @@ class Experiment(QtCore.QObject):
         assert isinstance(model, generic.Instrument), '{} is not a recognized instrument type'.format(model)
         setattr(self, name, model)
         self.instrument_list.append(name)
+        if self.__verbose: print('Added {} as instance of {}'.format(name, model))
+        if return_: return getattr(self, name)
 
     def print_setup(self):
         if len(self.instrument_list) == 0:
@@ -222,6 +239,7 @@ class Experiment(QtCore.QObject):
             connect_list = args
         for name in connect_list:
             getattr(self, name).connect()
+            if self.__verbose: print('Connected {}'.format(name))
 
     def disconnect_all(self, *args):
         """ Connect to the instruments.
@@ -240,12 +258,14 @@ class Experiment(QtCore.QObject):
         for name in disconnect_list:
             assert hasattr(self, name), 'No instrument named {} found.'.format(name)
             getattr(self, name).disconnect()
+            if self.__verbose: print('Disconnected {}'.format(name))
 
     def clear_instrument_list(self):
         """ Remove all instruments from the current instance."""
         self.disconnect_all()
         for inst in self.instrument_list:
             delattr(self, inst)
+            if self.__verbose: print('Removed {} from available instruments'.format(inst))
         self.instrument_list = []
 
     def initialize_experiment(self):
@@ -264,20 +284,27 @@ class Experiment(QtCore.QObject):
 
         self.scan_thread = QtCore.QThread()
         self.w = self.worker(self.measurement_file,
+                             self.base_instruments,
                              self.measurement_parameters,
-                             self.measurement_instruments,
                              **self.measurement_settings)
 
         self.w.finished.connect(self.on_finished)
         self.w.newData.connect(self.on_newData)
-        self.w.progressCanged[float].connect(self.on_progressCanged)
-        self.w.stateChanged[str].connect(self.on_stageCanged)
+        self.w.progressChanged[float].connect(self.on_progressChanged)
+        self.w.stateChanged[str].connect(self.on_stateChanged)
 
+        if self.__verbose: print('initialized: moving to new thread')
         self.w.moveToThread(self.scan_thread)
+        if self.__verbose: print('connecting')
         self.scan_thread.started.connect(self.w.work)
+        if self.__verbose: print('starting')
         self.scan_thread.start()
+        self.can_die=False
+        while not self.can_die :
+            time.sleep(2)
+        if self.__verbose: print('wtf???')
 
-    def create_file(self, name=None, dir='D:/Data/', replace=True):
+    def create_file(self, name=None, dir=None, replace=True):
         """ Initialize a file for a measurement.
 
         :Structure:
@@ -292,12 +319,15 @@ class Experiment(QtCore.QObject):
         """
         if name is not None:
             self.measurement_name = name
-
-        filename = dir + name
+        if dir is None:
+            dir = parse_setting('paths', 'h5_data')
+        filename = os.path.join(dir, self.measurement_name)
+        filename += '.h5'
         self.measurement_file = filename
         if os.path.isfile(filename) and replace:
             raise NameError('name already exists, please change.')
         else:
+            if self.__verbose: print('Created file {}'.format(filename))
             with h5py.File(filename, 'w', libver='latest') as f:
                 data_grp = f.create_group('data')
                 settings_grp = f.create_group('settings')
@@ -311,9 +341,14 @@ class Experiment(QtCore.QObject):
 
                     # create a dataset for each parameter, and assign the current value.
                     for par_name, par_val in inst.parameters.items():
-                        dtype = getattr(par_name, inst_name).type
-                        data = getattr(par_name, inst_name).value
-                        inst_group.create_dataset(par_name, shape=(1,), dtype=dtype, data=data)
+                        try:
+                            if self.__verbose: print('getting attribute {} from {}'.format(par_name, inst))
+                            dtype = getattr(inst, par_name).type
+                            data = getattr(inst, par_name).value
+                            inst_group.create_dataset(par_name, shape=(1,), dtype=dtype, data=data)
+                        except AttributeError:
+                            if self.__verbose: print('attribute not found')
+
                 metadata_grp['date'] = time.asctime()
                 metadata_grp['type'] = self.__TYPE
 
@@ -335,19 +370,27 @@ class Experiment(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def on_finished(self, signal):
+        if self.__verbose: print('-> finished <- signal recieved')
         self.finished.emit(signal)
+        self.can_die = True
+        print('finished')
 
     @QtCore.pyqtSlot()
     def on_newData(self, signal):
+        if self.__verbose: print('-> newData <- signal recieved')
         self.newData.emit(signal)
 
     @QtCore.pyqtSlot(float)
-    def on_progressCanged(self, signal):
+    def on_progressChanged(self, signal):
+        if self.__verbose: print('-> progressChanged <- signal recieved')
         self.progressChanged.emit(signal)
+        print('current_step: {}'.format(signal))
 
     @QtCore.pyqtSlot(str)
-    def on_stateCanged(self, signal):
+    def on_stateChanged(self, signal):
+        if self.__verbose: print('-> stateChanged <- signal recieved')
         self.stateCanged.emit(signal)
+
 
 class Worker(QtCore.QObject):
     """ Parent class for all workers.
@@ -361,7 +404,7 @@ class Worker(QtCore.QObject):
     signals emitted:
         finished (): at end of the scan.
         newData (): emitted at each measurement point.
-            together with scan progress information.
+            together with scan current_step information.
         stateChanged (str): emitted when the state of the worker changes.
             Allowed state values are defined in STATE_VALUES.
     """
@@ -371,12 +414,10 @@ class Worker(QtCore.QObject):
     progressChanged = QtCore.pyqtSignal(float)
     stateChanged = QtCore.pyqtSignal(str)
     STATE_VALUES = ['loading', 'idle', 'changing parameters', 'running', 'failed', 'complete']
+    __verbose = parse_setting('general', 'verbose')
 
-    def __init__(self, file, base_instruments, parameters,
-                 disconnect_on_parameter_change=True, **kwargs):
+    def __init__(self, file, base_instruments, parameters, **kwargs):  # ,**kwargs):
         """ Initialize worker instance.
-
-
 
         Args:
             file:
@@ -393,14 +434,14 @@ class Worker(QtCore.QObject):
 
         self.file = file
         for inst in base_instruments:
-            setattr(self, inst)
+            setattr(self, inst[0], inst[1])
         self.instruments = []  # instruments which controls the parameters
-        self.parameters = []  # parameters to be changed
+        self.methods = []  # parameters to be changed
         self.values = []  # list of values at which to set the parameters
 
         for param in parameters:
             self.instruments.append(param[0])
-            self.parameters.append(param[1])
+            self.methods.append(param[1])
             self.values.append(param[2])
 
         for key, val in kwargs.items():
@@ -409,51 +450,21 @@ class Worker(QtCore.QObject):
         # Flags
         self.__shouldStop = False  # soft stop, for interrupting at end of cycle.
         self.__state = 'none'
-        self.__disconnect_on_paramter_change = disconnect_on_parameter_change
-        self.__last_index = None # used to keep track of which parameter to change at each iteration
-        self.__progress = 0 # keep track of the progress of the scan
-        self.__max_progress = 0 # total number of steps of __progress to increment
-        self.__single_measurement_steps = 1 # number of steps in each measurement procedure
+        self.__last_index = None  # used to keep track of which parameter to change at each iteration
+        self.current_step = 0  # keep track of the current_step of the scan
+        self.n_of_steps = 0  # total number of steps of current_step to increment
+        self.single_measurement_steps = 1  # number of steps in each measurement procedure
 
-    #
-    # def check_requirements(self):
-    #     """ Check if all required instruments and settings were passed.
-    #
-    #     """
-    #     availableInstruments = []
-    #     availableSettings = []
-    #     for key, val in self.instruments.items():  # create list of available instruments
-    #         availableInstruments.append(key)
-    #     for key, val in self.instruments.items():  # create list of available settings
-    #         availableSettings.append(key)
-    #     for instrument in self.requiredInstruments:  # rise error for each missing instrument
-    #         if instrument not in availableInstruments:
-    #             raise NotImplementedError('Instrument {} not available.'.format(instrument))
-    #     for setting in self.requiredSettings:  # rise error for each missing Setting
-    #         if setting not in availableSettings:
-    #             raise NotImplementedError('Setting {} not available.'.format(instrument))
-    #
-    # def initialize_instruments(self):
-    #     """ create class attribute for each required instrument and setting.
-    #
-    #     """
-    #     for inst in self.requiredInstruments:
-    #         try:
-    #             # inst_string = str(instrument).lower().replace('-', '')
-    #             setattr(self, inst, self.instruments[inst])
-    #         except KeyError:
-    #             raise KeyError('Instrument {} not available.'.format(inst))
-    #     for setting in self.requiredSettings:
-    #         try:
-    #             setattr(self, setting, self.settings[setting])
-    #         except KeyError:
-    #             raise KeyError('Setting {} not available.'.format(setting))
+    @QtCore.pyqtSlot()
+    def test(self):
+        print('test passed')
 
-    def measurement_loop(self):
+    @QtCore.pyqtSlot()
+    def work(self):
         """ Iterate over all parameters and measure.
 
         This method iterates over all values of the parameters and performs a
-        measurement for each combinaion. The order defined will be maintained,
+        measurement for each combination. The order defined will be maintained,
         and the effective result is taht of running a nested for loop with the
         first parameter being the outermost loop and the last, the innermost.
 
@@ -468,7 +479,7 @@ class Worker(QtCore.QObject):
                 parameter_methods[1](polarization_values)
                 measure()
         """
-
+        if self.__verbose: print('worker started working')
         ranges = []
         self.__max_ranges = []
 
@@ -480,6 +491,7 @@ class Worker(QtCore.QObject):
         # initialize the indexes control variable
         self.__last_index = [0 for x in range(len(ranges))]
 
+        if self.__verbose: print('starting measurement loop!')
         for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure
             if self.__shouldStop:
                 break
@@ -497,25 +509,17 @@ class Worker(QtCore.QObject):
         Args:
             indexes (:obj:list of :obj:int): list of indexes of the parameter loops
             """
-        self.state = 'Changing Parameters'
+        self.state = 'changing parameters'
         for i, index in enumerate(indexes):
             # if the index corresponding to the parameter i has changed in this
             # iteration, set the new parameter
             if index != self.__last_index[i]:
-                if self.__disconnect_on_paramter_change:
-                    self.instruments[i].connect()
-                # as this should be a generic.Parameter class object, it should
-                # have a set method, to change its value.
-                getattr(self.instruments[i], self.parameters[i]).set(self.values[i][index])
-                if self.__disconnect_on_paramter_change:
-                    self.instruments[i].disconnect()
-
-    def work(self):
-        """ main loop, worker specific."""
-        # TODO: add assertions to make sure scan CAN start
-        print('starting a measurement loop')  # TODO: add mode description to print
-        self.measurement_loop()
-
+                if self.__verbose: print('setting parameters for iteration {}:'.format(indexes)+
+                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],self.values[i][index[i]]))
+                # now call the method of the instrument class with the value at#
+                #  this iteration
+                getattr(self.instruments[i], self.methods[i])(self.values[i][index[i]])
+            self.__last_index = indexes
     def measure(self):
         """ Perform a measurement step.
 
@@ -523,14 +527,18 @@ class Worker(QtCore.QObject):
         raise NotImplementedError("Method 'work' not implemented in worker (sub)class")
 
     def initialize_progress_counter(self):
-        self.__max_progress = 1
+        if self.__verbose: print('initializing counter')
+        self.n_of_steps = 1
+        print(self.__max_ranges)
         for i in self.__max_ranges:
-            self.__max_progress *= i
-        self.__max_progress *= self.__single_measurement_steps
+            self.n_of_steps *= i
+        self.n_of_steps *= self.single_measurement_steps
+        if self.__verbose: print('{} loop steps expected'.format(self.n_of_steps))
 
     def increment_progress_counter(self):
-        self.__progress += 1
-        self.progressChanged.emit(self.__progress / self.__max_progress)
+        self.current_step += 1
+        self.progress = 100*self.current_step / self.n_of_steps
+        self.progressChanged.emit(self.progress)
 
     @property
     def state(self):
@@ -567,6 +575,7 @@ class Worker(QtCore.QObject):
         """ Safely kill the thread by closing connection to all insturments.
 
         """
+        print('killing worker')
         for instrument in self.requiredInstruments:
             try:
                 getattr(self, instrument).disconnect()

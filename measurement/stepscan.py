@@ -26,19 +26,30 @@ from PyQt5 import QtCore
 from measurement.core import Worker, Experiment
 from instruments.lockinamplifier import LockInAmplifier, SR830
 from instruments.delaystage import DelayStage
+from utilities.misc import parse_setting
 
 from utilities.qt import raise_Qerror
 
 
 def main():
-    stepscan = StepScan()
-    stepscan.add_instrument('lockin', SR830())
-    stepscan.add_instrument('stage', DelayStage())
-    stepscan.check_requirements()
-    pass
+    import time
+    from instruments.lockinamplifier import SR830
+    from instruments.delaystage import DelayStage
+    from instruments.cryostat import Cryostat
+    time.sleep(2)
+    exp = StepScan()
+    lockin = exp.add_instrument('lockin', SR830())
+    stage = exp.add_instrument('delay_stage', DelayStage())
+    cryo = exp.add_instrument('cryo', Cryostat())
+    exp.print_setup()
+    time.sleep(1)
+    exp.create_file()
+    exp.add_parameter_iteration(cryo, 'change_temperature', [10,20])
+    exp.start_measurement()
 
 
 class StepScan(Experiment):
+    # __verbose = parse_setting('general', 'verbose')
     __TYPE = 'stepscan'
 
     def __init__(self, file=None, **kwargs):
@@ -46,9 +57,9 @@ class StepScan(Experiment):
         self.required_instruments = [LockInAmplifier, DelayStage]
 
         self.worker = StepScanWorker
-        self.scan_settings = {'averages': 10,
-                              'stage_positions': [],
-                              }
+        self.measurement_settings = {'averages': 3,
+                                     'stage_positions': [0,1,2,3],
+                                     }
 
     # def initialize_experiment(self): # TODO: implement stepscan specific requirements test
     #     """ set up all what is needed for a measurement session.
@@ -63,15 +74,13 @@ class StepScan(Experiment):
     #     self.check_requirements()
 
 
-
-
 class StepScanWorker(Worker):
     """ Subclass of Worker, designed to perform step scan measurements.
 
     Signals Emitted:
 
     finished (dict): at end of the scan, emits the results stored over the whole scan.
-    newData (dict): emitted at each measurement point. Usually contains a dictionary with the last measured values toghether with scan progress information.
+    newData (dict): emitted at each measurement point. Usually contains a dictionary with the last measured values toghether with scan current_step information.
 
     **Experiment Input required**:
 
@@ -84,13 +93,16 @@ class StepScanWorker(Worker):
 
     def __init__(self, file, base_instrument, parameters, **kwargs):
         super().__init__(file, base_instrument, parameters, **kwargs)
-        self.__single_measurement_steps = len(self.stage_positions) * self.averages
+        print('using Stepscan worker')
+        self.check_requirements()
+        self.single_measurement_steps = len(self.stage_positions) * self.averages
+        print('steps: {}'.format(self.single_measurement_steps))
 
     def check_requirements(self):
         assert hasattr(self, 'averages'), 'No number of averages was passed!'
         assert hasattr(self, 'stage_positions'), 'no values of the stage positions were passed!'
-        assert hasattr(self, 'lockin')
-        assert hasattr(self, 'delay_stage')
+        assert hasattr(self, 'lockin'), 'No Lockin Amplifier found: attribute name should be "lockin"'
+        assert hasattr(self, 'delay_stage'), 'No stage found: attribute name should be "delay_stage"'
 
         print('worker has all it needs. Ready to measure!')
 
@@ -100,22 +112,28 @@ class StepScanWorker(Worker):
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
-
+        print('\n---------------------\nHurra! its scanning!\n---------------------')
         for avg_n in range(self.averages):
             print('scanning average n {}'.format(avg_n))
 
             for i, pos in enumerate(self.stage_positions):
-                self.delay_stage.move_to(pos)
-                real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
+                self.delay_stage.move_absolute(pos)
+                # real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
                 time.sleep(self.lockin.dwelltime)
-                data = self.lockin.readSnap(['X', 'Y'])  # TODO: implement data management!
-                self.newData.emit(data)
+                # data = self.lockin.read_snap(['X', 'Y'])  # TODO: implement data management!
+                self.newData.emit()
                 self.increment_progress_counter()
+                print('current_step: {:.3f}% step {} of {}'.format(self.progress,self.current_step,self.n_of_steps))
 
 
 if __name__ == '__main__':
-    import os
+    import os, sys
 
     if os.getcwd()[-9] != 'FemtoScan':
         os.chdir('../')
+    from utilities.misc import my_exception_hook
+    # used to see errors generated by PyQt5 in pycharm:
+    sys._excepthook = sys.excepthook
+    # Set the exception hook to our wrapping function
+    sys.excepthook = my_exception_hook
     main()

@@ -2,9 +2,9 @@
 """
 Created on Sat Apr 21 16:22:35 2018
 
-@author: GVolM
+@author: Vladimir Grigorev, Steinn Ymir Agustsson
 
-    Copyright (C) 2018 Vladimir Grigorev, Steinn Ymir Agustsson
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,15 +20,15 @@ Created on Sat Apr 21 16:22:35 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
-
 import sys
 from instruments import generic
 import time
-import clr
-import System
 
-
+try:
+    import clr
+    import System
+except ImportError:
+    print('missing packages for Newport stage.')
 
 
 class DelayStage(generic.Instrument):
@@ -84,14 +84,11 @@ class NewportXPS(DelayStage):
     def __init__(self):
         super(NewportXPS, self).__init__()
         if 'CommandInterfaceXPS' not in sys.modules:  # TODO: fix imports for XPS stage
-                    # TODO: implement test and ask for correct path in case of faliure
+            # TODO: implement test and ask for correct path in case of faliure
             self.NETAssemblyPath = r'C:\Windows\Microsoft.NET\assembly\GAC_64\Newport.XPS.CommandInterface\v4.0_1.0.0.0__9a267756cf640dcf'
             sys.path.append(self.NETAssemblyPath)
             clr.AddReference("Newport.XPS.CommandInterface")
             import CommandInterfaceXPS
-            
-
-
 
         self.myXPS = CommandInterfaceXPS.XPS()
         self.Address = '192.168.254.254'
@@ -143,8 +140,6 @@ class NewportXPS(DelayStage):
     def disconnect(self):
         self.myXPS.GroupKill(System.String(self.StageName), System.String(""))
         print('DelayStage has been disconnected')
-
-    # %%
 
     def XPS_GetControllerVersion(self, myXPS, flag):
         result, version, errString = self.myXPS.FirmwareVersionGet(System.String(""), System.String(""))

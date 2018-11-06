@@ -2,9 +2,9 @@
 """
 Created on Sat Apr 21 17:11:24 2018
 
-@author: GVolM
+@author: Vladimir Grigorev, Steinn Ymir Agustsson
 
-    Copyright (C) 2018 Vladimir Grigorev, Steinn Ymir Agustsson
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,9 +37,10 @@ class LockInAmplifier(generic.Instrument):
         super(LockInAmplifier, self).__init__()
 
         self.name = 'Fake LockIn Apmlifier'
-        self.measurables = [self.read_value]
+        # list all methods which can be used as measurement functions
+        self.measurables = ['read_value']
         self.sleep_multiplier = 3
-
+        self.dwelltime = 1  # TODO: set dwelltime based on lockin settings, maybe as property
         self.sensitivity = generic.Parameter(self, value=1, unit=None)
         self.time_constant = generic.Parameter(self, value=0.3, unit=u.second)
 
@@ -63,8 +64,14 @@ class SR830(LockInAmplifier):
 
     def __init__(self):
         super().__init__()
-        self.name = 'Fake LockIn Apmlifier'
-        self.measurables = [self.read_snap, self.read_value]
+        self.name = 'SR830 Lockin Amplifier'
+        # list all methods which can be used as measurement functions
+        self.measurables = {'read_snap': {'input': '',
+                                          'output': None},
+                            'read_value': {
+                                'input': 'Parameter: a string like in manual. except Theta. Che the dictionary of parametrs for Output',
+                                'output': None}
+                            }
 
         self.sleep_multiplier = 3
 
@@ -337,7 +344,6 @@ class SR830(LockInAmplifier):
         def __init__(self, parent_instrument, **kwargs):
             super().__init__(parent_instrument, **kwargs)
             self.default_value = self.value
-
 
         def set(self, value):
             """ set the given value to the Parameter on the lock-in

@@ -2,9 +2,9 @@
 """
 Created on Sat Apr 21 16:08:39 2018
 
-@author: GVolM
+@author: Steinn Ymir Agustsson
 
-    Copyright (C) 2018 Vladimir Grigorev, Steinn Ymir Agustsson
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ class Instrument(object):
 
         config.add_section(self.name)
         for key, val in configDict.items():
-            config.set(self.name, key, str(val))  # TODO: change name to generic
+            config.set(self.name, key, str(val))
         if file[-4:] != '.ini':
             file += '.ini'
         with open(file, 'w') as configfile:  # save
@@ -127,7 +127,6 @@ class Instrument(object):
             except AttributeError:
                 print('no parameter called {} in this device')
 
-    # %% the danger zone:
     def __del__(self):
         """ Disconnect device before loosing it's instance."""
         self.disconnect()

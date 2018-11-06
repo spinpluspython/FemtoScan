@@ -1,16 +1,68 @@
 # -*- coding: utf-8 -*-
 """
 
-@author: Steinn Ymir Agustsson
+@author: Vladimir Grigorev, Steinn Ymir Agustsson
+
+    Copyright (C) 2018 Steinn Ymir Agustsson, Vladimir Grigorev
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
-from PyQt5 import QtCore
-from measurement.core import Worker
-from utilities.qt import raise_Qerror
+
 import time
+from PyQt5 import QtCore
+
+from measurement.core import Worker, Experiment
+from instruments.lockinamplifier import LockInAmplifier, SR830
+from instruments.delaystage import DelayStage
+
+from utilities.qt import raise_Qerror
 
 
 def main():
+    stepscan = StepScan()
+    stepscan.add_instrument('lockin', SR830())
+    stepscan.add_instrument('stage', DelayStage())
+    stepscan.check_requirements()
     pass
+
+
+class StepScan(Experiment):
+    __TYPE = 'stepscan'
+
+    def __init__(self, file=None, **kwargs):
+        super().__init__(file=file, **kwargs)
+        self.required_instruments = [LockInAmplifier, DelayStage]
+
+        self.worker = StepScanWorker
+        self.scan_settings = {'averages': 10,
+                              'stage_positions': [],
+                              }
+
+    # def initialize_experiment(self): # TODO: implement stepscan specific requirements test
+    #     """ set up all what is needed for a measurement session.
+    #
+    #     - check if parameter iteration methods, and relative values are present
+    #     - check if the file name chosen is already present, otherwise append number
+    #     - write file structure in the h5 file chosen
+    #     - preallocate data file structures
+    #     - disconnect all devices
+    #     """
+    #
+    #     self.check_requirements()
+
+
 
 
 class StepScanWorker(Worker):
@@ -30,67 +82,40 @@ class StepScanWorker(Worker):
 
     """
 
-    def __init__(self, settings, instruments):
-        super(StepScanWorker, self).__init__(settings, instruments)
+    def __init__(self, file, base_instrument, parameters, **kwargs):
+        super().__init__(file, base_instrument, parameters, **kwargs)
+        self.__single_measurement_steps = len(self.stage_positions) * self.averages
 
-        self.state = 'loading'
+    def check_requirements(self):
+        assert hasattr(self, 'averages'), 'No number of averages was passed!'
+        assert hasattr(self, 'stage_positions'), 'no values of the stage positions were passed!'
+        assert hasattr(self, 'lockin')
+        assert hasattr(self, 'delay_stage')
 
-        self.requiredSettings = ['stagePositions', 'lockinParametersToRead', 'dwelltime', 'numberOfScans']
-        self.requiredInstruments = ['lockin', 'stage']
+        print('worker has all it needs. Ready to measure!')
 
-        self.state = 'connecting instruments'
-        self.initialize_instruments()
-        #
-        # for instrument, value in instruments.items():
-        #     inst_string = str(instrument).lower().replace('-','')
-        #     setattr(self, inst_string, value)
-        # for setting, value in settings.items():
-        #     inst_string = str(instrument).lower().replace('-','')
-        #     setattr(self, inst_string, value)
-
-        self.state = 'idle'
-
-    def work(self):
+    def measure(self):
         """ Step Scan specific work procedure.
 
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
-        print('worker scanning')
-        self.state = 'scanning'
-        pointsPerScan = len(self.stagePositions)
-        j = 0
-        while j < self.numberOfScans:
-            j = j + 1
-            self.result['data'][j] = {}
-            for i in range(pointsPerScan):
-                pos = self.stagePositions[i]
-                self.stage.moveTo(pos)  # move stage to new position
-                time.sleep(self.dwelltime)  # wait for the lock-in value to saturate
-                # read data and add scan status information to the output dictionary.
-                newDataDict = self.lockin.readSnap(self.lockinParametersToRead)
-                # TODO: implement stage position readout
-                newDataDict['stagePosition'] = pos
-                # append data to results dataset
-                for key, val in newDataDict.items():
-                    self.result['data'][j][key] = val
-                # add lables for scan number (j) and point (i) for data emission only.
-                newDataDict['point'] = i
-                newDataDict['scanNumber'] = j  # add lable for scan number in order to track it in emitted signal
-                newDataDict['scanProgress'] = i / pointsPerScan
-                newDataDict['totalProgress'] = (i + j * pointsPerScan) / (self.numberOfScans * pointsPerScan)
-                self.newData.emit(newDataDict)
 
-                if self.shouldStop:
-                    self.kill_worker()
+        for avg_n in range(self.averages):
+            print('scanning average n {}'.format(avg_n))
 
-        self.finished.emit(self.result)
-        self.state = 'complete'
-
-    @QtCore.pyqtSlot(int)
-    def set_number_of_scans(self, new_numberOfScans):
-        self.set_numberOfScans = new_numberOfScans
+            for i, pos in enumerate(self.stage_positions):
+                self.delay_stage.move_to(pos)
+                real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
+                time.sleep(self.lockin.dwelltime)
+                data = self.lockin.readSnap(['X', 'Y'])  # TODO: implement data management!
+                self.newData.emit(data)
+                self.increment_progress_counter()
 
 
 if __name__ == '__main__':
+    import os
+
+    if os.getcwd()[-9] != 'FemtoScan':
+        os.chdir('../')
     main()

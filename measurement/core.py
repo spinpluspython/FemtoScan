@@ -140,7 +140,7 @@ class Experiment(QtCore.QObject):
                 setattr(self, key, val)
         self.get_parameters()
 
-    def add_parameter_iteration(self, instrument, method, values):
+    def add_parameter_iteration(self, name,unit,instrument, method, values):
         """ adds a measurement loop to the measurement plan.
 
         Args:
@@ -151,15 +151,16 @@ class Experiment(QtCore.QObject):
         Raises:
             AssertionError: when any of the types are not respected.
         """
-        assert isinstance(instrument, generic.Instrument)
-        assert isinstance(method, str)
-        assert hasattr(instrument, method)
-        assert isinstance(values, (list, tuple))
+        assert isinstance(name,str), 'name must be a string'
+        assert isinstance(unit,str), 'unit must be a string'
+        assert isinstance(instrument, generic.Instrument), ' instrumnet must be instance of generic.Instrument'
+        assert isinstance(method, str) and hasattr(instrument, method), 'method should be a string representing the name of a method of the instrumnet class'
+        assert isinstance(values, (list, tuple)), 'values should be list or tuple of numbers.'
         if self.__verbose:
             print('Added parameter iteration:\n\t- Instrument: {}\n\t- Method: {}\n\t- Values: {}'.format(instrument,
                                                                                                           method,
                                                                                                           values))
-        self.measurement_parameters.append((instrument, method, values))
+        self.measurement_parameters.append((name,unit,instrument, method, values))
 
     def check_requirements(self):
         """ check if the minimum requirements are fulfilled.
@@ -329,7 +330,7 @@ class Experiment(QtCore.QObject):
         else:
             if self.__verbose: print('Created file {}'.format(filename))
             with h5py.File(filename, 'w', libver='latest') as f:
-                data_grp = f.create_group('data')
+                rawdata_grp = f.create_group('raw_data')
                 settings_grp = f.create_group('settings')
                 axes_grp = f.create_group('axes')
                 metadata_grp = f.create_group('metadata')
@@ -435,14 +436,18 @@ class Worker(QtCore.QObject):
         self.file = file
         for inst in base_instruments:
             setattr(self, inst[0], inst[1])
+        self.names = []
+        self.units = []
         self.instruments = []  # instruments which controls the parameters
         self.methods = []  # parameters to be changed
         self.values = []  # list of values at which to set the parameters
 
         for param in parameters:
-            self.instruments.append(param[0])
-            self.methods.append(param[1])
-            self.values.append(param[2])
+            self.names.append(param[0])
+            self.units.append(param[1])
+            self.instruments.append(param[2])
+            self.methods.append(param[3])
+            self.values.append(param[4])
 
         for key, val in kwargs.items():
             setattr(self, key, val)
@@ -450,7 +455,7 @@ class Worker(QtCore.QObject):
         # Flags
         self.__shouldStop = False  # soft stop, for interrupting at end of cycle.
         self.__state = 'none'
-        self.__last_index = None  # used to keep track of which parameter to change at each iteration
+        self.current_index = None  # used to keep track of which parameter to change at each iteration
         self.current_step = 0  # keep track of the current_step of the scan
         self.n_of_steps = 0  # total number of steps of current_step to increment
         self.single_measurement_steps = 1  # number of steps in each measurement procedure
@@ -489,12 +494,13 @@ class Worker(QtCore.QObject):
             self.__max_ranges.append(maxrange)
         self.initialize_progress_counter()
         # initialize the indexes control variable
-        self.__last_index = [0 for x in range(len(ranges))]
+        self.current_index = [-1 for x in range(len(ranges))]
 
         if self.__verbose: print('starting measurement loop!')
         for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure
             if self.__shouldStop:
                 break
+            print(indexes)
             self.set_parameters(indexes)
             self.measure()
 
@@ -513,13 +519,15 @@ class Worker(QtCore.QObject):
         for i, index in enumerate(indexes):
             # if the index corresponding to the parameter i has changed in this
             # iteration, set the new parameter
-            if index != self.__last_index[i]:
+            print(index, self.current_index)
+            if index != self.current_index[i]:
                 if self.__verbose: print('setting parameters for iteration {}:'.format(indexes)+
-                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],self.values[i][index[i]]))
+                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],self.values[i][index]))
                 # now call the method of the instrument class with the value at#
                 #  this iteration
-                getattr(self.instruments[i], self.methods[i])(self.values[i][index[i]])
-            self.__last_index = indexes
+                getattr(self.instruments[i], self.methods[i])(self.values[i][index])
+                self.current_index[i]+=1
+
     def measure(self):
         """ Perform a measurement step.
 
@@ -529,7 +537,6 @@ class Worker(QtCore.QObject):
     def initialize_progress_counter(self):
         if self.__verbose: print('initializing counter')
         self.n_of_steps = 1
-        print(self.__max_ranges)
         for i in self.__max_ranges:
             self.n_of_steps *= i
         self.n_of_steps *= self.single_measurement_steps

@@ -21,6 +21,10 @@
 """
 
 import time
+import h5py
+import pandas as pd
+import numpy as np
+
 from PyQt5 import QtCore
 
 from measurement.core import Worker, Experiment
@@ -44,7 +48,8 @@ def main():
     exp.print_setup()
     time.sleep(1)
     exp.create_file()
-    exp.add_parameter_iteration(cryo, 'change_temperature', [10,20])
+    exp.add_parameter_iteration('temperature','K',cryo, 'change_temperature', [10,20])
+
     exp.start_measurement()
 
 
@@ -61,17 +66,6 @@ class StepScan(Experiment):
                                      'stage_positions': [0,1,2,3],
                                      }
 
-    # def initialize_experiment(self): # TODO: implement stepscan specific requirements test
-    #     """ set up all what is needed for a measurement session.
-    #
-    #     - check if parameter iteration methods, and relative values are present
-    #     - check if the file name chosen is already present, otherwise append number
-    #     - write file structure in the h5 file chosen
-    #     - preallocate data file structures
-    #     - disconnect all devices
-    #     """
-    #
-    #     self.check_requirements()
 
 
 class StepScanWorker(Worker):
@@ -96,7 +90,8 @@ class StepScanWorker(Worker):
         print('using Stepscan worker')
         self.check_requirements()
         self.single_measurement_steps = len(self.stage_positions) * self.averages
-        print('steps: {}'.format(self.single_measurement_steps))
+        self.parameters_to_measure = ['X', 'Y']
+        print('single scan steps: {}'.format(self.single_measurement_steps))
 
     def check_requirements(self):
         assert hasattr(self, 'averages'), 'No number of averages was passed!'
@@ -113,18 +108,35 @@ class StepScanWorker(Worker):
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
         print('\n---------------------\nHurra! its scanning!\n---------------------')
+        # groupname = 'raw_data/'
+        # print(self.current_index)
+        # for i, idx in enumerate(self.current_index):
+        #     groupname += str(self.values[i][idx]) + self.units[i] + ' - '
+        # groupname = groupname[:-3]
+        #
+        # with h5py.File(self.file, 'a') as f:
+        #     f.create_group(groupname)
+
         for avg_n in range(self.averages):
             print('scanning average n {}'.format(avg_n))
-
+            pd_dataframe = None
+            # hdf_dataset_name = groupname + '/avg{}'.format(str(avg_n).zfill(4))
+            # with h5py.File(self.file, 'a') as f:
+            #     f.create_dataset(hdf_dataset_name,shape=(len(self.parameters_to_measure), self.averages))
             for i, pos in enumerate(self.stage_positions):
                 self.delay_stage.move_absolute(pos)
                 # real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
                 time.sleep(self.lockin.dwelltime)
-                # data = self.lockin.read_snap(['X', 'Y'])  # TODO: implement data management!
+                # #result = self.lockin.read_snap(self.parameters_to_measure)  # TODO: implement data management!
+                # result = pd.DataFrame(data=(np.random.rand(2)),columns=self.parameters_to_measure)
+                # if pd_dataframe is None:
+                #     pd_dataframe = result
+                # else:
+                #     pd_dataframe.append(result)
                 self.newData.emit()
                 self.increment_progress_counter()
                 print('current_step: {:.3f}% step {} of {}'.format(self.progress,self.current_step,self.n_of_steps))
-
+            # pd_dataframe.to_hdf(self.file, 'raw_data/{}/{}'.format(groupname,hdf_dataset_name), 'a')
 
 if __name__ == '__main__':
     import os, sys

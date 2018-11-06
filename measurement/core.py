@@ -49,13 +49,13 @@ class Experiment(QtCore.QObject):
 
     This is done by adding to it instruments, via the :obj:add_instrument* method.
 
-    A measurement sesion can be defined by adding parameter iterations.
+    A measurement session can be defined by adding parameter iterations.
     This is done by using the method `add_parameter_iteration`, which creates a
     tuple of 3 objects: the *instrument*, the *parameter* and *values*.
-    **Instrument**: is an instance of the instrumentwhich will be used to
+    **Instrument**: is an instance of the instrument which will be used to
     control this parameter.
     **parameter** is the name under which this parameter can be found in the
-    insutrment object instance
+    instrument object instance
     **value** is a tuple or list of values. These are in order the values at
     which this parameter will be set. Each value will generate a measurement loop.
 
@@ -153,10 +153,10 @@ class Experiment(QtCore.QObject):
 
     def check_requirements(self):
         """ check if the minimum requirements are fulfilled.
+
         Raises:
             RequirementError: if any requirement is not fulfilled.
-
-            """
+        """
         missing = [x for x in self.required_instruments]
 
         for instrument in self.instrument_list:
@@ -182,7 +182,7 @@ class Experiment(QtCore.QObject):
                     self.parameters[instrument][attr] = getattr(self.instrument_instance, attr)
 
     def add_instrument(self, name, model):
-        """ Add an instrument to the experimental setup
+        """ Add an instrument to the experimental setup.
 
         adds as a class attribute an instance of a given model of an instrument,
         with a name of choice.

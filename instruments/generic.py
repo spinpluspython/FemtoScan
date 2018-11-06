@@ -127,7 +127,6 @@ class Instrument(object):
             except AttributeError:
                 print('no parameter called {} in this device')
 
-    # %% the danger zone:
     def __del__(self):
         """ Disconnect device before loosing it's instance."""
         self.disconnect()

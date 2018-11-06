@@ -141,8 +141,6 @@ class NewportXPS(DelayStage):
         self.myXPS.GroupKill(System.String(self.StageName), System.String(""))
         print('DelayStage has been disconnected')
 
-    # %%
-
     def XPS_GetControllerVersion(self, myXPS, flag):
         result, version, errString = self.myXPS.FirmwareVersionGet(System.String(""), System.String(""))
         if flag == 1:

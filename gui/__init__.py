@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-@author: Steinn Ymir Agustsson
-"""
-
 
 def main():
     pass

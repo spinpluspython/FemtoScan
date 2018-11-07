@@ -20,6 +20,7 @@
 
 """
 import sys, os
+import ast
 from configparser import ConfigParser
 
 
@@ -120,7 +121,7 @@ def parse_setting(category, name, settings_file='default'):
     settings.read(settings_file)
     try:
         value = settings[category][name]
-        return value
+        return ast.literal_eval(value)
     except KeyError:
         print('No entry "{}" in category "{}" found in SETTINGS.ini'.format(name, category))
         return None

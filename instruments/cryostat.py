@@ -44,7 +44,7 @@ class Cryostat(generic.Instrument):
         self.temperature_current = self.temperature_current + (
                 self.temperature_target - self.temperature_current) / 2  # change current temperature closer to the setted.
         print('current temperature ' + str(self.temperature_current))
-        time.sleep(1)
+        time.sleep(.1)
         return (self.temperature_current)
 
     def set_temperature(self, temperature):

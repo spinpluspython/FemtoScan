@@ -140,6 +140,17 @@ class Experiment(QtCore.QObject):
                 setattr(self, key, val)
         self.get_parameters()
 
+    @property
+    def name(self):
+        """ return the name of the scan file
+        """
+        return self.measurement_name
+
+    @name.setter
+    def set_name(self, string):
+        """ Change name of the measurement """
+        self.measurement_name = string
+
     def add_parameter_iteration(self, name,unit,instrument, method, values):
         """ adds a measurement loop to the measurement plan.
 

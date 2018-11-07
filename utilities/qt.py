@@ -19,8 +19,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
-from PyQt5 import QtWidgets
+import sys
+from PyQt5 import QtWidgets, uic
 
 def raise_Qerror(doingWhat, errorHandle, type='Warning', popup=True):
     """ opens a dialog window showing the error"""
@@ -36,6 +36,17 @@ def raise_Qerror(doingWhat, errorHandle, type='Warning', popup=True):
         errorDialog.setStandardButtons(QtWidgets.QMessageBox.Ok)
         errorDialog.exec_()
 
+def my_exception_hook(exctype, value, traceback):
+    # Print the error and traceback
+    print(exctype, value, traceback)
+    # Call the normal Exception hook after
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+
+def recompile(folder):
+    print('recompiling')
+    uic.compileUiDir(folder, execute=True)
+    print('done')
 
 def main():
     pass

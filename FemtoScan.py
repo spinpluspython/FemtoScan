@@ -19,10 +19,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import sys
+import sys, os
 import time
 
-from utilities.misc import parse_setting
+if not os.path.isfile('SETTINGS.ini'):
+    from utilities.settings import make_settings, parse_setting
+
+    make_settings()
 
 _MODE = parse_setting('launcher', 'mode')
 """ 'cmd' to run command line execution, 'gui' to start the graphical interface"""

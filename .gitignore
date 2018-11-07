@@ -11,3 +11,4 @@ instruments/__pycache__/
 
 *.h5
 *.hdf5
+/SETTINGS.ini

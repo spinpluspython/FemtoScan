@@ -30,7 +30,7 @@ from PyQt5 import QtCore
 from measurement.core import Worker, Experiment
 from instruments.lockinamplifier import LockInAmplifier, SR830
 from instruments.delaystage import DelayStage
-from utilities.misc import parse_setting
+from utilities.settings import parse_setting
 
 from utilities.qt import raise_Qerror
 

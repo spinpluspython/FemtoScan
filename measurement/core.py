@@ -27,7 +27,8 @@ import h5py
 
 from instruments import generic
 from utilities.qt import raise_Qerror
-from utilities.misc import nested_for, iterate_ranges, parse_setting
+from utilities.misc import nested_for, iterate_ranges
+from utilities.settings import parse_setting
 from utilities.exceptions import RequirementError
 from utilities.math import globalcounter
 

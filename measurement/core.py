@@ -95,7 +95,7 @@ class Experiment(QtCore.QObject):
         This is initialized by creating adding all the passed arguments as
         instrument instances, and creates a list of names of them in
         self.instrument_list.
-        Then, all methods which can be used to measure some quantity and all
+        Then, all methods which can be used to measure_avg some quantity and all
         parameters which can be set for each instruments are collected in
         self.measurable_methods and self.parameters respectively.
 
@@ -478,7 +478,7 @@ class Worker(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def work(self):
-        """ Iterate over all parameters and measure.
+        """ Iterate over all parameters and measure_avg.
 
         This method iterates over all values of the parameters and performs a
         measurement for each combination. The order defined will be maintained,
@@ -494,7 +494,7 @@ class Worker(QtCore.QObject):
             for polarization_values in parameter_values[1]:
                 parameter_methods[0](temperature_values)
                 parameter_methods[1](polarization_values)
-                measure()
+                measure_avg()
         """
         if self.__verbose: print('worker started working')
         ranges = []
@@ -509,7 +509,7 @@ class Worker(QtCore.QObject):
         self.current_index = [-1 for x in range(len(ranges))]
 
         if self.__verbose: print('starting measurement loop!')
-        for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure
+        for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure_avg
             if self.__shouldStop:
                 break
             print(indexes)

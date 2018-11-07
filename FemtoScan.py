@@ -21,7 +21,7 @@
 """
 import sys, os
 import time
-
+from utilities.settings import parse_setting
 if not os.path.isfile('SETTINGS.ini'):
     from utilities.settings import make_settings, parse_setting
 

@@ -41,9 +41,12 @@ def parse_setting(category, name, settings_file='default'):
 
         settings_file = os.path.join(current_path, 'SETTINGS.ini')
     settings.read(settings_file)
+
     try:
         value = settings[category][name]
         return ast.literal_eval(value)
     except KeyError:
         print('No entry "{}" in category "{}" found in SETTINGS.ini'.format(name, category))
         return None
+    except:
+        return(value)

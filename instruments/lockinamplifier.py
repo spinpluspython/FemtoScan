@@ -20,19 +20,17 @@ Created on Sat Apr 21 17:11:24 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-# import sys
-# sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')
+import time
+import numpy as np
 import serial
 
 from instruments import generic
-from utilities.units import ureg as u
-import numpy as np
-import time
-import pandas as pd
-from configparser import ConfigParser
+from utilities.settings import parse_setting
 
 
 class LockInAmplifier(generic.Instrument):
+    __verbose = parse_setting('general', 'verbose')
+
     def __init__(self):
         super(LockInAmplifier, self).__init__()
 
@@ -41,8 +39,8 @@ class LockInAmplifier(generic.Instrument):
         self.measurables = ['read_value']
         self.sleep_multiplier = 3
         self.dwelltime = 1  # TODO: set dwelltime based on lockin settings, maybe as property
-        self.sensitivity = generic.Parameter(self, value=1, unit=None)
-        self.time_constant = generic.Parameter(self, value=0.3, unit=u.second)
+        self.sensitivity = generic.Parameter(self, value=1)
+        self.time_constant = generic.Parameter(self, value=0.3)
 
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
@@ -59,33 +57,30 @@ class LockInAmplifier(generic.Instrument):
         time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
 
-    def read_snap(self, parameters, format='dict'):
+    def measure(self, parameters):
+
+        if parameters == 'default':
+            parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
+        assert self.is_connected(), 'lockin not connected.'
+        # sleep for the defined dwell time
+        time.sleep(self.time_constant.value * self.sleep_multiplier)
         values = list(np.random.randn(len(parameters)))
-        d = {}
-        if format not in ('dict','pandas'):
+
+        if format not in ('dict'):
             return values
         else:
             output = {}
             for idx, item in enumerate(parameters):
                 output[item] = float(values[idx])  # compose dictionary of values(float)
-            print(output)
-            if format == 'dict':
-                return output
-            elif format == 'pandas':
-                return pd.DataFrame(data=values, columns=parameters)
+            if self.__verbose: print(output)
+            return output
+
 
 class SR830(LockInAmplifier):
 
     def __init__(self):
         super().__init__()
         self.name = 'SR830 Lockin Amplifier'
-        # list all methods which can be used as measurement functions
-        self.measurables = {'read_snap': {'input': '',
-                                          'output': None},
-                            'read_value': {
-                                'input': 'Parameter: a string like in manual. except Theta. Che the dictionary of parametrs for Output',
-                                'output': None}
-                            }
 
         self.sleep_multiplier = 3
 
@@ -96,8 +91,8 @@ class SR830(LockInAmplifier):
         self.ser.port = 'COM6'
         self.ser.timeout = 1
 
-        self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux in 1': 5, 'Aux in 2': 6, 'Aux in 3': 7,
-                            'Aux in 4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
+        self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux1': 5, 'Aux2': 6, 'Aux3': 7,
+                            'Aux4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
 
         # parameters:
 
@@ -283,7 +278,38 @@ class SR830(LockInAmplifier):
             self.disconnect()
             print('Reading aborted: error - {}\n COM port closed'.format(e))
 
-    # %% lockin specific functions
+    def measure(self, parameters='default', format='dict'):
+        """ Measure the parameters in the current state
+
+        Args:
+            parameters:
+            format (str): return format for this function. 'dict', generates a
+                dictionary with parameters as keys. 'list' returns a list
+                containing the values.
+        Returns:
+            output (dict): if format='dict'. keys are the parameter names,
+                values are floats representing the numbers returned by the
+                lockin
+            list (list): list of float values as returned by the lockin.
+        """
+        if parameters == 'default':
+            parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
+
+        assert self.is_connected(), 'lockin not connected.'
+        # sleep for the defined dwell time
+        time.sleep(self.time_constant.get() * self.sleep_multiplier)
+
+        values = self.read_snap(parameters)
+
+        if format not in ('dict'):
+            return values
+        else:
+            output = {}
+            for idx, item in enumerate(parameters):
+                output[item] = float(values[idx])  # compose dictionary of values(float)
+            if self.__verbose: print(output)
+            return output
+
     def read_value(self, parameter):
         """Reads measured value from lockin.
 
@@ -299,10 +325,10 @@ class SR830(LockInAmplifier):
         assert parameter in self.output_dict, '{} is not a valid parameter to read from the SR830'.format(parameter)
         Command = 'OUTP ?' + str(self.output_dict[parameter])
         Value = float(self.read(Command))  # returns value as a float
-        print(str(Value) + ' V')
+        if self.__verbose: print(str(Value) + ' V')
         return Value
 
-    def read_snap(self, parameters, format=None):
+    def read_snap(self, parameters):
         """Read chosen Values from LockInAmplifier simultaneously.
 
         : parameters :
@@ -315,6 +341,7 @@ class SR830(LockInAmplifier):
         """
         assert isinstance(parameters, list), 'parameters need to be a tuple or list'
         assert False not in [isinstance(x, str) for x in parameters], 'items in the list must be strings'
+        assert 2 <= len(parameters) <= 6, 'read_snap requires 2 to 6 parameters'
         command = 'SNAP ? '
         for item in parameters:
             # compose command string with parameters in input
@@ -322,22 +349,10 @@ class SR830(LockInAmplifier):
         command = command[:-2]  # cut last ', '
         string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
         values = [float(x) for x in string.split(',')]  # split answer to separated values and turn them to floats
+        return values
 
-        if format not in ('dict','pandas'):
-            return values
-        else:
-            output = {}
-            for idx, item in enumerate(parameters):
-                output[item] = float(values[idx])  # compose dictionary of values(float)
-            print(output)
-            if format == 'dict':
-                return output
-            elif format == 'pandas':
-                return pd.DataFrame(data=values, columns=parameters)
-
-
-    def measure(self, avg=10, sleep=None, var='R'):
-        '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
+    def measure_avg(self, avg=10, sleep=None, var='R'):
+        ''' [DEPRECATED] Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
         if sleep == None:
             sleeptime = self.sleep_time_dict[self.time_constant.get()]  # TODO
             sleep = 3 * float(sleeptime)

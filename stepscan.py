@@ -55,7 +55,7 @@ class stepscan_measurements(object):
         for item in X:
             self.delay_stage.move_absolute(item)
             # time.sleep(0.0)
-            Y.append(self.lockin_amplifier.measure())
+            Y.append(self.lockin_amplifier.measure_avg())
         self.lockin_amplifier.disconnect()
         matplotlib.pyplot.plot(X, Y)
         self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)

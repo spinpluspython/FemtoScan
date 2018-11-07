@@ -37,12 +37,12 @@ from utilities.qt import raise_Qerror
 
 def main():
     import time
-    from instruments.lockinamplifier import SR830
+    from instruments.lockinamplifier import SR830, LockInAmplifier
     from instruments.delaystage import DelayStage
     from instruments.cryostat import Cryostat
     time.sleep(2)
     exp = StepScan()
-    lockin = exp.add_instrument('lockin', SR830())
+    lockin = exp.add_instrument('lockin', LockInAmplifier())
     stage = exp.add_instrument('delay_stage', DelayStage())
     cryo = exp.add_instrument('cryo', Cryostat())
     exp.print_setup()
@@ -107,36 +107,35 @@ class StepScanWorker(Worker):
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
-        print('\n---------------------\nHurra! its scanning!\n---------------------')
-        # groupname = 'raw_data/'
-        # print(self.current_index)
-        # for i, idx in enumerate(self.current_index):
-        #     groupname += str(self.values[i][idx]) + self.units[i] + ' - '
-        # groupname = groupname[:-3]
-        #
-        # with h5py.File(self.file, 'a') as f:
-        #     f.create_group(groupname)
+        print('\n---------------------\nNew measurement started\n---------------------')
+        groupname = 'raw_data/'
+        print(self.current_index)
+        for i, idx in enumerate(self.current_index):
+            groupname += str(self.values[i][idx]) + self.units[i] + ' - '
+        groupname = groupname[:-3]
+        with h5py.File(self.file, 'a') as f:
+            f.create_group(groupname)
 
         for avg_n in range(self.averages):
             print('scanning average n {}'.format(avg_n))
-            pd_dataframe = None
-            # hdf_dataset_name = groupname + '/avg{}'.format(str(avg_n).zfill(4))
-            # with h5py.File(self.file, 'a') as f:
-            #     f.create_dataset(hdf_dataset_name,shape=(len(self.parameters_to_measure), self.averages))
+            d_avg = {}
+            df_name = groupname + '/avg{}'.format(str(avg_n).zfill(4))
             for i, pos in enumerate(self.stage_positions):
                 self.delay_stage.move_absolute(pos)
                 # real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
                 time.sleep(self.lockin.dwelltime)
-                # #result = self.lockin.read_snap(self.parameters_to_measure)  # TODO: implement data management!
-                # result = pd.DataFrame(data=(np.random.rand(2)),columns=self.parameters_to_measure)
-                # if pd_dataframe is None:
-                #     pd_dataframe = result
-                # else:
-                #     pd_dataframe.append(result)
+                result = self.lockin.read_snap(self.parameters_to_measure, format='dict')  # TODO: implement data management!
+                result['pos'] = pos
+                for k, v in result.items():
+                    try:
+                        d_avg[k].append(v)
+                    except:
+                        d_avg[k] = [v]
                 self.newData.emit()
                 self.increment_progress_counter()
                 print('current_step: {:.3f}% step {} of {}'.format(self.progress,self.current_step,self.n_of_steps))
-            # pd_dataframe.to_hdf(self.file, 'raw_data/{}/{}'.format(groupname,hdf_dataset_name), 'a')
+            df = pd.DataFrame(data=d_avg, columns=self.parameters_to_measure, index=d_avg['pos'])
+            df.to_hdf(self.file, 'raw_data/' + df_name, mode='a', format='fixed')
 
 if __name__ == '__main__':
     import os, sys

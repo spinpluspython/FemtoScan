@@ -59,6 +59,20 @@ class LockInAmplifier(generic.Instrument):
         time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
 
+    def read_snap(self, parameters, format='dict'):
+        values = list(np.random.randn(len(parameters)))
+        d = {}
+        if format not in ('dict','pandas'):
+            return values
+        else:
+            output = {}
+            for idx, item in enumerate(parameters):
+                output[item] = float(values[idx])  # compose dictionary of values(float)
+            print(output)
+            if format == 'dict':
+                return output
+            elif format == 'pandas':
+                return pd.DataFrame(data=values, columns=parameters)
 
 class SR830(LockInAmplifier):
 
@@ -288,7 +302,7 @@ class SR830(LockInAmplifier):
         print(str(Value) + ' V')
         return Value
 
-    def read_snap(self, parameters, format='pandas'):
+    def read_snap(self, parameters, format=None):
         """Read chosen Values from LockInAmplifier simultaneously.
 
         : parameters :
@@ -307,18 +321,20 @@ class SR830(LockInAmplifier):
             command = command + str(self.output_dict[item]) + ', '
         command = command[:-2]  # cut last ', '
         string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
-        values = string.split(',')  # split answer to separated values
-        if format == 'dict':
+        values = [float(x) for x in string.split(',')]  # split answer to separated values and turn them to floats
+
+        if format not in ('dict','pandas'):
+            return values
+        else:
             output = {}
             for idx, item in enumerate(parameters):
                 output[item] = float(values[idx])  # compose dictionary of values(float)
             print(output)
-            return output
-        elif format == 'pandas':
-            output = pd.DataFrame(data=values, columns=parameters)
-            return output
-        else:
-            print('unknown format {}'.format(format))
+            if format == 'dict':
+                return output
+            elif format == 'pandas':
+                return pd.DataFrame(data=values, columns=parameters)
+
 
     def measure(self, avg=10, sleep=None, var='R'):
         '''Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''

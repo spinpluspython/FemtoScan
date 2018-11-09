@@ -21,6 +21,8 @@
 """
 import sys, os
 import time
+from PyQt5 import QtWidgets, QtCore
+
 from utilities.settings import parse_setting
 if not os.path.isfile('SETTINGS.ini'):
     from utilities.settings import make_settings, parse_setting
@@ -38,6 +40,7 @@ def launch_cmd():
     from instruments.lockinamplifier import SR830, LockInAmplifier
     from instruments.delaystage import DelayStage
     from instruments.cryostat import Cryostat
+
     time.sleep(2)
     exp = StepScan()
     lockin = exp.add_instrument('lockin', LockInAmplifier())
@@ -53,7 +56,6 @@ def launch_cmd():
 
 def launch_gui():
 
-    from PyQt5 import QtWidgets, QtCore
 
     from gui.mainwindow import MainWindow
     from utilities.qt import my_exception_hook, recompile
@@ -73,13 +75,13 @@ def launch_gui():
 
     print('showing GUI')
     prg.show()
-    try:
-        app.exec_()
-    except:
-        print('app.exec_() failed: exiting')
+
 
 
 if __name__ == '__main__':
+    app = QtCore.QCoreApplication.instance()
+    if app is None:
+        app = QtWidgets.QApplication(sys.argv)
 
     if _MODE == 'cmd':
         launch_cmd()
@@ -87,3 +89,8 @@ if __name__ == '__main__':
         launch_gui()
     else:
         print('unrecognized mode {}'.format(_MODE))
+
+    try:
+        app.exec_()
+    except:
+        print('app.exec_() failed: exiting')

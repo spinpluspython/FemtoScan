@@ -21,6 +21,7 @@ Created on Sat Apr 21 17:11:24 2018
 
 """
 import time
+
 import numpy as np
 import serial
 
@@ -57,24 +58,27 @@ class LockInAmplifier(generic.Instrument):
         time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
 
-    def measure(self, parameters):
+    @property
+    def connected(self):
+        return True
+
+    def measure(self, parameters, return_dict=False):
 
         if parameters == 'default':
             parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
-        assert self.is_connected(), 'lockin not connected.'
+        assert self.connected, 'lockin not connected.'
         # sleep for the defined dwell time
         time.sleep(self.time_constant.value * self.sleep_multiplier)
         values = list(np.random.randn(len(parameters)))
 
-        if format not in ('dict'):
-            return values
-        else:
+        if return_dict:
             output = {}
             for idx, item in enumerate(parameters):
                 output[item] = float(values[idx])  # compose dictionary of values(float)
             if self.__verbose: print(output)
             return output
-
+        else:
+            return values
 
 class SR830(LockInAmplifier):
 

@@ -16,7 +16,13 @@ def make_settings():
                                  'recompile':'False',
                                  }
                      }
+
     settings = ConfigParser()
+    for section_name, section in settings_dict.items():
+        settings.add_section(section_name)
+        for key, val in section.items():
+            settings.set(section_name, key, str(val))
+
     with open('SETTINGS.ini', 'w') as configfile:
         settings.write(configfile)
 

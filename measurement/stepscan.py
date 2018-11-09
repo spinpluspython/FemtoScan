@@ -20,24 +20,18 @@
 
 """
 
-import time
-import h5py
-import pandas as pd
 import numpy as np
 
-from PyQt5 import QtCore
-
-from measurement.core import Worker, Experiment
-from instruments.lockinamplifier import LockInAmplifier, SR830
 from instruments.delaystage import DelayStage
-from utilities.settings import parse_setting
-
-from utilities.qt import raise_Qerror
+from instruments.lockinamplifier import LockInAmplifier
+from measurement.core import Worker, Experiment
+from utilities.data import dict_to_hdf
+from utilities.math import monotonically_increasing
 
 
 def main():
     import time
-    from instruments.lockinamplifier import SR830, LockInAmplifier
+    from instruments.lockinamplifier import LockInAmplifier
     from instruments.delaystage import DelayStage
     from instruments.cryostat import Cryostat
     time.sleep(2)
@@ -62,9 +56,46 @@ class StepScan(Experiment):
         self.required_instruments = [LockInAmplifier, DelayStage]
 
         self.worker = StepScanWorker
-        self.measurement_settings = {'averages': 3,
-                                     'stage_positions': [0, 1, 2, 3],
+        # define settings to pass to worker. these can be set as variables,
+        # since they are class properties! see below...
+        self.measurement_settings = {'averages': 2,
+                                     'stage_positions': np.linspace(-1, 3, 10),
+                                     'time_zero': -.5,
                                      }
+
+    @property
+    def stage_positions(self):
+        return self.measurement_settings['stage_positions']
+
+    @stage_positions.setter
+    def stage_positions(self, array):
+        if isinstance(array, list):
+            array = np.array(array)
+        assert isinstance(array, np.ndarray), 'must be a 1d array'
+        assert len(array.shape) == 1, 'must be a 1d array'
+        assert monotonically_increasing(array), 'array must be monotonically increasing'
+
+        self.measurement_settings['stage_positions'] = array
+
+    @property
+    def averages(self):
+        return self.measurement_settings['averages']
+
+    @averages.setter
+    def averages(self, n):
+        assert isinstance(n, int), 'cant run over non integer loops!'
+        assert n > 0, 'cant run a negative number of loops!!'
+
+        self.measurement_settings['averages'] = n
+
+    @property
+    def time_zero(self):
+        return self.measurement_settings['time_zero']
+
+    @time_zero.setter
+    def zero_position(self, t0):
+        assert isinstance(t0, float) or isinstance(t0, int), 't0 must be a number!'
+        self.measurement_settings['time_zero'] = t0
 
 
 class StepScanWorker(Worker):
@@ -72,8 +103,11 @@ class StepScanWorker(Worker):
 
     Signals Emitted:
 
-    finished (dict): at end of the scan, emits the results stored over the whole scan.
-    newData (dict): emitted at each measurement point. Usually contains a dictionary with the last measured values toghether with scan current_step information.
+        finished (dict): at end of the scan, emits the results stored over the
+            whole scan.
+        newData (dict): emitted at each measurement point. Usually contains a
+            dictionary with the last measured values toghether with scan
+            current_step information.
 
     **Experiment Input required**:
 
@@ -95,6 +129,7 @@ class StepScanWorker(Worker):
     def check_requirements(self):
         assert hasattr(self, 'averages'), 'No number of averages was passed!'
         assert hasattr(self, 'stage_positions'), 'no values of the stage positions were passed!'
+        assert hasattr(self, 'time_zero'), 'Need to tell where time zero is!'
         assert hasattr(self, 'lockin'), 'No Lockin Amplifier found: attribute name should be "lockin"'
         assert hasattr(self, 'delay_stage'), 'No stage found: attribute name should be "delay_stage"'
 
@@ -108,25 +143,25 @@ class StepScanWorker(Worker):
         """
         print('\n---------------------\nNew measurement started\n---------------------')
         groupname = 'raw_data/'
-        print(self.current_index)
         for i, idx in enumerate(self.current_index):
             groupname += str(self.values[i][idx]) + self.units[i] + ' - '
         groupname = groupname[:-3]
-        with h5py.File(self.file, 'a') as f:
-            f.create_group(groupname)
+        # with h5py.File(self.file, 'a') as f:
+        #     f.create_group(groupname)
 
         for avg_n in range(self.averages):
             print('scanning average n {}'.format(avg_n))
             d_avg = {}
             df_name = groupname + '/avg{}'.format(str(avg_n).zfill(4))
             for i, pos in enumerate(self.stage_positions):
+                pos += self.time_zero
                 self.delay_stage.move_absolute(pos)
                 try:
                     real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
-                except NotImplementedError:
+                except AttributeError:
                     real_pos = pos
 
-                result = self.lockin.measure(self.parameters_to_measure)
+                result = self.lockin.measure(self.parameters_to_measure, return_dict=True)
                 result['pos'] = real_pos
                 for k, v in result.items():
                     try:
@@ -136,8 +171,11 @@ class StepScanWorker(Worker):
                 self.newData.emit()
                 self.increment_progress_counter()
                 print('current_step: {:.3f}% step {} of {}'.format(self.progress, self.current_step, self.n_of_steps))
-            df = pd.DataFrame(data=d_avg, columns=self.parameters_to_measure, index=d_avg['pos'])
-            df.to_hdf(self.file, 'raw_data/' + df_name, mode='a', format='fixed')
+            dict_to_hdf(self.file, df_name, d_avg, self.parameters_to_measure, d_avg['pos'])
+            #
+            #
+            # df = pd.DataFrame(data=d_avg, columns=self.parameters_to_measure, index=d_avg['pos'])
+            # df.to_hdf(self.file, 'raw_data/' + df_name, mode='a', format='fixed')
 
 
 if __name__ == '__main__':

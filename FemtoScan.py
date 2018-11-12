@@ -22,11 +22,11 @@
 import sys, os
 import time
 from PyQt5 import QtWidgets, QtCore
+import numpy as np
 
 from utilities.settings import parse_setting
 if not os.path.isfile('SETTINGS.ini'):
     from utilities.settings import make_settings, parse_setting
-
     make_settings()
 
 _MODE = parse_setting('launcher', 'mode')
@@ -50,6 +50,12 @@ def launch_cmd():
     time.sleep(1)
     exp.add_parameter_iteration('temperature','K',cryo, 'change_temperature', [10,20])
     # exp.set_name =  'somename'
+
+    exp.averages = 2
+    exp.stage_positions = np.linspace(-1,10,30)
+    exp.time_zero = 5.23
+
+    # lockin.time_constant.set(.01)
 
     exp.create_file()
     exp.start_measurement()

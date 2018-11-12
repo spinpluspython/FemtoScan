@@ -148,7 +148,7 @@ class Experiment(QtCore.QObject):
         return self.measurement_name
 
     @name.setter
-    def set_name(self, string):
+    def name(self, string):
         """ Change name of the measurement """
         self.measurement_name = string
 
@@ -497,24 +497,28 @@ class Worker(QtCore.QObject):
                 measure_avg()
         """
         if self.__verbose: print('worker started working')
-        ranges = []
-        self.__max_ranges = []
-
-        for iter_vals in self.values:
-            maxrange = len(iter_vals)
-            ranges.append((0, maxrange))
-            self.__max_ranges.append(maxrange)
-        self.initialize_progress_counter()
-        # initialize the indexes control variable
-        self.current_index = [-1 for x in range(len(ranges))]
-
-        if self.__verbose: print('starting measurement loop!')
-        for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure_avg
-            if self.__shouldStop:
-                break
-            print(indexes)
-            self.set_parameters(indexes)
+        if len(self.values) == 0:
+            if self.__verbose: print('No parameter loop: performing a single scan')
             self.measure()
+        else:
+            ranges = []
+            self.__max_ranges = []
+
+            for iter_vals in self.values:
+                maxrange = len(iter_vals)
+                ranges.append((0, maxrange))
+                self.__max_ranges.append(maxrange)
+            self.initialize_progress_counter()
+            # initialize the indexes control variable
+            self.current_index = [-1 for x in range(len(ranges))]
+
+            if self.__verbose: print('starting measurement loop!')
+            for indexes in iterate_ranges(ranges):  # iterate over all parameters, and measure_avg
+                if self.__shouldStop:
+                    break
+                print(indexes)
+                self.set_parameters(indexes)
+                self.measure()
 
         self.finished.emit()
         self.state = 'complete'

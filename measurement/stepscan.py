@@ -93,7 +93,7 @@ class StepScan(Experiment):
         return self.measurement_settings['time_zero']
 
     @time_zero.setter
-    def zero_position(self, t0):
+    def time_zero(self, t0):
         assert isinstance(t0, float) or isinstance(t0, int), 't0 must be a number!'
         self.measurement_settings['time_zero'] = t0
 

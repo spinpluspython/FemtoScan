@@ -40,14 +40,7 @@ class LockInAmplifier(generic.Instrument):
         # list all methods which can be used as measurement functions
         self.measurables = ['read_value']
         self.sleep_multiplier = 3
-        self._settings = {'time_constant':{'value':.3, 'unit':'s'}}
-
-    @property
-    def time_constant(self):
-        return self._settings['time_constant']['value']
-    @time_constant.setter
-    def time_constant(self, value):
-        self._settings['time_constant']['value'] = value
+        self._settings = {}
 
     def connect(self):
         print('Fake LockInAmplifier amplifier is connected')
@@ -61,7 +54,7 @@ class LockInAmplifier(generic.Instrument):
         '''
         Value = np.random.rand()  # returns value as a string, like the lock-in does
         print(parameter + ' = ' + str(Value) + ' V')
-        time.sleep(self.time_constant * self.sleep_multiplier)
+        time.sleep(self.time_constant.value * self.sleep_multiplier)
         return Value
 
     @property
@@ -74,7 +67,7 @@ class LockInAmplifier(generic.Instrument):
             parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
         assert self.connected, 'lockin not connected.'
         # sleep for the defined dwell time
-        time.sleep(self.time_constant * self.sleep_multiplier)
+        time.sleep(self.time_constant.value * self.sleep_multiplier)
         values = list(np.random.randn(len(parameters)))
 
         if return_dict:
@@ -592,8 +585,8 @@ class SR830(LockInAmplifier):
 
         Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
         """
-        if not self.is_connected():
-           raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        if not self.ser.is_open():
+            raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         try:
             self.ser.write((Command + '\r\n').encode('utf-8'))
         except Exception as e:
@@ -610,7 +603,8 @@ class SR830(LockInAmplifier):
                 answer from lockin as byte
         """
         if not self.is_connected():
-           raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+            self.connect()
+            raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
 
         try:
             # self.ser.open()
@@ -626,17 +620,14 @@ class SR830(LockInAmplifier):
             self.disconnect()
             print('Couldnt read command:: error - {}\n'.format(e))
 
-    def version(self):
-        return self.read('*IDN?')
-
     def set_to_default(self):
         """ Hardware reset Lock-in Amplifier."""
-        if not self.is_connected():
+        if not self.ser.is_open:
             raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         self.write('*RST')
 
     # %% measurement methods
-    def measure(self, parameters='default', format='dict'):
+    def measure(self, parameters='default', return_dict='dict'):
         """ Measure the parameters in the current state
 
         Args:
@@ -650,23 +641,26 @@ class SR830(LockInAmplifier):
                 lockin
             list (list): list of float values as returned by the lockin.
         """
+
+        if not self.is_connected: self.connect()
         if parameters == 'default':
             parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
 
-        assert self.is_connected(), 'lockin not connected.'
+#        assert self.is_connected(), 'lockin not connected.'
         # sleep for the defined dwell time
-        time.sleep(self.time_constant.get() * self.sleep_multiplier)
+        time.sleep(self.time_constant * self.sleep_multiplier)
 
         values = self.read_snap(parameters)
 
-        if format not in ('dict'):
-            return values
-        else:
+        
+        if return_dict:
             output = {}
             for idx, item in enumerate(parameters):
                 output[item] = float(values[idx])  # compose dictionary of values(float)
             if self.__verbose: print(output)
             return output
+        else:
+            return values
 
     def read_value(self, parameter):
         """Reads measured value from lockin.
@@ -703,7 +697,7 @@ class SR830(LockInAmplifier):
         command = 'SNAP ? '
         for item in parameters:
             # compose command string with parameters in input
-            command = command + str(self.output_dict[item]) + ', '
+            command = command + str(self._channel_names.index(item)) + ', '
         command = command[:-2]  # cut last ', '
         string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
         values = [float(x) for x in string.split(',')]  # split answer to separated values and turn them to floats
@@ -723,6 +717,8 @@ class SR830(LockInAmplifier):
         return val
 
     # %% settings property generators:
+
+    # for key,value in self._settings.items()
 
     @property
     def sensitivity(self):

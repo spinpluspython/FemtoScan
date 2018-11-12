@@ -42,8 +42,8 @@ def launch_cmd():
 
     time.sleep(2)
     exp = StepScan()
-    lockin = exp.add_instrument('lockin', LockInAmplifier())
-    stage = exp.add_instrument('delay_stage', DelayStage())
+    lockin = exp.add_instrument('lockin', SR830())
+    stage = exp.add_instrument('delay_stage', NewportXPS())
     cryo = exp.add_instrument('cryo', Cryostat())
     exp.print_setup()
     time.sleep(1)
@@ -58,6 +58,7 @@ def launch_cmd():
 
     exp.create_file()
     exp.start_measurement()
+    exp.disconnect_all()
 
 def launch_gui():
 

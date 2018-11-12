@@ -91,21 +91,21 @@ class LockInAmplifier(generic.Instrument):
 
     # %% Configuration of lockin functions
 
-    def get_configuration(self):
+    def get_settings(self):
         self.get_sensitivity()
         self.get_time_constant()
         self.get_frequency()
         self.get_reference_source()
         self.get_reference_trigger()
 
-    def set_configuration(self):
+    def set_settings(self):
         self.set_sensitivity(self.configuration['Sensitivity'])
         self.set_time_constant(self.configuration['Time constant'])
         self.set_frequency(self.configuration['Frequency'])
         self.set_reference_source(self.configuration['Reference source'])
         self.set_reference_trigger(self.configuration['Reference trigger'])
 
-    def save_configuration(self):
+    def save_settings(self):
         pass
 
     def laod_configuration(self):
@@ -484,7 +484,7 @@ class SR830(LockInAmplifier):
 
     # %% Configuration of lockin functions
 
-    def get_configuration(self):
+    def get_settings(self):
         self.get_input_config()
         self.get_input_coupling()
         self.get_input_notch_filter()
@@ -501,7 +501,7 @@ class SR830(LockInAmplifier):
         self.get_reference_trigger()
         self.get_sine_output_amplitude()
 
-    def set_configuration(self):
+    def set_settings(self):
         self.set_input_config(self.configuration['Input configuration'])
         self.set_input_coupling(self.configuration['Input coupling'])
         self.set_input_notch_filter(self.configuration['Input notch filter'])
@@ -518,7 +518,7 @@ class SR830(LockInAmplifier):
         self.set_reference_trigger(self.configuration['Reference trigger'])
         self.set_sine_output_amplitude(self.configuration['Sine output amplitude'])
 
-    def save_configuration(self):
+    def save_settings(self):
         pass
 
     def laod_configuration(self):

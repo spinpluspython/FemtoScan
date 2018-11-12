@@ -27,15 +27,10 @@ class Instrument(object):
 
     def __init__(self):
 
-        self.measurables = [None]
-        self.parameters = {}
         self.name = 'Generic Instrument'
+        self.measurables = []
+        self._settings = {}
 
-        #self.connection_type = None
-        #self.configuration = {}
-        #self.instrument_model_name = 'Dummy'
-
-        # self.load_configuration()
 
     def connect(self):
         raise NotImplementedError('method not implemented for the current model')
@@ -52,19 +47,8 @@ class Instrument(object):
     def version(self):
         """ return the version of the instrument"""
         return 'test Instrument 0.0'
-
-    def init_parameters(self):
-        self.parameters = {}
-        for attr, val in self.__dict__.items():
-            if isinstance(getattr(self, attr), Parameter):
-                # TODO: implement value initialization to read value from device, or default.
-                self.parameters[attr] = val
-
-    def get_measurables(self):
-        """ Function should return the methods which can be used to record some data."""
-        raise NotImplementedError('method not implemented for the current model')
-
-    def get_configuration(self):
+    @property
+    def settings(self):
         """ get the value of all parameters in current state.
 
         :returns:
@@ -72,34 +56,42 @@ class Instrument(object):
                 dictionary with as keys the parameter name and as values the
                 value in the current configuration.
         """
-        configDict = {}
-        for item, value in self.parameters.items():
-            configDict[item] = value.value
-        return configDict
+        return self._settings
 
-    def set_configuration(self, configDict):
+    @settings.setter
+    def settings(self, settingsDict):
         """ get the value of all parameters in current state.
 
         :parameter:
-            configDict: dict
-                dictionary with as keys the parameter name and as values the
-                value in the current configuration.
+            settingsDict: dict
+                dictionary containing keys for each setting to be changed.
+                Values should also be dicts, containing heys for what needs to
+                be changed in the settings.
         """
-        for key, val in configDict.items():
-            assert isinstance(val, Parameter)
-            oldval = self.parameters[key].value
-            if oldval != val:
-                print('{} changed from {} to {}'.format(key, oldval, val))
-                self.parameters[key].value = val
+        assert isinstance(settingsDict, dict), 'Settings is supposed to be a dict, not {}'.format(type(settingsDict))
+        for key, value in settingsDict.items():
+            if isinstance(value,dict):
+                for s_key,s_val in value.items():
+                    oldval = self._settings[key][s_key]
+                    assert type(oldval)==type(s_val), 'wrong type for {}: {}: {}'.format(key,s_key,s_val)
+                    if oldval != s_val:
+                        print('{} {} changed from {} to {}'.format(key, s_key, oldval, s_val))
+                    self._settings[key][s_key] = s_val
+            else:
+                oldval = self._settings[key]['value']
+                assert type(oldval) == type(value), 'wrong type for {}: {}: {}'.format(key, 'value', s_val)
+                if oldval != value:
+                    print('{} {} changed from {} to {}'.format(key, 'value', oldval, value))
+                self._settings[key]['value'] = value
 
-    def save_configuration(self, file):
+    def save_settings(self, file):
         """ Save the current configuration to ini file.
 
         :parameters:
             file: str
                 file name complete with absolute path
         """
-        configDict = self.get_configuration()
+        configDict = self.get_settings()
         config = ConfigParser()
 
         config.add_section(self.name)
@@ -110,7 +102,7 @@ class Instrument(object):
         with open(file, 'w') as configfile:  # save
             config.write(configfile)
 
-    def load_configuration(self, file):  # TODO: fix this, its broken!!
+    def load_settings(self, file):  # TODO: fix this, its broken!!
         """ Load a configuration from a previously saved ini file.
 
         :parameters:
@@ -183,4 +175,4 @@ if __name__ == '__main__':
     inst.configuration['set3'] = '3'
     print(inst.configuration)
 
-    inst.save_configuration('test')
+    inst.save_settings('test')

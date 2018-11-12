@@ -31,7 +31,6 @@ class Instrument(object):
         self.measurables = []
         self._settings = {}
 
-
     def connect(self):
         raise NotImplementedError('method not implemented for the current model')
 
@@ -47,6 +46,7 @@ class Instrument(object):
     def version(self):
         """ return the version of the instrument"""
         return 'test Instrument 0.0'
+
     @property
     def settings(self):
         """ get the value of all parameters in current state.
@@ -70,10 +70,10 @@ class Instrument(object):
         """
         assert isinstance(settingsDict, dict), 'Settings is supposed to be a dict, not {}'.format(type(settingsDict))
         for key, value in settingsDict.items():
-            if isinstance(value,dict):
-                for s_key,s_val in value.items():
+            if isinstance(value, dict):
+                for s_key, s_val in value.items():
                     oldval = self._settings[key][s_key]
-                    assert type(oldval)==type(s_val), 'wrong type for {}: {}: {}'.format(key,s_key,s_val)
+                    assert type(oldval) == type(s_val), 'wrong type for {}: {}: {}'.format(key, s_key, s_val)
                     if oldval != s_val:
                         print('{} {} changed from {} to {}'.format(key, s_key, oldval, s_val))
                     self._settings[key][s_key] = s_val
@@ -84,7 +84,7 @@ class Instrument(object):
                     print('{} {} changed from {} to {}'.format(key, 'value', oldval, value))
                 self._settings[key]['value'] = value
 
-    def save_settings(self, file): #TODO: rewrite this for new settings structure
+    def save_settings(self, file):  # TODO: rewrite this for new settings structure
         """ Save the current configuration to ini file.
 
         :parameters:
@@ -102,7 +102,7 @@ class Instrument(object):
         with open(file, 'w') as configfile:  # save
             config.write(configfile)
 
-    def load_settings(self, file):  #TODO: rewrite this for new settings structure
+    def load_settings(self, file):  # TODO: rewrite this for new settings structure
         """ Load a configuration from a previously saved ini file.
 
         :parameters:

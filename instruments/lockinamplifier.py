@@ -1094,7 +1094,7 @@ class SR830(LockInAmplifier):
     def detection_harmonic(self, value):
         """ Set the value on the lockin or if disconnected queue it to be set."""
         setting = 'detection_harmonic'
-        assert isinstance(value,float), 'wrong type for detection harmonic'
+        assert isinstance(value, float), 'wrong type for detection harmonic'
 
         try:
             cmd = self._settings[setting]['cmd']

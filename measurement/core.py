@@ -27,10 +27,9 @@ import h5py
 
 from instruments import generic
 from utilities.qt import raise_Qerror
-from utilities.misc import nested_for, iterate_ranges
+from utilities.misc import iterate_ranges
 from utilities.settings import parse_setting
 from utilities.exceptions import RequirementError
-from utilities.math import globalcounter
 
 
 def main():

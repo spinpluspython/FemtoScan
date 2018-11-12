@@ -20,9 +20,11 @@ Created on Tue Oct  9 22:30:31 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-from instruments import generic
-import serial
 import time
+
+import serial
+
+from instruments import generic
 
 
 class Cryostat(generic.Instrument):
@@ -56,21 +58,17 @@ class Cryostat(generic.Instrument):
         self.set_temperature(temperature)
 
         self.check_temp(tolerance)
-        
 
     def check_temp(self, tolerance, sleep_time=0.1):
-        temp=[]
+        temp = []
         diff = 100000.
         while diff > tolerance:
             time.sleep(sleep_time)
             temp.append(self.get_temperature())
-            if len(temp)>10:
+            if len(temp) > 10:
                 temp.pop(0)
-                diff = max([abs(x-self.temperature_target) for x in temp])
-                #diff = abs(self.temperature_current - self.temperature_set)
-                
-            
-    
+                diff = max([abs(x - self.temperature_target) for x in temp])
+                # diff = abs(self.temperature_current - self.temperature_set)
 
 
 class MercuryITC(Cryostat):
@@ -81,7 +79,6 @@ class MercuryITC(Cryostat):
         self.ser = serial.Serial()
         self.ser.baudrate = self.Baud
         self.ser.port = self.COMPort
-
 
     # %%
     def connect(self):
@@ -170,17 +167,18 @@ class MercuryITC(Cryostat):
         except Exception as xui:
             print('error' + str(xui))
             self.ser.close
-            
 
     # %%
+
+
 class ITC503s(Cryostat):
     def __init__(self):
         super(ITC503s, self).__init__()
-        self.COMPort = 'COM6'#set on the place
+        self.COMPort = 'COM6'  # set on the place
         self.Baud = 9600
-        self.deviceAddr=24
+        self.deviceAddr = 24
         self.ser = serial.Serial()
-        self.ser.timeout=1
+        self.ser.timeout = 1
         self.ser.baudrate = self.Baud
         self.ser.port = self.COMPort
 
@@ -196,32 +194,33 @@ class ITC503s(Cryostat):
                 '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
             Value = self.ser.readline()  # reads version
             print(Value)
-            #self.ser.close()
-            self.write('++eoi 0') # enable the eoi signal mode, which signals about and of the line
-            self.write('++eos 1') # sets up the terminator <cr> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
-            self.write('++addr '+str(self.deviceAddr))
+            # self.ser.close()
+            self.write('++eoi 0')  # enable the eoi signal mode, which signals about and of the line
+            self.write(
+                '++eos 1')  # sets up the terminator <cr> wich will be added to every command for LockInAmplifier, this is only for GPIB connetction
+            self.write('++addr ' + str(self.deviceAddr))
             self.read('V')
             self.read('C1')
             self.read('A1')
-        except Exception as xui: 
-            print('error'+str(xui))
+        except Exception as xui:
+            print('error' + str(xui))
             self.ser.close()
-            
+
     def disconnect(self):
         """Close com port
         """
-        self.ser.close()    
-        
+        self.ser.close()
+
     def write(self, Command):
         """ Send any command to the opened port in right format.
 
         Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
         """
         try:
-            #self.ser.write('++addr '+str(self.deviceAddr))
+            # self.ser.write('++addr '+str(self.deviceAddr))
             self.ser.write((Command + '\r\n').encode('utf-8'))
             # self.ser.close()
-        except Exception as e: 
+        except Exception as e:
             print('xui>\n{}'.format(e))
             # self.ser.close()
 
@@ -238,7 +237,7 @@ class ITC503s(Cryostat):
         """
         try:
             # self.ser.open()
-            self.write('++addr '+str(self.deviceAddr))
+            self.write('++addr ' + str(self.deviceAddr))
             self.ser.write((command + '\r\n').encode(
                 'utf-8'))  # query info from lockin. adapter reads answer automaticaly and store it
             self.ser.write(('++read eoi\r\n').encode(
@@ -247,18 +246,18 @@ class ITC503s(Cryostat):
             # self.ser.close()
             print(value)
             return value
-            
+
         except Exception as r:
             self.ser.close()
             print(r)
-            
+
     def set_temperature(self, temperature):
         try:
-            command = 'T'+str(temperature)
+            command = 'T' + str(temperature)
             self.read(command)
-            #self.ser.write(b'++read eoi\r\n')
+            # self.ser.write(b'++read eoi\r\n')
             response = str(self.ser.readline())
-            self.temperature_target=temperature
+            self.temperature_target = temperature
             print(response)
             # if response.split(sep=':')[-1]='VALID':
 
@@ -266,17 +265,17 @@ class ITC503s(Cryostat):
         except Exception as xui:
             print('error' + str(xui))
             self.ser.close
-            
+
     def get_temperature(self):
         try:
             command = 'R1'
-            
+
             response = str(self.read(command))
-            temperature=float(response[3:-3])
-            print(temperature)#todo: change translation procedure 
-            self.temperature_current=temperature
+            temperature = float(response[3:-3])
+            print(temperature)  # todo: change translation procedure
+            self.temperature_current = temperature
             # if response.split(sep=':')[-1]='VALID':
-            return(temperature)
+            return (temperature)
 
 
         except Exception as xui:

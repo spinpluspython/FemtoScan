@@ -29,7 +29,9 @@ from instruments import generic
 from utilities.exceptions import RequirementError
 from utilities.misc import iterate_ranges
 from utilities.qt import raise_Qerror
+from utilities.misc import iterate_ranges
 from utilities.settings import parse_setting
+from utilities.exceptions import RequirementError
 
 
 def main():

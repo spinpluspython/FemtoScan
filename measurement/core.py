@@ -217,6 +217,7 @@ class Experiment(QtCore.QObject):
         setattr(self, name, model)
         self.instrument_list.append(name)
         if self.__verbose: print('Added {} as instance of {}'.format(name, model))
+        print(getattr(self, name).version())
         if return_: return getattr(self, name)
 
     def print_setup(self):

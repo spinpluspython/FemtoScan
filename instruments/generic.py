@@ -84,7 +84,7 @@ class Instrument(object):
                     print('{} {} changed from {} to {}'.format(key, 'value', oldval, value))
                 self._settings[key]['value'] = value
 
-    def save_settings(self, file):
+    def save_settings(self, file): #TODO: rewrite this for new settings structure
         """ Save the current configuration to ini file.
 
         :parameters:
@@ -102,7 +102,7 @@ class Instrument(object):
         with open(file, 'w') as configfile:  # save
             config.write(configfile)
 
-    def load_settings(self, file):  # TODO: fix this, its broken!!
+    def load_settings(self, file):  #TODO: rewrite this for new settings structure
         """ Load a configuration from a previously saved ini file.
 
         :parameters:

@@ -157,7 +157,7 @@ class StepScanWorker(Worker):
                 pos += self.time_zero
                 self.delay_stage.move_absolute(pos)
                 try:
-                    real_pos = self.delay_stage.position.get()  # TODO: implement, or remove
+                    real_pos = self.delay_stage.position # TODO: implement, or remove
                 except AttributeError:
                     real_pos = pos
 

@@ -21,8 +21,9 @@ Created on Sat Apr 21 16:22:35 2018
 
 """
 import sys
-from instruments import generic
 import time
+
+from instruments import generic
 
 try:
     import clr

@@ -20,17 +20,16 @@ Created on Nov 22 09:57:29 2017
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import os, sys
 import time
-from PyQt5 import QtCore
+
 import h5py
+from PyQt5 import QtCore
 
 from instruments import generic
-from utilities.qt import raise_Qerror
-from utilities.misc import nested_for, iterate_ranges
-from utilities.settings import parse_setting
 from utilities.exceptions import RequirementError
-from utilities.math import globalcounter
+from utilities.misc import iterate_ranges
+from utilities.qt import raise_Qerror
+from utilities.settings import parse_setting
 
 
 def main():
@@ -139,7 +138,6 @@ class Experiment(QtCore.QObject):
                 self.add_instrument(key, val)
             except AssertionError:
                 setattr(self, key, val)
-        self.get_parameters()
 
     @property
     def name(self):
@@ -152,7 +150,7 @@ class Experiment(QtCore.QObject):
         """ Change name of the measurement """
         self.measurement_name = string
 
-    def add_parameter_iteration(self, name,unit,instrument, method, values):
+    def add_parameter_iteration(self, name, unit, instrument, method, values):
         """ adds a measurement loop to the measurement plan.
 
         Args:
@@ -163,16 +161,17 @@ class Experiment(QtCore.QObject):
         Raises:
             AssertionError: when any of the types are not respected.
         """
-        assert isinstance(name,str), 'name must be a string'
-        assert isinstance(unit,str), 'unit must be a string'
+        assert isinstance(name, str), 'name must be a string'
+        assert isinstance(unit, str), 'unit must be a string'
         assert isinstance(instrument, generic.Instrument), ' instrumnet must be instance of generic.Instrument'
-        assert isinstance(method, str) and hasattr(instrument, method), 'method should be a string representing the name of a method of the instrumnet class'
+        assert isinstance(method, str) and hasattr(instrument,
+                                                   method), 'method should be a string representing the name of a method of the instrumnet class'
         assert isinstance(values, (list, tuple)), 'values should be list or tuple of numbers.'
         if self.__verbose:
             print('Added parameter iteration:\n\t- Instrument: {}\n\t- Method: {}\n\t- Values: {}'.format(instrument,
                                                                                                           method,
                                                                                                           values))
-        self.measurement_parameters.append((name,unit,instrument, method, values))
+        self.measurement_parameters.append((name, unit, instrument, method, values))
 
     def check_requirements(self):
         """ check if the minimum requirements are fulfilled.
@@ -198,16 +197,6 @@ class Experiment(QtCore.QObject):
                 print('all requrements met. Good to go!')
         except TypeError:
             print('No requirements set. Nothing to check!')
-
-    def get_parameters(self):
-        """ Find all parameters which can be set and write them to a dictionary in self.parameters"""
-        if self.__verbose: print('Retreaving parameters\n')
-        for instrument in self.instrument_list:
-            instrument_instance = getattr(self, instrument)
-            for attr, val in instrument_instance.__dict__.items():
-                if isinstance(getattr(instrument_instance, attr), generic.Parameter):
-                    if self.__verbose: print('\t- Found {} in {}'.format(attr, instrument))
-                    self.parameters[instrument][attr] = getattr(instrument_instance, attr)
 
     def add_instrument(self, name, model, return_=True):
         """ Add an instrument to the experimental setup.
@@ -312,8 +301,8 @@ class Experiment(QtCore.QObject):
         self.scan_thread.started.connect(self.w.work)
         if self.__verbose: print('starting')
         self.scan_thread.start()
-        self.can_die=False
-        while not self.can_die :
+        self.can_die = False
+        while not self.can_die:
             time.sleep(2)
         if self.__verbose: print('wtf???')
 
@@ -537,12 +526,13 @@ class Worker(QtCore.QObject):
             # iteration, set the new parameter
             print(index, self.current_index)
             if index != self.current_index[i]:
-                if self.__verbose: print('setting parameters for iteration {}:'.format(indexes)+
-                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],self.values[i][index]))
+                if self.__verbose: print('setting parameters for iteration {}:'.format(indexes) +
+                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],
+                                                                         self.values[i][index]))
                 # now call the method of the instrument class with the value at#
                 #  this iteration
                 getattr(self.instruments[i], self.methods[i])(self.values[i][index])
-                self.current_index[i]+=1
+                self.current_index[i] += 1
 
     def measure(self):
         """ Perform a measurement step.
@@ -560,7 +550,7 @@ class Worker(QtCore.QObject):
 
     def increment_progress_counter(self):
         self.current_step += 1
-        self.progress = 100*self.current_step / self.n_of_steps
+        self.progress = 100 * self.current_step / self.n_of_steps
         self.progressChanged.emit(self.progress)
 
     @property

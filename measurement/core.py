@@ -20,6 +20,7 @@ Created on Nov 22 09:57:29 2017
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+import os
 import time
 
 import h5py
@@ -342,12 +343,12 @@ class Experiment(QtCore.QObject):
                     inst = getattr(self, inst_name)
 
                     # create a dataset for each parameter, and assign the current value.
-                    for par_name, par_val in inst.parameters.items():
+                    for par_name, par_val in inst.settings.items():
                         try:
                             if self.__verbose: print('getting attribute {} from {}'.format(par_name, inst))
-                            dtype = getattr(inst, par_name).type
-                            data = getattr(inst, par_name).value
-                            inst_group.create_dataset(par_name, shape=(1,), dtype=dtype, data=data)
+                            #dtype = getattr(inst, par_name).type
+                            data = getattr(inst, par_name)
+                            inst_group.create_dataset(par_name, data=data)
                         except AttributeError:
                             if self.__verbose: print('attribute not found')
 

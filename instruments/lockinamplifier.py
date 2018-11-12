@@ -461,7 +461,7 @@ class SR830(LockInAmplifier):
             'input_config': {'value': 'A',
                              'allowed_values': ['A', 'A-B', 'I(1mOm)', 'I(100mOm)'],
                              'unit': '',
-                             'cmd_line': 'OFSL',
+                             'cmd': 'OFSL',
                              },
             'input_shield': {'value': 'Float',
                              'allowed_values': ['Float', 'Ground'],
@@ -585,8 +585,8 @@ class SR830(LockInAmplifier):
 
         Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
         """
-        if not self.ser.is_open:
-            raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        #if not self.ser.is_open:
+         #   raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         try:
             self.ser.write((Command + '\r\n').encode('utf-8'))
         except Exception as e:
@@ -602,8 +602,8 @@ class SR830(LockInAmplifier):
             value:
                 answer from lockin as byte
         """
-        if not self.ser.is_open:
-            raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        #if not self.ser.is_open:
+         #   raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
 
         try:
             # self.ser.open()

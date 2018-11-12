@@ -23,7 +23,6 @@ import sys, os
 import time
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
-
 from utilities.settings import parse_setting
 if not os.path.isfile('SETTINGS.ini'):
     from utilities.settings import make_settings, parse_setting
@@ -38,13 +37,13 @@ _RECOMPILE = parse_setting('launcher', 'recompile')
 def launch_cmd():
     from measurement.stepscan import StepScan
     from instruments.lockinamplifier import SR830, LockInAmplifier
-    from instruments.delaystage import DelayStage
+    from instruments.delaystage import DelayStage, NewportXPS
     from instruments.cryostat import Cryostat
 
     time.sleep(2)
     exp = StepScan()
-    lockin = exp.add_instrument('lockin', LockInAmplifier())
-    stage = exp.add_instrument('delay_stage', DelayStage())
+    lockin = exp.add_instrument('lockin', SR830())
+    stage = exp.add_instrument('delay_stage', NewportXPS())
     cryo = exp.add_instrument('cryo', Cryostat())
     exp.print_setup()
     time.sleep(1)

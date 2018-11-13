@@ -20,22 +20,42 @@ Created on Sat Apr 21 16:08:39 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+import logging
 from configparser import ConfigParser
+from utilities.exceptions import DeviceNotFoundError, DeviceNotConnectedError
 
 
 class Instrument(object):
 
     def __init__(self):
+        self.logger = logging.getLogger('{}.Instrument'.format(__name__))
+        self.logger.info('Created instance of Generic instrument.')
 
         self.name = 'Generic Instrument'
         self.measurables = []
+        # define properties
         self._settings = {}
+        self._connected = False
+        self._version = 'Generic Instrument 0.1'
+
+    @property
+    def connected(self):
+        self.logger.debug("Someone asked if I'm connected... yes! I am")
+        return self._connected
+
+    def get_setting(self,setting, key='value'):
+        """allowes to read values locally, without promting the device itself."""
+        assert isinstance(self,setting), '{} is not an available setting in {}'.format(setting,self.name)
+        return self._settings[setting][key]
 
     def connect(self):
-        raise NotImplementedError('method not implemented for the current model')
+        print('Connecting generic instrument')
+        self._connected = True
 
     def disconnect(self):
-        raise NotImplementedError('method not implemented for the current model')
+        self.logger.info('disconnecting generic instrument')
+
+        self._connected = False
 
     def read(self, command):
         raise NotImplementedError('method not implemented for the current model')
@@ -43,9 +63,15 @@ class Instrument(object):
     def write(self, command):
         raise NotImplementedError('method not implemented for the current model')
 
+    def test_connection(self):
+        try:
+            self.connect()
+            self.version()
+        except:
+            raise DeviceNotFoundError
+    @property
     def version(self):
-        """ return the version of the instrument"""
-        return 'test Instrument 0.0'
+        return self._version
 
     @property
     def settings(self):

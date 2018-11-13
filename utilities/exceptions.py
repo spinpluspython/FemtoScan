@@ -27,8 +27,10 @@ def main():
 class RequirementError(Exception):
     pass
 
-
 class DeviceNotConnectedError(Exception):
+    pass
+
+class DeviceNotFoundError(Exception):
     pass
 
 

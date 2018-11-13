@@ -21,6 +21,9 @@
 """
 import sys, os
 import time
+import logging
+from logging.config import fileConfig
+
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 from utilities.settings import parse_setting
@@ -39,11 +42,12 @@ def launch_cmd():
     from instruments.lockinamplifier import SR830, LockInAmplifier
     from instruments.delaystage import DelayStage, NewportXPS
     from instruments.cryostat import Cryostat
-
     time.sleep(2)
     exp = StepScan()
-    lockin = exp.add_instrument('lockin', SR830())
-    stage = exp.add_instrument('delay_stage', NewportXPS())
+    logger.info('Created Stepscan Instance')
+
+    lockin = exp.add_instrument('lockin', LockInAmplifier())
+    stage = exp.add_instrument('delay_stage', DelayStage())
     cryo = exp.add_instrument('cryo', Cryostat())
     exp.print_setup()
     time.sleep(1)
@@ -85,6 +89,27 @@ def launch_gui():
 
 
 if __name__ == '__main__':
+    # create logger with 'spam_application'
+    # print(os.path.isfile('./utilities/logging_config.ini'))
+    fileConfig('./utilities/logging_config.ini')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.debug('Started logger')
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler('spam.log')
+    fh.setLevel(logging.DEBUG)
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    logger.critical('started logger')
     app = QtCore.QCoreApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(sys.argv)

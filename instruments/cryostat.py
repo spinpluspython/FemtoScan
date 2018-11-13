@@ -21,10 +21,12 @@ Created on Tue Oct  9 22:30:31 2018
 
 """
 import time
-
+import logging
 import serial
 
 from instruments import generic
+
+# logger = logging.getLogger(__name__)
 
 
 class Cryostat(generic.Instrument):
@@ -32,6 +34,9 @@ class Cryostat(generic.Instrument):
 
     def __init__(self):
         super(Cryostat, self).__init__()
+        self.logger = logging.getLogger('{}.Cryostat'.format(__name__))
+        self.logger.info('Created instance of fake Cryostat.')
+
         self.temperature_current = 300
         self.temperature_target = 300
 

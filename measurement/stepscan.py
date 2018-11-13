@@ -21,6 +21,7 @@
 """
 
 import numpy as np
+import logging
 
 from instruments.delaystage import DelayStage
 from instruments.lockinamplifier import LockInAmplifier
@@ -29,30 +30,15 @@ from utilities.data import dict_to_hdf
 from utilities.math import monotonically_increasing
 
 
-def main():
-    import time
-    from instruments.lockinamplifier import LockInAmplifier
-    from instruments.delaystage import DelayStage
-    from instruments.cryostat import Cryostat
-    time.sleep(2)
-    exp = StepScan()
-    lockin = exp.add_instrument('lockin', LockInAmplifier())
-    stage = exp.add_instrument('delay_stage', DelayStage())
-    cryo = exp.add_instrument('cryo', Cryostat())
-    exp.print_setup()
-    time.sleep(1)
-    exp.create_file()
-    exp.add_parameter_iteration('temperature', 'K', cryo, 'change_temperature', [10, 20])
-
-    exp.start_measurement()
-
 
 class StepScan(Experiment):
-    # __verbose = parse_setting('general', 'verbose')
     __TYPE = 'stepscan'
 
     def __init__(self, file=None, **kwargs):
         super().__init__(file=file, **kwargs)
+        self.logger = logging.getLogger('{}.StepScan'.format(__name__))
+        self.logger.info('Created instance of StepScan.')
+
         self.required_instruments = [LockInAmplifier, DelayStage]
 
         self.worker = StepScanWorker
@@ -74,6 +60,13 @@ class StepScan(Experiment):
         assert isinstance(array, np.ndarray), 'must be a 1d array'
         assert len(array.shape) == 1, 'must be a 1d array'
         assert monotonically_increasing(array), 'array must be monotonically increasing'
+        max_resolution = 0
+        for i in range(len(array)-1):
+            step = array[i+1]-array[i]
+            if step < max_resolution:
+                max_resolution = step
+        self.logger.info('Stage positions changed: {} steps'.format(len(array)))
+        self.logger.debug('Current stage_positions configuration: {} steps from {} to {} with max resolution {}'.format(len(array),array[0],array[-1],max_resolution))
 
         self.measurement_settings['stage_positions'] = array
 
@@ -85,7 +78,7 @@ class StepScan(Experiment):
     def averages(self, n):
         assert isinstance(n, int), 'cant run over non integer loops!'
         assert n > 0, 'cant run a negative number of loops!!'
-
+        self.logger.info('Changed number of averages to {}'.format(n))
         self.measurement_settings['averages'] = n
 
     @property
@@ -95,6 +88,7 @@ class StepScan(Experiment):
     @time_zero.setter
     def time_zero(self, t0):
         assert isinstance(t0, float) or isinstance(t0, int), 't0 must be a number!'
+        self.logger.info('Changed time zero to {}'.format(t0))
         self.measurement_settings['time_zero'] = t0
 
 
@@ -120,11 +114,13 @@ class StepScanWorker(Worker):
 
     def __init__(self, file, base_instrument, parameters, **kwargs):
         super().__init__(file, base_instrument, parameters, **kwargs)
-        print('using Stepscan worker')
+        self.logger = logging.getLogger('{}.Worker'.format(__name__))
+        self.logger.debug('Created a "Worker" instance')
+
         self.check_requirements()
         self.single_measurement_steps = len(self.stage_positions) * self.averages
         self.parameters_to_measure = ['X', 'Y']
-        print('single scan steps: {}'.format(self.single_measurement_steps))
+        self.logger.info('Initialized worker with single scan steps: {}'.format(self.single_measurement_steps))
 
     def check_requirements(self):
         assert hasattr(self, 'averages'), 'No number of averages was passed!'
@@ -133,7 +129,7 @@ class StepScanWorker(Worker):
         assert hasattr(self, 'lockin'), 'No Lockin Amplifier found: attribute name should be "lockin"'
         assert hasattr(self, 'delay_stage'), 'No stage found: attribute name should be "delay_stage"'
 
-        print('worker has all it needs. Ready to measure_avg!')
+        self.logger.info('worker has all it needs. Ready to measure_avg!')
 
     def measure(self):
         """ Step Scan specific work procedure.
@@ -141,7 +137,8 @@ class StepScanWorker(Worker):
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
-        print('\n---------------------\nNew measurement started\n---------------------')
+        self.logger.info('---- New measurement started ----')
+
         groupname = 'raw_data/'
         for i, idx in enumerate(self.current_index):
             groupname += str(self.values[i][idx]) + self.units[i] + ' - '
@@ -150,7 +147,8 @@ class StepScanWorker(Worker):
         #     f.create_group(groupname)
 
         for avg_n in range(self.averages):
-            print('scanning average n {}'.format(avg_n))
+            self.lockin.connect()
+            self.logger.info('scanning average n {}'.format(avg_n))
             d_avg = {}
             df_name = groupname + '/avg{}'.format(str(avg_n).zfill(4))
             for i, pos in enumerate(self.stage_positions):
@@ -159,19 +157,25 @@ class StepScanWorker(Worker):
                 try:
                     real_pos = self.delay_stage.position # TODO: implement, or remove
                 except AttributeError:
+                    self.logger.debug('No readout of stage position. saving with nominal value {}'.format(pos))
                     real_pos = pos
 
                 result = self.lockin.measure(self.parameters_to_measure, return_dict=True)
+
                 result['pos'] = real_pos
                 for k, v in result.items():
                     try:
                         d_avg[k].append(v)
                     except:
                         d_avg[k] = [v]
+                self.logger.debug('Measured values: {}'.format(result))
                 self.newData.emit()
                 self.increment_progress_counter()
-                print('current_step: {:.3f}% step {} of {}'.format(self.progress, self.current_step, self.n_of_steps))
+                self.logger.info('current_step: {:.3f}% step {} of {}'.format(self.progress, self.current_step, self.n_of_steps))
             dict_to_hdf(self.file, df_name, d_avg, self.parameters_to_measure, d_avg['pos'])
+            self.logger.debug('writted data to file.')
+            self.lockin.disconnect()
+
             #
             #
             # df = pd.DataFrame(data=d_avg, columns=self.parameters_to_measure, index=d_avg['pos'])
@@ -189,4 +193,4 @@ if __name__ == '__main__':
     sys._excepthook = sys.excepthook
     # Set the exception hook to our wrapping function
     sys.excepthook = my_exception_hook
-    main()
+    pass

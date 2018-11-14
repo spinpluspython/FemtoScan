@@ -91,23 +91,25 @@ def launch_gui():
 if __name__ == '__main__':
     # create logger with 'spam_application'
     # print(os.path.isfile('./utilities/logging_config.ini'))
-    fileConfig('./utilities/logging_config.ini')
+    fileConfig('./cfg/logging_config.ini')
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
+    # logger.propagate = True
     logger.debug('Started logger')
     # create file handler which logs even debug messages
-    fh = logging.FileHandler('spam.log')
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    # fh = logging.FileHandler('./cfg/event_log.log')
+    # fh.setLevel(logging.DEBUG)
+    # # create console handler with a higher log level
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.WARNING)
+    # # create formatter and add it to the handlers
+    # file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # stream_formatter = logging.Formatter('%(levelname)-8s - %(name)-50s - %(message)s')
+    # # fh.setFormatter(file_formatter)
+    # # ch.setFormatter(stream_formatter)
+    # # add the handlers to the logger
+    # logging.getLogger('').addHandler(fh)
+    # logging.getLogger('').addHandler(ch)
 
     logger.critical('started logger')
     app = QtCore.QCoreApplication.instance()

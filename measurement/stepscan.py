@@ -162,7 +162,8 @@ class StepScanWorker(Worker):
 
                 result = self.lockin.measure(self.parameters_to_measure, return_dict=True)
 
-                result['pos'] = real_pos
+                result['pos'] = pos
+                result['real_pos'] = real_pos
                 for k, v in result.items():
                     try:
                         d_avg[k].append(v)

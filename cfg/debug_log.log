@@ -1,0 +1,167 @@
+2018-11-14 15:55:31,819 __main__     DEBUG    Started logger
+2018-11-14 15:55:31,820 __main__     CRITICAL started logger
+2018-11-14 15:55:33,981 measurement.stepscan.StepScan INFO     Created instance of StepScan.
+2018-11-14 15:55:33,981 __main__     INFO     Created Stepscan Instance
+2018-11-14 15:55:33,981 instruments.generic.Instrument INFO     Created instance of Generic instrument.
+2018-11-14 15:55:33,981 instruments.lockinamplifier.LockInAmplifier INFO     Created instance of fake LockInAmplifier.
+2018-11-14 15:55:33,981 measurement.stepscan.StepScan INFO     Added lockin as instance of <instruments.lockinamplifier.LockInAmplifier object at 0x000001EDA495A4E0>
+2018-11-14 15:55:33,981 instruments.generic.Instrument INFO     Created instance of Generic instrument.
+2018-11-14 15:55:33,981 measurement.stepscan.StepScan INFO     Added delay_stage as instance of <instruments.delaystage.DelayStage object at 0x000001EDA495AB38>
+2018-11-14 15:55:33,981 instruments.generic.Instrument INFO     Created instance of Generic instrument.
+2018-11-14 15:55:33,982 instruments.cryostat.Cryostat INFO     Created instance of fake Cryostat.
+2018-11-14 15:55:33,982 measurement.stepscan.StepScan INFO     Added cryo as instance of <instruments.cryostat.Cryostat object at 0x000001EDA495ABA8>
+2018-11-14 15:55:34,982 measurement.stepscan.StepScan INFO     Added parameter iteration:
+	- Instrument: <instruments.cryostat.Cryostat object at 0x000001EDA495ABA8>
+	- Method: change_temperature
+	- Values: [10, 20]
+2018-11-14 15:55:34,982 measurement.stepscan.StepScan INFO     Changed number of averages to 2
+2018-11-14 15:55:34,983 measurement.stepscan.StepScan INFO     Stage positions changed: 30 steps
+2018-11-14 15:55:34,983 measurement.stepscan.StepScan INFO     Changed time zero to 5.23
+2018-11-14 15:55:34,986 measurement.stepscan.StepScan INFO     Created file D:\data\FemtoScan\data\unknown measurement Wed Nov 14 15-55-33 2018.h5
+2018-11-14 15:55:34,994 measurement.stepscan.StepScan INFO     getting attribute time_constant from <instruments.lockinamplifier.LockInAmplifier object at 0x000001EDA495A4E0>
+2018-11-14 15:55:35,025 measurement.stepscan.StepScan INFO     found lockin as <class 'instruments.lockinamplifier.LockInAmplifier'>
+2018-11-14 15:55:35,025 measurement.stepscan.StepScan INFO     found delay_stage as <class 'instruments.delaystage.DelayStage'>
+2018-11-14 15:55:35,026 measurement.stepscan.Worker INFO     worker has all it needs. Ready to measure_avg!
+2018-11-14 15:55:35,026 measurement.stepscan.Worker INFO     Initialized worker with single scan steps: 60
+2018-11-14 15:55:35,026 measurement.stepscan.Worker INFO     worker started working
+2018-11-14 15:55:35,027 measurement.stepscan.Worker INFO     Progress Counter initialized: 120 loop steps expected
+2018-11-14 15:55:35,027 measurement.stepscan.Worker INFO     starting measurement loop!
+2018-11-14 15:55:35,028 measurement.stepscan.Worker INFO     setting parameters for iteration [0]:
+changing <instruments.cryostat.Cryostat object at 0x000001EDA495ABA8>.change_temperature to 10
+2018-11-14 15:55:39,249 measurement.stepscan.Worker INFO     ---- New measurement started ----
+2018-11-14 15:55:39,249 instruments.lockinamplifier.LockInAmplifier INFO     Connected Fake LockInAmplifier amplifier.
+2018-11-14 15:55:39,249 measurement.stepscan.Worker INFO     scanning average n 0
+2018-11-14 15:55:39,977 measurement.stepscan.Worker INFO     current_step: 0.833% step 1 of 120
+2018-11-14 15:55:40,319 measurement.stepscan.Worker INFO     current_step: 1.667% step 2 of 120
+2018-11-14 15:55:40,659 measurement.stepscan.Worker INFO     current_step: 2.500% step 3 of 120
+2018-11-14 15:55:41,001 measurement.stepscan.Worker INFO     current_step: 3.333% step 4 of 120
+2018-11-14 15:55:41,342 measurement.stepscan.Worker INFO     current_step: 4.167% step 5 of 120
+2018-11-14 15:55:41,682 measurement.stepscan.Worker INFO     current_step: 5.000% step 6 of 120
+2018-11-14 15:55:42,023 measurement.stepscan.Worker INFO     current_step: 5.833% step 7 of 120
+2018-11-14 15:55:42,364 measurement.stepscan.Worker INFO     current_step: 6.667% step 8 of 120
+2018-11-14 15:55:42,706 measurement.stepscan.Worker INFO     current_step: 7.500% step 9 of 120
+2018-11-14 15:55:43,047 measurement.stepscan.Worker INFO     current_step: 8.333% step 10 of 120
+2018-11-14 15:55:43,388 measurement.stepscan.Worker INFO     current_step: 9.167% step 11 of 120
+2018-11-14 15:55:43,730 measurement.stepscan.Worker INFO     current_step: 10.000% step 12 of 120
+2018-11-14 15:55:44,072 measurement.stepscan.Worker INFO     current_step: 10.833% step 13 of 120
+2018-11-14 15:55:44,414 measurement.stepscan.Worker INFO     current_step: 11.667% step 14 of 120
+2018-11-14 15:55:44,755 measurement.stepscan.Worker INFO     current_step: 12.500% step 15 of 120
+2018-11-14 15:55:45,097 measurement.stepscan.Worker INFO     current_step: 13.333% step 16 of 120
+2018-11-14 15:55:45,438 measurement.stepscan.Worker INFO     current_step: 14.167% step 17 of 120
+2018-11-14 15:55:45,779 measurement.stepscan.Worker INFO     current_step: 15.000% step 18 of 120
+2018-11-14 15:55:46,120 measurement.stepscan.Worker INFO     current_step: 15.833% step 19 of 120
+2018-11-14 15:55:46,460 measurement.stepscan.Worker INFO     current_step: 16.667% step 20 of 120
+2018-11-14 15:55:46,801 measurement.stepscan.Worker INFO     current_step: 17.500% step 21 of 120
+2018-11-14 15:55:47,142 measurement.stepscan.Worker INFO     current_step: 18.333% step 22 of 120
+2018-11-14 15:55:47,483 measurement.stepscan.Worker INFO     current_step: 19.167% step 23 of 120
+2018-11-14 15:55:47,825 measurement.stepscan.Worker INFO     current_step: 20.000% step 24 of 120
+2018-11-14 15:55:48,166 measurement.stepscan.Worker INFO     current_step: 20.833% step 25 of 120
+2018-11-14 15:55:48,507 measurement.stepscan.Worker INFO     current_step: 21.667% step 26 of 120
+2018-11-14 15:55:48,848 measurement.stepscan.Worker INFO     current_step: 22.500% step 27 of 120
+2018-11-14 15:55:49,190 measurement.stepscan.Worker INFO     current_step: 23.333% step 28 of 120
+2018-11-14 15:55:49,530 measurement.stepscan.Worker INFO     current_step: 24.167% step 29 of 120
+2018-11-14 15:55:49,871 measurement.stepscan.Worker INFO     current_step: 25.000% step 30 of 120
+2018-11-14 15:55:49,891 instruments.lockinamplifier.LockInAmplifier INFO     Disconnected Fake LockInAmplifier amplifier.
+2018-11-14 15:55:49,892 instruments.lockinamplifier.LockInAmplifier INFO     Connected Fake LockInAmplifier amplifier.
+2018-11-14 15:55:49,892 measurement.stepscan.Worker INFO     scanning average n 1
+2018-11-14 15:55:51,296 measurement.stepscan.Worker INFO     current_step: 25.833% step 31 of 120
+2018-11-14 15:55:51,637 measurement.stepscan.Worker INFO     current_step: 26.667% step 32 of 120
+2018-11-14 15:55:51,978 measurement.stepscan.Worker INFO     current_step: 27.500% step 33 of 120
+2018-11-14 15:55:52,319 measurement.stepscan.Worker INFO     current_step: 28.333% step 34 of 120
+2018-11-14 15:55:52,659 measurement.stepscan.Worker INFO     current_step: 29.167% step 35 of 120
+2018-11-14 15:55:53,001 measurement.stepscan.Worker INFO     current_step: 30.000% step 36 of 120
+2018-11-14 15:55:53,342 measurement.stepscan.Worker INFO     current_step: 30.833% step 37 of 120
+2018-11-14 15:55:53,683 measurement.stepscan.Worker INFO     current_step: 31.667% step 38 of 120
+2018-11-14 15:55:54,023 measurement.stepscan.Worker INFO     current_step: 32.500% step 39 of 120
+2018-11-14 15:55:54,364 measurement.stepscan.Worker INFO     current_step: 33.333% step 40 of 120
+2018-11-14 15:55:54,706 measurement.stepscan.Worker INFO     current_step: 34.167% step 41 of 120
+2018-11-14 15:55:55,047 measurement.stepscan.Worker INFO     current_step: 35.000% step 42 of 120
+2018-11-14 15:55:55,387 measurement.stepscan.Worker INFO     current_step: 35.833% step 43 of 120
+2018-11-14 15:55:55,728 measurement.stepscan.Worker INFO     current_step: 36.667% step 44 of 120
+2018-11-14 15:55:56,069 measurement.stepscan.Worker INFO     current_step: 37.500% step 45 of 120
+2018-11-14 15:55:56,409 measurement.stepscan.Worker INFO     current_step: 38.333% step 46 of 120
+2018-11-14 15:55:56,751 measurement.stepscan.Worker INFO     current_step: 39.167% step 47 of 120
+2018-11-14 15:55:57,092 measurement.stepscan.Worker INFO     current_step: 40.000% step 48 of 120
+2018-11-14 15:55:57,433 measurement.stepscan.Worker INFO     current_step: 40.833% step 49 of 120
+2018-11-14 15:55:57,773 measurement.stepscan.Worker INFO     current_step: 41.667% step 50 of 120
+2018-11-14 15:55:58,114 measurement.stepscan.Worker INFO     current_step: 42.500% step 51 of 120
+2018-11-14 15:55:58,455 measurement.stepscan.Worker INFO     current_step: 43.333% step 52 of 120
+2018-11-14 15:55:58,796 measurement.stepscan.Worker INFO     current_step: 44.167% step 53 of 120
+2018-11-14 15:55:59,136 measurement.stepscan.Worker INFO     current_step: 45.000% step 54 of 120
+2018-11-14 15:55:59,476 measurement.stepscan.Worker INFO     current_step: 45.833% step 55 of 120
+2018-11-14 15:55:59,817 measurement.stepscan.Worker INFO     current_step: 46.667% step 56 of 120
+2018-11-14 15:56:00,158 measurement.stepscan.Worker INFO     current_step: 47.500% step 57 of 120
+2018-11-14 15:56:00,500 measurement.stepscan.Worker INFO     current_step: 48.333% step 58 of 120
+2018-11-14 15:56:00,840 measurement.stepscan.Worker INFO     current_step: 49.167% step 59 of 120
+2018-11-14 15:56:01,181 measurement.stepscan.Worker INFO     current_step: 50.000% step 60 of 120
+2018-11-14 15:56:01,190 instruments.lockinamplifier.LockInAmplifier INFO     Disconnected Fake LockInAmplifier amplifier.
+2018-11-14 15:56:01,191 measurement.stepscan.Worker INFO     setting parameters for iteration [1]:
+changing <instruments.cryostat.Cryostat object at 0x000001EDA495ABA8>.change_temperature to 20
+2018-11-14 15:56:04,409 measurement.stepscan.Worker INFO     ---- New measurement started ----
+2018-11-14 15:56:04,409 instruments.lockinamplifier.LockInAmplifier INFO     Connected Fake LockInAmplifier amplifier.
+2018-11-14 15:56:04,409 measurement.stepscan.Worker INFO     scanning average n 0
+2018-11-14 15:56:05,811 measurement.stepscan.Worker INFO     current_step: 50.833% step 61 of 120
+2018-11-14 15:56:06,152 measurement.stepscan.Worker INFO     current_step: 51.667% step 62 of 120
+2018-11-14 15:56:06,493 measurement.stepscan.Worker INFO     current_step: 52.500% step 63 of 120
+2018-11-14 15:56:06,834 measurement.stepscan.Worker INFO     current_step: 53.333% step 64 of 120
+2018-11-14 15:56:07,175 measurement.stepscan.Worker INFO     current_step: 54.167% step 65 of 120
+2018-11-14 15:56:07,516 measurement.stepscan.Worker INFO     current_step: 55.000% step 66 of 120
+2018-11-14 15:56:07,857 measurement.stepscan.Worker INFO     current_step: 55.833% step 67 of 120
+2018-11-14 15:56:08,199 measurement.stepscan.Worker INFO     current_step: 56.667% step 68 of 120
+2018-11-14 15:56:08,539 measurement.stepscan.Worker INFO     current_step: 57.500% step 69 of 120
+2018-11-14 15:56:08,880 measurement.stepscan.Worker INFO     current_step: 58.333% step 70 of 120
+2018-11-14 15:56:09,220 measurement.stepscan.Worker INFO     current_step: 59.167% step 71 of 120
+2018-11-14 15:56:09,561 measurement.stepscan.Worker INFO     current_step: 60.000% step 72 of 120
+2018-11-14 15:56:09,903 measurement.stepscan.Worker INFO     current_step: 60.833% step 73 of 120
+2018-11-14 15:56:10,244 measurement.stepscan.Worker INFO     current_step: 61.667% step 74 of 120
+2018-11-14 15:56:10,583 measurement.stepscan.Worker INFO     current_step: 62.500% step 75 of 120
+2018-11-14 15:56:10,924 measurement.stepscan.Worker INFO     current_step: 63.333% step 76 of 120
+2018-11-14 15:56:11,266 measurement.stepscan.Worker INFO     current_step: 64.167% step 77 of 120
+2018-11-14 15:56:11,606 measurement.stepscan.Worker INFO     current_step: 65.000% step 78 of 120
+2018-11-14 15:56:11,947 measurement.stepscan.Worker INFO     current_step: 65.833% step 79 of 120
+2018-11-14 15:56:12,287 measurement.stepscan.Worker INFO     current_step: 66.667% step 80 of 120
+2018-11-14 15:56:12,628 measurement.stepscan.Worker INFO     current_step: 67.500% step 81 of 120
+2018-11-14 15:56:12,970 measurement.stepscan.Worker INFO     current_step: 68.333% step 82 of 120
+2018-11-14 15:56:13,311 measurement.stepscan.Worker INFO     current_step: 69.167% step 83 of 120
+2018-11-14 15:56:13,652 measurement.stepscan.Worker INFO     current_step: 70.000% step 84 of 120
+2018-11-14 15:56:13,992 measurement.stepscan.Worker INFO     current_step: 70.833% step 85 of 120
+2018-11-14 15:56:14,333 measurement.stepscan.Worker INFO     current_step: 71.667% step 86 of 120
+2018-11-14 15:56:14,674 measurement.stepscan.Worker INFO     current_step: 72.500% step 87 of 120
+2018-11-14 15:56:15,015 measurement.stepscan.Worker INFO     current_step: 73.333% step 88 of 120
+2018-11-14 15:56:15,357 measurement.stepscan.Worker INFO     current_step: 74.167% step 89 of 120
+2018-11-14 15:56:15,698 measurement.stepscan.Worker INFO     current_step: 75.000% step 90 of 120
+2018-11-14 15:56:15,705 instruments.lockinamplifier.LockInAmplifier INFO     Disconnected Fake LockInAmplifier amplifier.
+2018-11-14 15:56:15,705 instruments.lockinamplifier.LockInAmplifier INFO     Connected Fake LockInAmplifier amplifier.
+2018-11-14 15:56:15,705 measurement.stepscan.Worker INFO     scanning average n 1
+2018-11-14 15:56:17,108 measurement.stepscan.Worker INFO     current_step: 75.833% step 91 of 120
+2018-11-14 15:56:17,449 measurement.stepscan.Worker INFO     current_step: 76.667% step 92 of 120
+2018-11-14 15:56:17,790 measurement.stepscan.Worker INFO     current_step: 77.500% step 93 of 120
+2018-11-14 15:56:18,131 measurement.stepscan.Worker INFO     current_step: 78.333% step 94 of 120
+2018-11-14 15:56:18,472 measurement.stepscan.Worker INFO     current_step: 79.167% step 95 of 120
+2018-11-14 15:56:18,813 measurement.stepscan.Worker INFO     current_step: 80.000% step 96 of 120
+2018-11-14 15:56:19,155 measurement.stepscan.Worker INFO     current_step: 80.833% step 97 of 120
+2018-11-14 15:56:19,496 measurement.stepscan.Worker INFO     current_step: 81.667% step 98 of 120
+2018-11-14 15:56:19,836 measurement.stepscan.Worker INFO     current_step: 82.500% step 99 of 120
+2018-11-14 15:56:20,178 measurement.stepscan.Worker INFO     current_step: 83.333% step 100 of 120
+2018-11-14 15:56:20,519 measurement.stepscan.Worker INFO     current_step: 84.167% step 101 of 120
+2018-11-14 15:56:20,859 measurement.stepscan.Worker INFO     current_step: 85.000% step 102 of 120
+2018-11-14 15:56:21,201 measurement.stepscan.Worker INFO     current_step: 85.833% step 103 of 120
+2018-11-14 15:56:21,543 measurement.stepscan.Worker INFO     current_step: 86.667% step 104 of 120
+2018-11-14 15:56:21,885 measurement.stepscan.Worker INFO     current_step: 87.500% step 105 of 120
+2018-11-14 15:56:22,226 measurement.stepscan.Worker INFO     current_step: 88.333% step 106 of 120
+2018-11-14 15:56:22,567 measurement.stepscan.Worker INFO     current_step: 89.167% step 107 of 120
+2018-11-14 15:56:22,908 measurement.stepscan.Worker INFO     current_step: 90.000% step 108 of 120
+2018-11-14 15:56:23,250 measurement.stepscan.Worker INFO     current_step: 90.833% step 109 of 120
+2018-11-14 15:56:23,591 measurement.stepscan.Worker INFO     current_step: 91.667% step 110 of 120
+2018-11-14 15:56:23,932 measurement.stepscan.Worker INFO     current_step: 92.500% step 111 of 120
+2018-11-14 15:56:24,273 measurement.stepscan.Worker INFO     current_step: 93.333% step 112 of 120
+2018-11-14 15:56:24,614 measurement.stepscan.Worker INFO     current_step: 94.167% step 113 of 120
+2018-11-14 15:56:24,954 measurement.stepscan.Worker INFO     current_step: 95.000% step 114 of 120
+2018-11-14 15:56:25,295 measurement.stepscan.Worker INFO     current_step: 95.833% step 115 of 120
+2018-11-14 15:56:25,635 measurement.stepscan.Worker INFO     current_step: 96.667% step 116 of 120
+2018-11-14 15:56:25,976 measurement.stepscan.Worker INFO     current_step: 97.500% step 117 of 120
+2018-11-14 15:56:26,316 measurement.stepscan.Worker INFO     current_step: 98.333% step 118 of 120
+2018-11-14 15:56:26,656 measurement.stepscan.Worker INFO     current_step: 99.167% step 119 of 120
+2018-11-14 15:56:26,996 measurement.stepscan.Worker INFO     current_step: 100.000% step 120 of 120
+2018-11-14 15:56:27,005 instruments.lockinamplifier.LockInAmplifier INFO     Disconnected Fake LockInAmplifier amplifier.
+2018-11-14 15:56:27,005 measurement.stepscan.Worker INFO     Measurement loop completed

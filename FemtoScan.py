@@ -36,6 +36,7 @@ _MODE = parse_setting('launcher', 'mode')
 _RECOMPILE = parse_setting('launcher', 'recompile')
 
 
+_MODE = 'gui'
 
 def launch_cmd():
     from measurement.stepscan import StepScan

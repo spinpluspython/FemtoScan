@@ -29,6 +29,8 @@ def monotonically_increasing(l):
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
+def sin(x,A,f,p):
+    return A* np.sin(x/f + p)
 
 def globalcounter(idx,M):
     counterlist = idx[::-1]

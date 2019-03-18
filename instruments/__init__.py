@@ -7,6 +7,13 @@ import logging
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
+# import logging
+# from logging.config import fileConfig
+#
+# fileConfig('./cfg/logging_config.ini')
+# logger = logging.getLogger(__name__)
+
+
 def main():
     pass
 

@@ -20,17 +20,24 @@
 
 """
 import sys
+#
+# import nidaqmx
+# import numpy as np
+# import pyqtgraph as pg
+# from PyQt5.QtCore import QCoreApplication, QTimer
+# from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QPushButton, \
+#     QGroupBox
+# from nidaqmx.constants import Edge, AcquisitionType
 
-import nidaqmx
-import numpy as np
-import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QTimer
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QPushButton, \
-    QGroupBox
-from pyqtgraph.Qt import QtCore, QtGui
-from nidaqmx.constants import Edge, AcquisitionType
+import sys
+import logging
+from logging.config import fileConfig
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtWidgets import  QApplication, QMainWindow
 
 from utilities import math
+from gui.fastscan.mainwindow import FastScanMainWindow
+
 
 
 def main():
@@ -40,12 +47,19 @@ def main():
     # Set the exception hook to our wrapping function
     sys.excepthook = my_exception_hook
 
+
+    #create main logger
+    fileConfig('./cfg/logging_config.ini')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.debug('Started logger')
+
     app = QCoreApplication.instance()
+
     if app is None:
         app = QApplication(sys.argv)
     # Create handle prg for the Graphic Interface
     prg = FastScanMainWindow()
-    # prg = testwindow()
 
     # print('showing GUI')
     prg.show()
@@ -55,44 +69,11 @@ def main():
     except:
         print('exiting')
 
-
-class testwindow(QMainWindow):
-
-    def __init__(self):
-        super(testwindow, self).__init__()
-        hbox = QtGui.QHBoxLayout(self)
-
-        topleft = QtGui.QFrame(self)
-        topleft.setFrameShape(QtGui.QFrame.StyledPanel)
-        topleft.setGeometry(0, 0, 300, 0)
-
-        topright = QtGui.QFrame(self)
-        topright.setFrameShape(QtGui.QFrame.StyledPanel)
-        topright.setGeometry(0, 320, 1000, 0)
-
-        bottom = QtGui.QFrame(self)
-        bottom.setFrameShape(QtGui.QFrame.StyledPanel)
-        bottom.setGeometry(1210, 0, 1280, 0)
-
-        splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
-        splitter1.addWidget(topleft)
-        splitter1.addWidget(topright)
-
-        splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
-        splitter2.addWidget(splitter1)
-        splitter2.addWidget(bottom)
-
-        hbox.addWidget(splitter2)
-
-        self.setLayout(hbox)
-        # QtGui.QApplication.setStyle(QtGui.QStyleFactory.create('Cleanlooks'))
-
-
-class FastScanMainWindow(QMainWindow):
+class DEPRECATED_FastScanMainWindow(QMainWindow):
     _SIMULATE = True
 
     def __init__(self):
-        super(FastScanMainWindow, self).__init__()
+        super(DEPRECATED_FastScanMainWindow, self).__init__()
         self.setWindowTitle('Fast Scan')
         self.setGeometry(100, 50, 1024, 768)
 

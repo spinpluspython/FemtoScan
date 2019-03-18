@@ -16,7 +16,7 @@ the GNU General Public License is intended to guarantee your freedom to
 share and change all versions of a program--to make sure it remains free
 software for all its users.  We, the Free Software Foundation, use the
 GNU General Public License for most of our software; it applies also to
-any other work released this way by its authors.  You can apply it to
+any other project released this way by its authors.  You can apply it to
 your programs, too.
 
   When we speak of free software, we are referring to freedom, not
@@ -77,79 +77,79 @@ modification follow.
   "Copyright" also means copyright-like laws that apply to other kinds of
 works, such as semiconductor masks.
 
-  "The Program" refers to any copyrightable work licensed under this
+  "The Program" refers to any copyrightable project licensed under this
 License.  Each licensee is addressed as "you".  "Licensees" and
 "recipients" may be individuals or organizations.
 
-  To "modify" a work means to copy from or adapt all or part of the work
+  To "modify" a project means to copy from or adapt all or part of the project
 in a fashion requiring copyright permission, other than the making of an
-exact copy.  The resulting work is called a "modified version" of the
-earlier work or a work "based on" the earlier work.
+exact copy.  The resulting project is called a "modified version" of the
+earlier project or a project "based on" the earlier project.
 
-  A "covered work" means either the unmodified Program or a work based
+  A "covered project" means either the unmodified Program or a project based
 on the Program.
 
-  To "propagate" a work means to do anything with it that, without
+  To "propagate" a project means to do anything with it that, without
 permission, would make you directly or secondarily liable for
 infringement under applicable copyright law, except executing it on a
 computer or modifying a private copy.  Propagation includes copying,
 distribution (with or without modification), making available to the
 public, and in some countries other activities as well.
 
-  To "convey" a work means any kind of propagation that enables other
+  To "convey" a project means any kind of propagation that enables other
 parties to make or receive copies.  Mere interaction with a user through
 a computer network, with no transfer of a copy, is not conveying.
 
   An interactive user interface displays "Appropriate Legal Notices"
 to the extent that it includes a convenient and prominently visible
 feature that (1) displays an appropriate copyright notice, and (2)
-tells the user that there is no warranty for the work (except to the
+tells the user that there is no warranty for the project (except to the
 extent that warranties are provided), that licensees may convey the
-work under this License, and how to view a copy of this License.  If
+project under this License, and how to view a copy of this License.  If
 the interface presents a list of user commands or options, such as a
 menu, a prominent item in the list meets this criterion.
 
   1. Source Code.
 
-  The "source code" for a work means the preferred form of the work
+  The "source code" for a project means the preferred form of the project
 for making modifications to it.  "Object code" means any non-source
-form of a work.
+form of a project.
 
   A "Standard Interface" means an interface that either is an official
 standard defined by a recognized standards body, or, in the case of
 interfaces specified for a particular programming language, one that
 is widely used among developers working in that language.
 
-  The "System Libraries" of an executable work include anything, other
-than the work as a whole, that (a) is included in the normal form of
+  The "System Libraries" of an executable project include anything, other
+than the project as a whole, that (a) is included in the normal form of
 packaging a Major Component, but which is not part of that Major
-Component, and (b) serves only to enable use of the work with that
+Component, and (b) serves only to enable use of the project with that
 Major Component, or to implement a Standard Interface for which an
 implementation is available to the public in source code form.  A
 "Major Component", in this context, means a major essential component
 (kernel, window system, and so on) of the specific operating system
-(if any) on which the executable work runs, or a compiler used to
-produce the work, or an object code interpreter used to run it.
+(if any) on which the executable project runs, or a compiler used to
+produce the project, or an object code interpreter used to run it.
 
-  The "Corresponding Source" for a work in object code form means all
+  The "Corresponding Source" for a project in object code form means all
 the source code needed to generate, install, and (for an executable
-work) run the object code and to modify the work, including scripts to
-control those activities.  However, it does not include the work's
+project) run the object code and to modify the project, including scripts to
+control those activities.  However, it does not include the project's
 System Libraries, or general-purpose tools or generally available free
 programs which are used unmodified in performing those activities but
-which are not part of the work.  For example, Corresponding Source
+which are not part of the project.  For example, Corresponding Source
 includes interface definition files associated with source files for
-the work, and the source code for shared libraries and dynamically
-linked subprograms that the work is specifically designed to require,
+the project, and the source code for shared libraries and dynamically
+linked subprograms that the project is specifically designed to require,
 such as by intimate data communication or control flow between those
-subprograms and other parts of the work.
+subprograms and other parts of the project.
 
   The Corresponding Source need not include anything that users
 can regenerate automatically from other parts of the Corresponding
 Source.
 
-  The Corresponding Source for a work in source code form is that
-same work.
+  The Corresponding Source for a project in source code form is that
+same project.
 
   2. Basic Permissions.
 
@@ -157,8 +157,8 @@ same work.
 copyright on the Program, and are irrevocable provided the stated
 conditions are met.  This License explicitly affirms your unlimited
 permission to run the unmodified Program.  The output from running a
-covered work is covered by this License only if the output, given its
-content, constitutes a covered work.  This License acknowledges your
+covered project is covered by this License only if the output, given its
+content, constitutes a covered project.  This License acknowledges your
 rights of fair use or other equivalent, as provided by copyright law.
 
   You may make, run and propagate covered works that you do not
@@ -178,17 +178,17 @@ makes it unnecessary.
 
   3. Protecting Users' Legal Rights From Anti-Circumvention Law.
 
-  No covered work shall be deemed part of an effective technological
+  No covered project shall be deemed part of an effective technological
 measure under any applicable law fulfilling obligations under article
 11 of the WIPO copyright treaty adopted on 20 December 1996, or
 similar laws prohibiting or restricting circumvention of such
 measures.
 
-  When you convey a covered work, you waive any legal power to forbid
+  When you convey a covered project, you waive any legal power to forbid
 circumvention of technological measures to the extent such circumvention
 is effected by exercising rights under this License with respect to
-the covered work, and you disclaim any intention to limit operation or
-modification of the work as a means of enforcing, against the work's
+the covered project, and you disclaim any intention to limit operation or
+modification of the project as a means of enforcing, against the project's
 users, your or third parties' legal rights to forbid circumvention of
 technological measures.
 
@@ -207,7 +207,7 @@ and you may offer support or warranty protection for a fee.
 
   5. Conveying Modified Source Versions.
 
-  You may convey a work based on the Program, or the modifications to
+  You may convey a project based on the Program, or the modifications to
 produce it from the Program, in the form of source code under the
 terms of section 4, provided that you also meet all of these conditions:
 
@@ -232,19 +232,19 @@ terms of section 4, provided that you also meet all of these conditions:
     interfaces that do not display Appropriate Legal Notices, your
     work need not make them do so.
 
-  A compilation of a covered work with other separate and independent
-works, which are not by their nature extensions of the covered work,
+  A compilation of a covered project with other separate and independent
+works, which are not by their nature extensions of the covered project,
 and which are not combined with it such as to form a larger program,
 in or on a volume of a storage or distribution medium, is called an
 "aggregate" if the compilation and its resulting copyright are not
 used to limit the access or legal rights of the compilation's users
-beyond what the individual works permit.  Inclusion of a covered work
+beyond what the individual works permit.  Inclusion of a covered project
 in an aggregate does not cause this License to apply to the other
 parts of the aggregate.
 
   6. Conveying Non-Source Forms.
 
-  You may convey a covered work in object code form under the terms
+  You may convey a covered project in object code form under the terms
 of sections 4 and 5, provided that you also convey the
 machine-readable Corresponding Source under the terms of this License,
 in one of these ways:
@@ -292,7 +292,7 @@ in one of these ways:
 
   A separable portion of the object code, whose source code is excluded
 from the Corresponding Source as a System Library, need not be
-included in conveying the object code work.
+included in conveying the object code project.
 
   A "User Product" is either (1) a "consumer product", which means any
 tangible personal property which is normally used for personal, family,
@@ -309,13 +309,13 @@ the only significant mode of use of the product.
 
   "Installation Information" for a User Product means any methods,
 procedures, authorization keys, or other information required to install
-and execute modified versions of a covered work in that User Product from
+and execute modified versions of a covered project in that User Product from
 a modified version of its Corresponding Source.  The information must
 suffice to ensure that the continued functioning of the modified object
 code is in no case prevented or interfered with solely because
 modification has been made.
 
-  If you convey an object code work under this section in, or with, or
+  If you convey an object code project under this section in, or with, or
 specifically for use in, a User Product, and the conveying occurs as
 part of a transaction in which the right of possession and use of the
 User Product is transferred to the recipient in perpetuity or for a
@@ -323,12 +323,12 @@ fixed term (regardless of how the transaction is characterized), the
 Corresponding Source conveyed under this section must be accompanied
 by the Installation Information.  But this requirement does not apply
 if neither you nor any third party retains the ability to install
-modified object code on the User Product (for example, the work has
+modified object code on the User Product (for example, the project has
 been installed in ROM).
 
   The requirement to provide Installation Information does not include a
 requirement to continue to provide support service, warranty, or updates
-for a work that has been modified or installed by the recipient, or for
+for a project that has been modified or installed by the recipient, or for
 the User Product in which it has been modified or installed.  Access to a
 network may be denied when the modification itself materially and
 adversely affects the operation of the network or violates the rules and
@@ -351,15 +351,15 @@ apply only to part of the Program, that part may be used separately
 under those permissions, but the entire Program remains governed by
 this License without regard to the additional permissions.
 
-  When you convey a copy of a covered work, you may at your option
+  When you convey a copy of a covered project, you may at your option
 remove any additional permissions from that copy, or from any part of
 it.  (Additional permissions may be written to require their own
-removal in certain cases when you modify the work.)  You may place
-additional permissions on material, added by you to a covered work,
+removal in certain cases when you modify the project.)  You may place
+additional permissions on material, added by you to a covered project,
 for which you have or can give appropriate copyright permission.
 
   Notwithstanding any other provision of this License, for material you
-add to a covered work, you may (if authorized by the copyright holders of
+add to a covered project, you may (if authorized by the copyright holders of
 that material) supplement the terms of this License with terms:
 
     a) Disclaiming warranty or limiting liability differently from the
@@ -391,11 +391,11 @@ received it, or any part of it, contains a notice stating that it is
 governed by this License along with a term that is a further
 restriction, you may remove that term.  If a license document contains
 a further restriction but permits relicensing or conveying under this
-License, you may add to a covered work material governed by the terms
+License, you may add to a covered project material governed by the terms
 of that license document, provided that the further restriction does
 not survive such relicensing or conveying.
 
-  If you add terms to a covered work in accord with this section, you
+  If you add terms to a covered project in accord with this section, you
 must place, in the relevant source files, a statement of the
 additional terms that apply to those files, or a notice indicating
 where to find the applicable terms.
@@ -406,7 +406,7 @@ the above requirements apply either way.
 
   8. Termination.
 
-  You may not propagate or modify a covered work except as expressly
+  You may not propagate or modify a covered project except as expressly
 provided under this License.  Any attempt otherwise to propagate or
 modify it is void, and will automatically terminate your rights under
 this License (including any patent licenses granted under the third
@@ -422,7 +422,7 @@ prior to 60 days after the cessation.
   Moreover, your license from a particular copyright holder is
 reinstated permanently if the copyright holder notifies you of the
 violation by some reasonable means, this is the first time you have
-received notice of violation of this License (for any work) from that
+received notice of violation of this License (for any project) from that
 copyright holder, and you cure the violation prior to 30 days after
 your receipt of the notice.
 
@@ -435,29 +435,29 @@ material under section 10.
   9. Acceptance Not Required for Having Copies.
 
   You are not required to accept this License in order to receive or
-run a copy of the Program.  Ancillary propagation of a covered work
+run a copy of the Program.  Ancillary propagation of a covered project
 occurring solely as a consequence of using peer-to-peer transmission
 to receive a copy likewise does not require acceptance.  However,
 nothing other than this License grants you permission to propagate or
-modify any covered work.  These actions infringe copyright if you do
+modify any covered project.  These actions infringe copyright if you do
 not accept this License.  Therefore, by modifying or propagating a
-covered work, you indicate your acceptance of this License to do so.
+covered project, you indicate your acceptance of this License to do so.
 
   10. Automatic Licensing of Downstream Recipients.
 
-  Each time you convey a covered work, the recipient automatically
+  Each time you convey a covered project, the recipient automatically
 receives a license from the original licensors, to run, modify and
-propagate that work, subject to this License.  You are not responsible
+propagate that project, subject to this License.  You are not responsible
 for enforcing compliance by third parties with this License.
 
   An "entity transaction" is a transaction transferring control of an
 organization, or substantially all assets of one, or subdividing an
 organization, or merging organizations.  If propagation of a covered
-work results from an entity transaction, each party to that
-transaction who receives a copy of the work also receives whatever
-licenses to the work the party's predecessor in interest had or could
+project results from an entity transaction, each party to that
+transaction who receives a copy of the project also receives whatever
+licenses to the project the party's predecessor in interest had or could
 give under the previous paragraph, plus a right to possession of the
-Corresponding Source of the work from the predecessor in interest, if
+Corresponding Source of the project from the predecessor in interest, if
 the predecessor has it or can get it with reasonable efforts.
 
   You may not impose any further restrictions on the exercise of the
@@ -471,8 +471,8 @@ sale, or importing the Program or any portion of it.
   11. Patents.
 
   A "contributor" is a copyright holder who authorizes use under this
-License of the Program or a work on which the Program is based.  The
-work thus licensed is called the contributor's "contributor version".
+License of the Program or a project on which the Program is based.  The
+project thus licensed is called the contributor's "contributor version".
 
   A contributor's "essential patent claims" are all patent claims
 owned or controlled by the contributor, whether already acquired or
@@ -496,41 +496,41 @@ sue for patent infringement).  To "grant" such a patent license to a
 party means to make such an agreement or commitment not to enforce a
 patent against the party.
 
-  If you convey a covered work, knowingly relying on a patent license,
-and the Corresponding Source of the work is not available for anyone
+  If you convey a covered project, knowingly relying on a patent license,
+and the Corresponding Source of the project is not available for anyone
 to copy, free of charge and under the terms of this License, through a
 publicly available network server or other readily accessible means,
 then you must either (1) cause the Corresponding Source to be so
 available, or (2) arrange to deprive yourself of the benefit of the
-patent license for this particular work, or (3) arrange, in a manner
+patent license for this particular project, or (3) arrange, in a manner
 consistent with the requirements of this License, to extend the patent
 license to downstream recipients.  "Knowingly relying" means you have
 actual knowledge that, but for the patent license, your conveying the
-covered work in a country, or your recipient's use of the covered work
+covered project in a country, or your recipient's use of the covered project
 in a country, would infringe one or more identifiable patents in that
 country that you have reason to believe are valid.
 
   If, pursuant to or in connection with a single transaction or
 arrangement, you convey, or propagate by procuring conveyance of, a
-covered work, and grant a patent license to some of the parties
-receiving the covered work authorizing them to use, propagate, modify
-or convey a specific copy of the covered work, then the patent license
+covered project, and grant a patent license to some of the parties
+receiving the covered project authorizing them to use, propagate, modify
+or convey a specific copy of the covered project, then the patent license
 you grant is automatically extended to all recipients of the covered
-work and works based on it.
+project and works based on it.
 
   A patent license is "discriminatory" if it does not include within
 the scope of its coverage, prohibits the exercise of, or is
 conditioned on the non-exercise of one or more of the rights that are
 specifically granted under this License.  You may not convey a covered
-work if you are a party to an arrangement with a third party that is
+project if you are a party to an arrangement with a third party that is
 in the business of distributing software, under which you make payment
 to the third party based on the extent of your activity of conveying
-the work, and under which the third party grants, to any of the
-parties who would receive the covered work from you, a discriminatory
-patent license (a) in connection with copies of the covered work
+the project, and under which the third party grants, to any of the
+parties who would receive the covered project from you, a discriminatory
+patent license (a) in connection with copies of the covered project
 conveyed by you (or copies made from those copies), or (b) primarily
 for and in connection with specific products or compilations that
-contain the covered work, unless you entered into that arrangement,
+contain the covered project, unless you entered into that arrangement,
 or that patent license was granted, prior to 28 March 2007.
 
   Nothing in this License shall be construed as excluding or limiting
@@ -542,7 +542,7 @@ otherwise be available to you under applicable patent law.
   If conditions are imposed on you (whether by court order, agreement or
 otherwise) that contradict the conditions of this License, they do not
 excuse you from the conditions of this License.  If you cannot convey a
-covered work so as to satisfy simultaneously your obligations under this
+covered project so as to satisfy simultaneously your obligations under this
 License and any other pertinent obligations, then as a consequence you may
 not convey it at all.  For example, if you agree to terms that obligate you
 to collect a royalty for further conveying from those to whom you convey
@@ -552,10 +552,10 @@ License would be to refrain entirely from conveying the Program.
   13. Use with the GNU Affero General Public License.
 
   Notwithstanding any other provision of this License, you have
-permission to link or combine any covered work with a work licensed
+permission to link or combine any covered project with a project licensed
 under version 3 of the GNU Affero General Public License into a single
-combined work, and to convey the resulting work.  The terms of this
-License will continue to apply to the part which is the covered work,
+combined project, and to convey the resulting project.  The terms of this
+License will continue to apply to the part which is the covered project,
 but the special requirements of the GNU Affero General Public License,
 section 13, concerning interaction through a network will apply to the
 combination as such.

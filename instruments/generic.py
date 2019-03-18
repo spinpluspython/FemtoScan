@@ -69,6 +69,7 @@ class Instrument(object):
             self.version()
         except:
             raise DeviceNotFoundError
+
     @property
     def version(self):
         return self._version

@@ -368,7 +368,7 @@ class SR830(LockInAmplifier):
         assert parameter in self._channel_names, '{} is not a valid parameter to read from the SR830'.format(parameter)
         command = 'OUTP ?' + str(self._channel_names.index(parameter))
         value = float(self.read(command))  # returns value as a float
-        logger.info('Read_value: {} V'.format(value))
+        self.logger.info('Read_value: {} V'.format(value))
         # if self.__verbose: print(str(value) + ' V')
         return value
 

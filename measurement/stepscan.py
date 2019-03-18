@@ -132,7 +132,7 @@ class StepScanWorker(Worker):
         self.logger.info('worker has all it needs. Ready to measure_avg!')
 
     def measure(self):
-        """ Step Scan specific work procedure.
+        """ Step Scan specific project procedure.
 
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.

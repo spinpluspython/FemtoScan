@@ -29,6 +29,14 @@ def monotonically_increasing(l):
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
+def sech2_fwhm(x, A, x0, fwhm,c):
+    tau = fwhm*2/1.76
+    return A / (np.cosh((x-x0)/tau))**2+c
+
+def gaussian_fwhm(x, A,x0, fwhm,c):
+    sig = fwhm*2/2.355
+    return A*np.exp(-np.power(x - x0, 2.) / (2 * np.power(sig, 2.)))+c
+
 def sin(x,A,f,p):
     return A* np.sin(x/f + p)
 
@@ -39,6 +47,16 @@ def globalcounter(idx,M):
         counterlist[i] = counterlist[i]*np.prod(maxlist[:i])
     return int(np.sum(counterlist))
 
+def transient_1expdec(t, A1, tau1, sigma, y0, off):
+    """ Fitting function for transients, 1 exponent decay.
+    A: Amplitude
+    Tau: exp decay
+    sigma: pump pulse duration
+    y0: whole curve offset
+    off: slow dynamics offset"""
+    tmp = np.erf((sigma ** 2. - 5.545 * tau1 * t) / (2.7726 * sigma * tau1))
+    tmp = .5 * (1- tmp) * np.exp(sigma ** 2. / (11.09 * tau1 ** 2.))
+    return y0 + tmp * (A1 * (np.exp(-t / tau1)) + off)
 
 def main():
     pass

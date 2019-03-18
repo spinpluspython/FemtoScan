@@ -27,14 +27,6 @@ def main():
         print(i)
 
 
-def my_exception_hook(exctype, value, traceback):
-    # Print the error and traceback
-    print(exctype, value, traceback)
-    # Call the normal Exception hook after
-    sys._excepthook(exctype, value, traceback)
-    sys.exit(1)
-
-
 def nested_for(ranges, operation, *args, **kwargs):
     """this is some magic iteration script. it creates a nested for loop
     :parameters:

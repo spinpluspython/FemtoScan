@@ -20,16 +20,15 @@ Created on Nov 22 09:57:29 2017
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import os
-import time
 import logging
+import time
+
 import h5py
 from PyQt5 import QtCore
 
 from instruments import generic
 from utilities.exceptions import RequirementError
 from utilities.misc import iterate_ranges
-from utilities.qt import raise_Qerror
 from utilities.settings import parse_setting
 
 
@@ -153,9 +152,10 @@ class Experiment(QtCore.QObject):
         assert isinstance(method, str) and hasattr(instrument,
                                                    method), 'method should be a string representing the name of a method of the instrumnet class'
         assert isinstance(values, (list, tuple)), 'values should be list or tuple of numbers.'
-        self.logger.info('Added parameter iteration:\n\t- Instrument: {}\n\t- Method: {}\n\t- Values: {}'.format(instrument,
-                                                                                                          method,
-                                                                                                          values))
+        self.logger.info(
+            'Added parameter iteration:\n\t- Instrument: {}\n\t- Method: {}\n\t- Values: {}'.format(instrument,
+                                                                                                    method,
+                                                                                                    values))
         self.measurement_parameters.append((name, unit, instrument, method, values))
 
     def check_requirements(self):
@@ -275,13 +275,12 @@ class Experiment(QtCore.QObject):
         self.logger.debug('Thread initialized: moving to new thread')
         self.w.moveToThread(self.scan_thread)
         self.logger.debug('connecting')
-        self.scan_thread.started.connect(self.w.work)
+        self.scan_thread.started.connect(self.w.project)
         self.logger.debug('starting')
         self.scan_thread.start()
         self.can_die = False
         self.logger.debug('main thread idle. waiting for thread death signal...')
         while not self.can_die:
-
             time.sleep(2)
         self.logger.debug('Thread death signal recieved. Main Thread waking up.')
 
@@ -329,7 +328,7 @@ class Experiment(QtCore.QObject):
                             data = getattr(inst, par_name)
                             inst_group.create_dataset(par_name, data=data)
                         except AttributeError:
-                            self.logger.warning('attribute {} of {} not found'.format(par_name,inst))
+                            self.logger.warning('attribute {} of {} not found'.format(par_name, inst))
                         except Exception as e:
                             self.logger.error('couldnt write setting to HDF5: {}'.format(e), exc_info=True)
                 metadata_grp['date'] = time.asctime()
@@ -340,7 +339,7 @@ class Experiment(QtCore.QObject):
         raise NotImplementedError('cannot load settings yet... working on it!')  # TODO: implement load settings
 
     @QtCore.pyqtSlot(dict)
-    def set_measurement_settings(self, settings_dict): #TODO: this looks wrong.. needs checking!
+    def set_measurement_settings(self, settings_dict):  # TODO: this looks wrong.. needs checking!
         """ define the settings specific for the scan.
 
         Args:
@@ -509,8 +508,8 @@ class Worker(QtCore.QObject):
             print(index, self.current_index)
             if index != self.current_index[i]:
                 self.logger.info('setting parameters for iteration {}:'.format(indexes) +
-                                         '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],
-                                                                         self.values[i][index]))
+                                 '\nchanging {}.{} to {}'.format(self.instruments[i], self.methods[i],
+                                                                 self.values[i][index]))
                 # now call the method of the instrument class with the value at#
                 #  this iteration
                 getattr(self.instruments[i], self.methods[i])(self.values[i][index])
@@ -520,7 +519,7 @@ class Worker(QtCore.QObject):
         """ Perform a measurement step.
 
         This method is called at every iteration of the measurement loop."""
-        raise NotImplementedError("Method 'work' not implemented in worker (sub)class")
+        raise NotImplementedError("Method 'project' not implemented in worker (sub)class")
 
     def initialize_progress_counter(self):
         """ initialize the progress counter which helps keep track of measurement loop status"""
@@ -530,11 +529,11 @@ class Worker(QtCore.QObject):
         self.n_of_steps *= self.single_measurement_steps
         self.logger.info('Progress Counter initialized: {} loop steps expected'.format(self.n_of_steps))
 
-
     def increment_progress_counter(self):
         self.current_step += 1
         self.progress = 100 * self.current_step / self.n_of_steps
-        self.logger.debug('Progress incremented to {}, step {}/{}'.format(self.progress,self.current_step,self.n_of_steps))
+        self.logger.debug(
+            'Progress incremented to {}, step {}/{}'.format(self.progress, self.current_step, self.n_of_steps))
 
         self.progressChanged.emit(self.progress)
 
@@ -585,6 +584,8 @@ class Worker(QtCore.QObject):
                 pass
             except Exception as e:
                 self.logger.error('Error killing {}: {}'.format(instrument, e), exc_info=True)
+
+
 
 
 if __name__ == "__main__":

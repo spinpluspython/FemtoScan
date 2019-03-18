@@ -20,7 +20,8 @@
 
 """
 import sys
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, QtCore, uic
+
 
 def raise_Qerror(doingWhat, errorHandle, type='Warning', popup=True):
     """ opens a dialog window showing the error"""
@@ -47,6 +48,48 @@ def recompile(folder):
     print('recompiling')
     uic.compileUiDir(folder, execute=True)
     print('done')
+
+def make_timer(timeout, slot=None,start=True):
+    timer = QtCore.QTimer()
+    timer.setInterval(timeout)
+    if slot is not None:
+        timer.timeout.connect(slot)
+    if start:
+        timer.start()
+
+
+def SpinBox(name=None,type=int, value=None, step=None, max=None, min=None, suffix=None,layout_list=None):
+    if type == int:
+        spinbox = QtWidgets.QSpinBox()
+    if type == float:
+        spinbox = QtWidgets.QDoubleSpinBox()
+    if max is not None:
+        if max == 'max':
+            spinbox.setMaximum(2147483647)
+        else:
+            spinbox.setMaximum(max)
+    if min is not None:
+        if max == 'max':
+            spinbox.setMinimum(-2147483647)
+        else:
+            spinbox.setMinimum(min)
+    if value is not None: spinbox.setValue(value)
+    if suffix is not None: spinbox.setSuffix(' {}'.format(suffix))
+    if step is not None: spinbox.setSingleStep(step)
+    if layout_list is not None: layout_list.append((name,spinbox))
+    return spinbox
+
+
+def labeled_qitem(label, qitem):
+    w = QtWidgets.QWidget()
+    l = QtWidgets.QHBoxLayout()
+    w.setLayout(l)
+    l.addWidget(QtWidgets.QLabel(label))
+    l.addWidget(qitem)
+    return w
+
+
+
 
 def main():
     pass

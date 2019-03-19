@@ -232,9 +232,6 @@ class FastScanMainWindow(QMainWindow):
     def initialize_data_manager(self):
 
         manager = FastScanThreadManager(self.settings)
-        # for name, val in self.settings.items():
-        #     self.logger.debug('set {} to {}'.format(name,val))
-        #     setattr(manager, name, val)
         manager.newProcessedData.connect(self.on_processed_data)
         manager.newStreamerData.connect(self.on_streamer_data)
         manager.error.connect(self.on_thread_error)
@@ -251,13 +248,11 @@ class FastScanMainWindow(QMainWindow):
     def toggle_darkcontrol_mode(self):
         self.data_manager.dark_control = self.radio_dark_control.isChecked()
 
-
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
         try:
             t0 = self.processor_tick
             self.processor_tick = time.time()
-
             if len(self.fps_l) >= 100:
                 self.fps_l.pop(0)
             self.fps_l.append(1. / (self.processor_tick - t0))
@@ -265,11 +260,7 @@ class FastScanMainWindow(QMainWindow):
             self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
         except:
             self.processor_tick = time.time()
-
-        # self.visual_widget.update_dataset(dataset)
         self.visual_widget.append_curve(data_array)
-        # self.visual_widget.plot_main('processed signal', data['last'], data[1])
-        # self.visual_widget.plot_main('average', )
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
 
     def on_streamer_data(self, data):

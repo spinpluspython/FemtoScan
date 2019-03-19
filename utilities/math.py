@@ -20,6 +20,7 @@
 
 """
 import numpy as np
+from scipy.special import erf
 
 
 def monotonically_increasing(l):
@@ -47,14 +48,15 @@ def globalcounter(idx,M):
         counterlist[i] = counterlist[i]*np.prod(maxlist[:i])
     return int(np.sum(counterlist))
 
-def transient_1expdec(t, A1, tau1, sigma, y0, off):
+def transient_1expdec(t, A1, tau1, sigma, y0, off, t0):
     """ Fitting function for transients, 1 exponent decay.
     A: Amplitude
     Tau: exp decay
     sigma: pump pulse duration
     y0: whole curve offset
     off: slow dynamics offset"""
-    tmp = np.erf((sigma ** 2. - 5.545 * tau1 * t) / (2.7726 * sigma * tau1))
+    t=t-t0
+    tmp = erf((sigma ** 2. - 5.545 * tau1 * t) / (2.7726 * sigma * tau1))
     tmp = .5 * (1- tmp) * np.exp(sigma ** 2. / (11.09 * tau1 ** 2.))
     return y0 + tmp * (A1 * (np.exp(-t / tau1)) + off)
 

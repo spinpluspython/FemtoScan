@@ -155,6 +155,8 @@ class FastScanPlotWidget(QWidget):
         self.secondary_plot_lines[name]['x'] = dataArray.time
         self.secondary_plot_lines[name]['y'] = dataArray
 
+
+
     def on_clock(self):
         if not self.plot_queue.empty():
             newData = self.plot_queue.get()
@@ -162,8 +164,16 @@ class FastScanPlotWidget(QWidget):
             if self.all_data is None:
                 self.all_data = newData
 
-            else:
+            else: # todo: improve performance, its too slow!
+
                 self.all_data = xr.concat([self.all_data, newData], 'avg')
+                avg_da = self.all_data.mean('avg')
+                time_axis = np.arange(-100,100,.1) #todo: generalize for the right amplitde
+                avg_binned = avg_da.groupby_bins('time',time_axis).mean()
+                d = xr.DataArray(np.array(avg_binned),coords={'time':time_axis[:-1]+.05},dims='time')
+                d = d.dropna('time')
+                self.average_curve.setData(d.time,d)
+
             # for key, array in newData.items():
             #     if key == 'all':
             #         if 'avg' in array.dims:

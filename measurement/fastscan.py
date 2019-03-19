@@ -34,7 +34,7 @@ from nidaqmx.constants import Edge, AcquisitionType
 from instruments.delaystage import DelayStage
 from instruments.lockinamplifier import LockInAmplifier
 from measurement.core import Experiment,Worker
-from utilities.math import gaussian
+from utilities.math import gaussian, gaussian_fwhm, sech2_fwhm, transient_1expdec
 from utilities.math import monotonically_increasing
 from utilities.qt import make_timer
 
@@ -165,7 +165,7 @@ class FastScanThreadManager(QtCore.QObject):
     newData = QtCore.pyqtSignal(np.ndarray)
     error = QtCore.pyqtSignal(Exception)
 
-    def __init__(self, settings=None, processor_buffer=30000, streamer_buffer=90000):
+    def __init__(self, settings=None):
         super().__init__()
 
         self.logger = logging.getLogger('{}.FastScanThreadManager'.format(__name__))
@@ -189,92 +189,26 @@ class FastScanThreadManager(QtCore.QObject):
         self.processed_averages = None  # container for the xarray dataarray of all averages
 
         self.res_from_previous = np.zeros((3, 0))
-        # self.timer = make_timer(1000. / 60, self.on_timer, start=True)
+
         self.timer = QtCore.QTimer()
         self.timer.setInterval(100.)
         self.timer.timeout.connect(self.on_timer)
         self.timer.start()
         self.lock_data = False
 
-
         self.create_processors()
         self.create_streamer()
 
-    @property
-    def processor_buffer_size(self):
-        return self.settings['processor_buffer']
-
-    @processor_buffer_size.setter
-    def processor_buffer_size(self, buffer_size):
-        assert 0 < buffer_size < 1000000
-        assert isinstance(buffer_size, int)
-        if not self.streamer_thread.isRunnung():
-            self.settings['processor_buffer'] = buffer_size
-        else:
-            self.logger.warning('Cannot change buffer size while streamer is running.')
-
-    @property
-    def streamer_buffer_size(self):
-        return self.settings['streamer_buffer']
-
-    @streamer_buffer_size.setter
-    def streamer_buffer_size(self, buffer_size):
-        assert 0 < buffer_size < 1000000
-        assert isinstance(buffer_size, int)
-        if not self.streamer_thread.isRunnung():
-            self.settings['streamer_buffer'] = buffer_size
-        else:
-            self.logger.warning('Cannot change buffer size while streamer is running.')
-
-    @property
-    def dark_control(self):
-        return self.settings['dark_control']
-
-    @dark_control.setter
-    def dark_control(self, val):
-        assert isinstance(val, bool), 'dark control must be boolean.'
-        self.settings['dark_control'] = val
-
-    @property
-    def simulate(self):
-        return self.settings['simulate']
-
-    @simulate.setter
-    def simulate(self,val):
-        assert isinstance(val,bool), 'simulate attribute should be boolean'
-        self.settings['simulate'] = val
-
-    @property
-    def shaker_amplitude(self):
-        return self.settings['shaker_amplitude']
-    @shaker_amplitude.setter
-    def shaker_amplitude(self,val):
-        assert 0<val<300, 'shaker amplitude must be between 0 and 300 ps'
-        self.settings['shaker_amplitude'] = val
-
-    @property
-    def number_of_processors(self):
-        return self.settings['number_of_processors']
-
-    @number_of_processors.setter
-    def number_of_processors(self, val):
-        assert isinstance(val, int), 'dark control must be boolean.'
-        assert val < os.cpu_count(), 'Too many processors, cant be more than cpu count: {}'.format(os.cpu_count())
-        self.settings['number_of_processors'] = val
-        self.create_processors()
-
     @QtCore.pyqtSlot()
     def on_timer(self):
-
+        """ For each idle processor, start evaluating an element in the streamer queue"""
         for processor, ready in zip(self.processors, self.processor_ready):
             if ready and not self.__stream_queue.empty():
                 self.logger.debug('processing data with processor {}'.format(processor.id))
                 processor.project(self.__stream_queue.get(), use_dark_control=self.dark_control)
 
-
     def create_streamer(self):
         self.streamer_thread = QtCore.QThread()
-        # self.streamer_thread.stopped.connect(self.acquisitionStopped.emit)
 
         self.streamer = FastScanStreamer(self.streamer_buffer_size, simulate=self.settings['simulate'])
         self.streamer.newData[np.ndarray].connect(self.on_streamer_data)
@@ -288,10 +222,11 @@ class FastScanThreadManager(QtCore.QObject):
     def start_streamer(self):
         self.streamer_thread.start()
         self.logger.info('FastScanStreamer started')
-        self.logger.info('streamer settings: {}'.format(self.settings))
+        self.logger.debug('streamer settings: {}'.format(self.settings))
 
     @QtCore.pyqtSlot()
     def stop_streamer(self):
+        self.logger.debug('FastScan Streamer is stopping.')
         self.streamer.stop_acquisition()
         self.streamer_thread.exit()
 
@@ -362,6 +297,72 @@ class FastScanThreadManager(QtCore.QObject):
         self.stop_streamer()
         for thread in self.processor_threads:
             thread.exit()
+
+    ### Properties
+
+    @property
+    def processor_buffer_size(self):
+        return self.settings['processor_buffer']
+
+    @processor_buffer_size.setter
+    def processor_buffer_size(self, buffer_size):
+        assert 0 < buffer_size < 1000000
+        assert isinstance(buffer_size, int)
+        if not self.streamer_thread.isRunnung():
+            self.settings['processor_buffer'] = buffer_size
+        else:
+            self.logger.warning('Cannot change buffer size while streamer is running.')
+
+    @property
+    def streamer_buffer_size(self):
+        return self.settings['streamer_buffer']
+
+    @streamer_buffer_size.setter
+    def streamer_buffer_size(self, buffer_size):
+        assert 0 < buffer_size < 1000000
+        assert isinstance(buffer_size, int)
+        if not self.streamer_thread.isRunnung():
+            self.settings['streamer_buffer'] = buffer_size
+        else:
+            self.logger.warning('Cannot change buffer size while streamer is running.')
+
+    @property
+    def dark_control(self):
+        return self.settings['dark_control']
+
+    @dark_control.setter
+    def dark_control(self, val):
+        assert isinstance(val, bool), 'dark control must be boolean.'
+        self.settings['dark_control'] = val
+
+    @property
+    def simulate(self):
+        return self.settings['simulate']
+
+    @simulate.setter
+    def simulate(self,val):
+        assert isinstance(val,bool), 'simulate attribute should be boolean'
+        self.settings['simulate'] = val
+
+    @property
+    def shaker_amplitude(self):
+        return self.settings['shaker_amplitude']
+    @shaker_amplitude.setter
+    def shaker_amplitude(self,val):
+        assert 0<val<300, 'shaker amplitude must be between 0 and 300 ps'
+        self.settings['shaker_amplitude'] = val
+
+    @property
+    def number_of_processors(self):
+        return self.settings['number_of_processors']
+
+    @number_of_processors.setter
+    def number_of_processors(self, val):
+        assert isinstance(val, int), 'dark control must be boolean.'
+        assert val < os.cpu_count(), 'Too many processors, cant be more than cpu count: {}'.format(os.cpu_count())
+        self.settings['number_of_processors'] = val
+        self.create_processors()
+
 
 
 class FastScanStreamer(QtCore.QObject):
@@ -446,13 +447,36 @@ class FastScanStreamer(QtCore.QObject):
                 self.logger.debug('simulating measurement cycle #{} of {}'.format(i, self.iterations))
                 self.simulate_measure()
 
-    def simulate_measure(self, function='gaussian', args=(10,10)):
+    def simulate_measure(self, function='sech2_fwhm', args=[1,0,.1,1], amplitude=10):
         data = self.data
         t0 = time.time()
-        if function == 'gaussian':
+        args_ = args[:]
+
+        if function == 'gauss_fwhm':
+            f = gaussian_fwhm
+            step = 0.00152587890625
+            args_[1] *= step # transform ps to voltage
+            args_[2] *= step # transform ps to voltage
+        elif function == 'gaussian':
             f = gaussian
-            step = 0.000152587890625
-            args = [step*x for x in args]
+            step = 0.00152587890625
+            args_[1] *= step # transform ps to voltage
+            args_[2] *= step # transform ps to voltage
+            args_.pop(0)
+            args_.pop(-1)
+        elif function == 'sech2_fwhm':
+            f = sech2_fwhm
+            step = 0.00152587890625
+            args_[1] *= step # transform ps to voltage
+            args_[2] *= step # transform ps to voltage
+        elif function == 'transient_1expdec':
+            f = transient_1expdec
+            step = 0.00152587890625
+            args_ = [2,20,1,1,.01,-10]
+            args_[1] *= step  # transform ps to voltage
+            args_[2] *= step  # transform ps to voltage
+            args_[5] *= step  # transform ps to voltage
+
         else:
             raise NotImplementedError('no funcion called {}, please use gauss or sech2'.format(function))
         #########
@@ -460,13 +484,12 @@ class FastScanStreamer(QtCore.QObject):
         noise = np.random.rand(len(n))
         phase = noise[0] * 2 * np.pi
 
-        amplitude = .5 * (1 + .02 * np.random.uniform(-1, 1))
-
+        amplitude = amplitude*0.00152587890625 * (1 + .02 * np.random.uniform(-1, 1))
 
         data[0, :] = np.cos(2 * np.pi * n / 30000 + phase) * amplitude / 2  # in volt
 
         data[1, 1::2] = data[0, 1::2] / 3
-        data[1,  ::2] = f(data[0, ::2], *args) + noise[::2] + data[0, ::2] / 3
+        data[1,  ::2] = f(data[0, ::2], *args_) + noise[::2] + data[0, ::2] / 3
         data[2,  ::2] = True
         data[2, 1::2] = False
         ####
@@ -505,8 +528,6 @@ class FastScanProcessor(QtCore.QObject):
         stream data. Values from the signal channel are assigned to the corresponding
         bin from the stage positions. if Dark Control is true, values where dc
         is true are added, while where dark control is false, it is substracted.
-
-
 
         :param stream_data:
         :param use_dark_control:

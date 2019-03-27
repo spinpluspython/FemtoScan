@@ -42,6 +42,8 @@ class FastScanPlotWidget(QWidget):
         self.clock.timeout.connect(self.on_clock)
         self.clock.start()
 
+        self.show_average = False
+
         self.plot_queue = mp.Queue()
         self.all_data = None
         layout = QVBoxLayout()
@@ -161,10 +163,11 @@ class FastScanPlotWidget(QWidget):
         if not self.plot_queue.empty():
             newData = self.plot_queue.get()
 
+
             if self.all_data is None:
                 self.all_data = newData
 
-            else: # todo: improve performance, its too slow!
+            elif self.show_average: # todo: improve performance, its too slow!
 
                 self.all_data = xr.concat([self.all_data, newData], 'avg')
                 avg_da = self.all_data.mean('avg')

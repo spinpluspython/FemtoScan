@@ -184,6 +184,7 @@ class FastScanPlotWidget(QWidget):
             #     else:
             #         self.plot_main_xr(key,array,pen=(0,255,0))
             self.last_curve.setData(newData.time,newData)
+
             # try:
             #     avg = self.all_data.groupBy_bins('time',100,.sum('avg')
             #     print('all: {}\n\n\n'.format(self.all_data))

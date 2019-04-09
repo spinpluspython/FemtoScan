@@ -43,6 +43,7 @@ class FastScanThreadManager(QtCore.QObject):
     """
     newStreamerData = QtCore.pyqtSignal(np.ndarray)
     newProcessedData = QtCore.pyqtSignal(xr.DataArray)
+    newFitResult = QtCore.pyqtSignal(dict)
     acquisitionStopped = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal()
     newData = QtCore.pyqtSignal(np.ndarray)
@@ -86,9 +87,11 @@ class FastScanThreadManager(QtCore.QObject):
     def on_timer(self):
         """ For each idle processor, start evaluating an element in the streamer queue"""
         for processor, ready in zip(self.processors, self.processor_ready):
+
             if ready and not self.__stream_queue.empty():
                 self.logger.debug('processing data with processor {}'.format(processor.id))
                 processor.project(self.__stream_queue.get(), use_dark_control=self.dark_control)
+
 
     def create_streamer(self):
         self.streamer_thread = QtCore.QThread()
@@ -149,6 +152,7 @@ class FastScanThreadManager(QtCore.QObject):
             self.processor_threads.append(QtCore.QThread())
             self.processor_ready.append(False)
             self.processors[i].newData[np.ndarray].connect(self.on_processor_data)
+            self.processors[i].newFit[dict].connect(self.on_fit_result)
             self.processors[i].error.connect(self.error.emit)
             self.processors[i].isReady.connect(self.set_processor_ready)
             # self.processors[i].newDatadict.connect(self.overwrite_datadict)
@@ -169,7 +173,17 @@ class FastScanThreadManager(QtCore.QObject):
         This emits data to the main window, so it can be plotted..."""
         # TODO: add save data
         self.__processor_queue.put(processed_dataarray)
+        for processor, ready in zip(self.processors, self.processor_ready):
+            if ready:
+                processor.fit_sech2(processed_dataarray)
+                print('############## Attempting to fit ###############')
+                break
         self.newProcessedData.emit(processed_dataarray)
+
+    @QtCore.pyqtSlot(dict)
+    def on_fit_result(self,fitDict):
+        print('######### fit result: {}'.format(fitDict['popt']))
+        self.newFitResult.emit(fitDict)
 
     @QtCore.pyqtSlot()
     def reset_data(self):

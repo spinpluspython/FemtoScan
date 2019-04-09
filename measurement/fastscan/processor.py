@@ -29,6 +29,8 @@ from scipy.optimize import curve_fit
 from scipy.signal import butter, filtfilt
 
 from utilities.settings import parse_setting
+from utilities.math import gaussian_fwhm, gaussian, sech2_fwhm, transient_1expdec
+
 
 def main():
     pass
@@ -42,6 +44,7 @@ class FastScanProcessor(QtCore.QObject):
     isReady = QtCore.pyqtSignal(int)
     finished = QtCore.pyqtSignal()
     newData = QtCore.pyqtSignal(xr.DataArray)
+    newFit = QtCore.pyqtSignal(dict)
     # newDatadict = QtCore.pyqtSignal(dict)
     error = QtCore.pyqtSignal(Exception)
 
@@ -151,5 +154,28 @@ class FastScanProcessor(QtCore.QObject):
             data_dict['all'] = processor_data
         self.newDatadict.emit(data_dict)
 
-    def fit(self,func,dataarray):
-        pass
+    def fit_sech2(self,da):
+
+        f = sech2_fwhm
+
+
+        # guess = [1, 0, .1, 0]
+        xc = da.time[np.argmax(da.values)]
+        off = da[da.time - xc > .2].mean()
+        a = da.max() - off
+        guess = [a,xc,.1,off]
+        try:
+            popt,pcov = curve_fit(f,da.time,da,p0=guess)
+            fitDict = {'popt':popt,
+                       'pcov':pcov,
+                       'perr':np.sqrt(np.diag(pcov)),
+                       'curve':xr.DataArray(f(da.time,*popt), coords={'time': da.time}, dims='time')
+                       }
+
+            self.newFit.emit(fitDict)
+
+
+        except Exception as e:
+            self.logger.critical('Fitting failed: {}'.format(e))
+
+

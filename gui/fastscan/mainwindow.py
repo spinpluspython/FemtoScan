@@ -234,6 +234,7 @@ class FastScanMainWindow(QMainWindow):
         manager = FastScanThreadManager(self.settings)
         manager.newProcessedData.connect(self.on_processed_data)
         manager.newStreamerData.connect(self.on_streamer_data)
+        manager.newFitResult.connect(self.on_fit_result)
         manager.error.connect(self.on_thread_error)
 
         manager_thread = QtCore.QThread()
@@ -262,6 +263,11 @@ class FastScanMainWindow(QMainWindow):
             self.processor_tick = time.time()
         self.visual_widget.append_curve(data_array)
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
+
+    @QtCore.pyqtSlot(dict)
+    def on_fit_result(self,fitDict):
+        self.pulse_duration_label.setText('{:.3} ps'.format(fitDict['popt'][2]))
+
 
     def on_streamer_data(self, data):
         n_samples = data.shape[1]

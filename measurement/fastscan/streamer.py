@@ -120,7 +120,7 @@ class FastScanStreamer(QtCore.QObject):
                 self.logger.debug('simulating measurement cycle #{} of {}'.format(i, self.iterations))
                 self.simulate_measure()
 
-    def simulate_measure(self, function='sech2_fwhm', args=[.5, -2, 1.2, 1], amplitude=10):
+    def simulate_measure(self, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10):
         data = self.data
         t0 = time.time()
         args_ = args[:]
@@ -170,9 +170,13 @@ class FastScanStreamer(QtCore.QObject):
         data[2, 1::2] = False
         ####
         dt = time.time() - t0
+
+        # QtCore.QTimer.singleShot(max(self.n_samples / 273000 - dt, 0),self.emit_data)
         time.sleep(max(self.n_samples / 273000 - dt, 0))
         self.logger.debug(
             'simulated data in {:.2f} ms - real would take {:.2f} - '
             'outputting array of {}'.format(dt * 1000, self.n_samples / 273, self.data.shape))
 
+        self.newData.emit(self.data)
+    def emit_data(self):
         self.newData.emit(self.data)

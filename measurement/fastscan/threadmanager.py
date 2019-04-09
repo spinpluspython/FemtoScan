@@ -44,6 +44,7 @@ class FastScanThreadManager(QtCore.QObject):
     newStreamerData = QtCore.pyqtSignal(np.ndarray)
     newProcessedData = QtCore.pyqtSignal(xr.DataArray)
     newFitResult = QtCore.pyqtSignal(dict)
+    newAverage = QtCore.pyqtSignal(xr.DataArray)
     acquisitionStopped = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal()
     newData = QtCore.pyqtSignal(np.ndarray)
@@ -56,10 +57,11 @@ class FastScanThreadManager(QtCore.QObject):
         self.logger.info('Created Thread Manager')
 
         self.settings = {'dark_control': False,
-                         'processor_buffer': 42000,
+                         'processor_buffer': 21000,
                          'streamer_buffer': 42000,
-                         'number_of_processors': 4,
-                         'simulate': True
+                         'number_of_processors': 2,
+                         'simulate':True,
+                         'n_averages':1
                          }
 
         if settings is not None:
@@ -69,13 +71,16 @@ class FastScanThreadManager(QtCore.QObject):
         self.__stream_queue = mp.Queue()  # Queue where to store unprocessed streamer data
         self.__processor_queue = mp.Queue()
 
+        self.all_curves = None
+        self.running_average = None
+
         self.data_dict = {}  # dict containing data to be plotted
         self.processed_averages = None  # container for the xarray dataarray of all averages
 
         self.res_from_previous = np.zeros((3, 0))
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(100.)
+        self.timer.setInterval(1.)
         self.timer.timeout.connect(self.on_timer)
         self.timer.start()
         self.lock_data = False
@@ -172,22 +177,32 @@ class FastScanThreadManager(QtCore.QObject):
         """ called when new processed data is available
         This emits data to the main window, so it can be plotted..."""
         # TODO: add save data
-        self.__processor_queue.put(processed_dataarray)
+        # self.__processor_queue.put(processed_dataarray)
+        self.newProcessedData.emit(processed_dataarray)
+
+        if self.all_curves is None:
+            self.all_curves = processed_dataarray
+            self.running_average = processed_dataarray.dropna('time')
+
+        else:
+            self.all_curves = xr.concat([self.all_curves[-self.n_averages+1:], processed_dataarray], 'avg')
+            self.running_average = self.all_curves.mean('avg').dropna('time')
+
         for processor, ready in zip(self.processors, self.processor_ready):
             if ready:
-                processor.fit_sech2(processed_dataarray)
-                print('############## Attempting to fit ###############')
+                processor.fit_sech2(self.running_average)
                 break
         self.newProcessedData.emit(processed_dataarray)
+        self.newAverage.emit(self.running_average)
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self,fitDict):
-        print('######### fit result: {}'.format(fitDict['popt']))
         self.newFitResult.emit(fitDict)
 
     @QtCore.pyqtSlot()
     def reset_data(self):
-        pass  # TODO: make this
+        self.running_average = None
+        self.all_curves = None
 
     @QtCore.pyqtSlot()
     def close(self):
@@ -242,15 +257,6 @@ class FastScanThreadManager(QtCore.QObject):
         self.settings['simulate'] = val
 
     @property
-    def shaker_amplitude(self):
-        return self.settings['shaker_amplitude']
-
-    @shaker_amplitude.setter
-    def shaker_amplitude(self, val):
-        assert 0 < val < 300, 'shaker amplitude must be between 0 and 300 ps'
-        self.settings['shaker_amplitude'] = val
-
-    @property
     def number_of_processors(self):
         return self.settings['number_of_processors']
 
@@ -261,6 +267,15 @@ class FastScanThreadManager(QtCore.QObject):
         self.settings['number_of_processors'] = val
         self.create_processors()
 
+    @property
+    def n_averages(self):
+        return self.settings['n_averages']
+
+    @n_averages.setter
+    def n_averages(self, val):
+        assert val > 0, 'cannot set below 1'
+        self.settings['n_averages'] = val
+        self.logger.debug('n_averages set to {}'.format(val))
 
 if __name__ == '__main__':
     main()

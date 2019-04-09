@@ -92,7 +92,7 @@ class FastScanProcessor(QtCore.QObject):
 
         step = parse_setting('fastscan','shaker_position_step')
         ps_per_step =  parse_setting('fastscan','shaker_ps_per_step')# ADC step size - corresponds to 25fs
-        # consider 0.1 ps step size from shaker digitalized signal,
+        # consider 0.05 ps step size from shaker digitalized signal,
 
         # step_to_time_factor = .05  # should be considering the 2 passes through the shaker
         minpos = shaker_positions.min()
@@ -100,33 +100,31 @@ class FastScanProcessor(QtCore.QObject):
         maxpos = shaker_positions.max()
         max_t = (maxpos / step) * ps_per_step
 
-        n_points = int((maxpos - minpos) / step) + 1
-        time_axis = np.linspace(min_t, max_t, n_points)
-
         position_bins = np.array((shaker_positions - minpos) / step, dtype=int)
+        time_axis, time_bins = make_time_bins(min_t, max_t, ps_per_step)
+
+        result = np.zeros_like(time_axis)
+        norm_array = np.zeros_like(time_axis)
 
         try:
             if use_dark_control:
-                result = np.zeros(n_points, dtype=np.float64)
-                norm_array = np.zeros(n_points, dtype=np.float64)
                 for val, pos, dc in zip(signal, position_bins, dark_control):
                     if dc:
                         result[pos] += val
                         norm_array[pos] += 1.
                     else:
                         result[pos] -= val
-
                 result /= norm_array
             else:
-                result = np.zeros(n_points, dtype=np.float64)
-                norm_array = np.zeros(n_points, dtype=np.float64)
+
                 for val, pos in zip(signal, position_bins):
                     result[pos] += val
                     norm_array[pos] += 1.
                 result /= norm_array
 
-            output = xr.DataArray(result, coords={'time': time_axis}, dims='time')
-
+            res = xr.DataArray(result, coords={'time': time_axis}, dims='time')
+            output = xr.DataArray(res.groupby_bins('time', time_bins).mean(),
+                                  coords={'time': time_axis}, dims='time').dropna('time')
             self.newData.emit(output)
 
             self.logger.debug('Projected {} points to a {} pts array, with {} nans in : {:.2f} ms'.format(
@@ -179,3 +177,7 @@ class FastScanProcessor(QtCore.QObject):
             self.logger.critical('Fitting failed: {}'.format(e))
 
 
+def make_time_bins(min_t,max_t,step):
+    bins = np.arange(step*np.floor(min_t/step)-step/2,step*np.ceil(max_t/step)+step/2,step)
+    axis = bins[:-1]+step/2
+    return axis,bins

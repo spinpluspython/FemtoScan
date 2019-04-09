@@ -29,7 +29,7 @@ import qdarkstyle
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
-    QRadioButton, QLabel, QLineEdit
+    QRadioButton, QLabel, QLineEdit, QSpinBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
@@ -70,9 +70,9 @@ class FastScanMainWindow(QMainWindow):
         self.settings = {'dark_control': False,
                          'processor_buffer': 21000,
                          'streamer_buffer': 42000,
-                         'number_of_processors': 2,
+                         'number_of_processors': 6,
                          'simulate':True,
-                         'shaker_amplitude':10
+                         'n_averages':1
                          }
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
 
@@ -134,6 +134,13 @@ class FastScanMainWindow(QMainWindow):
         self.radio_simulate.clicked.connect(self.toggle_simulation_mode)
         self.toggle_simulation_mode()
 
+        self.n_averages_spinbox = QSpinBox()
+        self.n_averages_spinbox.setMinimum(1)
+        self.n_averages_spinbox.setValue(10)
+        self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
+        acquisition_box_layout.addWidget(QLabel('Averages: '), 2, 0, 1, 1)
+        acquisition_box_layout.addWidget(self.n_averages_spinbox, 2, 1, 1, 1)
+
         # ----------------------------------------------------------------------
         # Settings Box
         # ----------------------------------------------------------------------
@@ -145,26 +152,20 @@ class FastScanMainWindow(QMainWindow):
         settings_items = []
 
         self.spinbox_streamer_buffer = SpinBox(
-            name='samples', layout_list=settings_items,
+            name='streamer buffer', layout_list=settings_items,
             type=int, value=self.settings['streamer_buffer'], step=1, max='max')
         self.spinbox_streamer_buffer.valueChanged.connect(self.set_streamer_buffer)
 
         self.spinbox_processor_buffer = SpinBox(
-            name='samples', layout_list=settings_items,
+            name='processor buffer', layout_list=settings_items,
             type=int, value=self.settings['processor_buffer'], step=1, max='max')
         self.spinbox_processor_buffer.valueChanged.connect(self.set_processor_buffer)
-
-        self.spinbox_shaker_amplitude = SpinBox(
-            name='Shaker Amplitude', layout_list=settings_items,
-            type=float, value=self.settings['shaker_amplitude'], step=.01, suffix='ps')
-        self.spinbox_shaker_amplitude.valueChanged.connect(self.set_shaker_amplitude)
 
         for item in settings_items:
             settings_box_layout.addWidget(labeled_qitem(*item))
         self.label_processor_fps = QLabel('FPS: 0')
         settings_box_layout.addWidget(self.label_processor_fps)
-        self.label_streamer_fps = QLabel('FPS: 0')
-        settings_box_layout.addWidget(self.label_streamer_fps)
+
         self.radio_dark_control = QRadioButton('Dark Control')
         self.radio_dark_control.setChecked(True)
         settings_box_layout.addWidget(self.radio_dark_control)
@@ -184,10 +185,11 @@ class FastScanMainWindow(QMainWindow):
 
         self.fit_off_checkbox = QRadioButton('Off')
         autocorrelation_box_layout.addWidget(self.fit_off_checkbox, 0, 0, 1, 1)
-        self.fit_gauss_checkbox = QRadioButton('Gaussian')
+        self.fit_gauss_checkbox = QRadioButton('last curve')
         autocorrelation_box_layout.addWidget(self.fit_gauss_checkbox, 0, 1, 1, 1)
-        self.fit_sech2_checkbox = QRadioButton('Sech2')
+        self.fit_sech2_checkbox = QRadioButton('average')
         autocorrelation_box_layout.addWidget(self.fit_sech2_checkbox, 0, 2, 1, 1)
+
 
         self.fit_off_checkbox.setChecked(True)
 
@@ -266,6 +268,7 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self,fitDict):
+
         self.pulse_duration_label.setText('{:.3} ps'.format(fitDict['popt'][2]))
 
 
@@ -288,14 +291,14 @@ class FastScanMainWindow(QMainWindow):
     def set_n_samples(self):
         pass
 
-    def set_shaker_amplitude(self, val):
-        pass
+    def set_n_averages(self, val):
+        self.data_manager.n_averages = val
 
     def set_processor_buffer(self, val):
-        pass
+        self.data_manager.processor_buffer_size = val
 
     def set_streamer_buffer(self, val):
-        pass
+        self.data_manager.streamer_buffer_size = val
 
     def save_data(self):
         pass

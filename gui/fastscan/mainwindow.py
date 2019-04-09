@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGro
     QRadioButton, QLabel, QLineEdit
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
-from measurement.fastscan import FastScanThreadManager
+from measurement.fastscan.threadmanager import FastScanThreadManager
 from utilities.qt import SpinBox, labeled_qitem, make_timer
 
 

@@ -29,6 +29,7 @@ from nidaqmx import stream_readers
 from nidaqmx.constants import Edge, AcquisitionType
 
 from utilities.math import gaussian_fwhm, gaussian, sech2_fwhm, transient_1expdec
+from utilities.settings import parse_setting
 
 
 def main():
@@ -119,35 +120,37 @@ class FastScanStreamer(QtCore.QObject):
                 self.logger.debug('simulating measurement cycle #{} of {}'.format(i, self.iterations))
                 self.simulate_measure()
 
-    def simulate_measure(self, function='sech2_fwhm', args=[1, 0, .1, 1], amplitude=10):
+    def simulate_measure(self, function='sech2_fwhm', args=[1, 0, .1, 0], amplitude=10):
         data = self.data
         t0 = time.time()
         args_ = args[:]
+        step = parse_setting('fastscan', 'shaker_position_step')
+        ps_per_step =  parse_setting('fastscan','shaker_ps_per_step')# ADC step size - corresponds to 25fs
 
         if function == 'gauss_fwhm':
             f = gaussian_fwhm
-            step = 0.000152587890625/.05
-            args_[1] *= step  # transform ps to voltage
-            args_[2] *= step  # transform ps to voltage
+            args_[1] *= step/ps_per_step  # transform ps to voltage
+            args_[2] *= step/ps_per_step  # transform ps to voltage
         elif function == 'gaussian':
             f = gaussian
-            step = 0.000152587890625/.05
-            args_[1] *= step  # transform ps to voltage
-            args_[2] *= step  # transform ps to voltage
+            step = parse_setting('fastscan','shaker_position_step')
+            args_[1] *= step/ps_per_step  # transform ps to voltage
+            args_[2] *= step/ps_per_step  # transform ps to voltage
             args_.pop(0)
             args_.pop(-1)
         elif function == 'sech2_fwhm':
             f = sech2_fwhm
-            step = 0.000152587890625/.05
-            args_[1] *= step  # transform ps to voltage
-            args_[2] *= step  # transform ps to voltage
+            step = parse_setting('fastscan','shaker_position_step')
+            args_[1] *= step/ps_per_step  # transform ps to voltage
+            args_[2] *= step/ps_per_step  # transform ps to voltage
         elif function == 'transient_1expdec':
             f = transient_1expdec
-            step = 0.000152587890625/.05
+            step = parse_setting('fastscan','shaker_position_step')
+
             args_ = [2, 20, 1, 1, .01, -10]
-            args_[1] *= step  # transform ps to voltage
-            args_[2] *= step  # transform ps to voltage
-            args_[5] *= step  # transform ps to voltage
+            args_[1] *= step/ps_per_step  # transform ps to voltage
+            args_[2] *= step/ps_per_step  # transform ps to voltage
+            args_[5] *= step/ps_per_step  # transform ps to voltage
 
         else:
             raise NotImplementedError('no funcion called {}, please use gauss or sech2'.format(function))
@@ -156,7 +159,7 @@ class FastScanStreamer(QtCore.QObject):
         noise = np.random.rand(len(n))
         phase = noise[0] * 2 * np.pi
 
-        amplitude = amplitude * 0.000152587890625/.05 * (1 + .02 * np.random.uniform(-1, 1))
+        amplitude = amplitude * step/ps_per_step * (1 + .02 * np.random.uniform(-1, 1))
 
 
         data[0, :] = np.cos(2 * np.pi * n / 30000 + phase) * amplitude / 2  # in volt

@@ -56,3 +56,17 @@ def parse_setting(category, name, settings_file='default'):
         return None
     except:
         return(value)
+
+
+
+if __name__ == '__main__':
+
+    import time
+    t0 = time.time()
+
+    s = parse_setting('fastscan','shaker_position_step')
+    print('{} as {} in {:.3f}ms'.format(s,type(s),(time.time()-t0)*1000))
+
+
+
+

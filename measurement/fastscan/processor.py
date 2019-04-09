@@ -28,6 +28,7 @@ from PyQt5 import QtCore
 from scipy.optimize import curve_fit
 from scipy.signal import butter, filtfilt
 
+from utilities.settings import parse_setting
 
 def main():
     pass
@@ -86,14 +87,15 @@ class FastScanProcessor(QtCore.QObject):
             b, a = butter(2, .001)
             shaker_positions = filtfilt(b, a, shaker_positions)
 
-        step = 0.000152587890625  # ADC step size - corresponds to 25fs
+        step = parse_setting('fastscan','shaker_position_step')
+        ps_per_step =  parse_setting('fastscan','shaker_ps_per_step')# ADC step size - corresponds to 25fs
         # consider 0.1 ps step size from shaker digitalized signal,
 
-        step_to_time_factor = .05  # should be considering the 2 passes through the shaker
+        # step_to_time_factor = .05  # should be considering the 2 passes through the shaker
         minpos = shaker_positions.min()
-        min_t = (minpos / step) * step_to_time_factor
+        min_t = (minpos / step) * ps_per_step
         maxpos = shaker_positions.max()
-        max_t = (maxpos / step) * step_to_time_factor
+        max_t = (maxpos / step) * ps_per_step
 
         n_points = int((maxpos - minpos) / step) + 1
         time_axis = np.linspace(min_t, max_t, n_points)
@@ -148,3 +150,6 @@ class FastScanProcessor(QtCore.QObject):
         except KeyError:
             data_dict['all'] = processor_data
         self.newDatadict.emit(data_dict)
+
+    def fit(self,func,dataarray):
+        pass

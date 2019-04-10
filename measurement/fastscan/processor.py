@@ -183,20 +183,20 @@ class FastScanProcessor(QtCore.QObject):
 
     def fit_sech2(self, da):
 
-        f = sech2_fwhm
-
+        da_ = da.dropna('time')
         # guess = [1, 0, .1, 0]
-        xc = da.time[np.argmax(da.values)]
-        off = da[da.time - xc > .2].mean()
-        a = da.max() - off
+        xc = da_.time[np.argmax(da_.values)]
+        off = da_[da_.time - xc > .2].mean()
+        a = da_.max() - off
         guess = [a, xc, .1, off]
         try:
-            popt, pcov = curve_fit(f, da.time, da, p0=guess)
+            popt, pcov = curve_fit(sech2_fwhm, da_.time, da_, p0=guess)
             fitDict = {'popt': popt,
                        'pcov': pcov,
                        'perr': np.sqrt(np.diag(pcov)),
-                       'curve': xr.DataArray(f(da.time, *popt), coords={'time': da.time}, dims='time')
+                       'curve': xr.DataArray(sech2_fwhm(da_.time, *popt), coords={'time': da_.time}, dims='time')
                        }
+            self.logger.debug('Fitting successful')
 
             self.newFit.emit(fitDict)
 

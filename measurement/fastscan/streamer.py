@@ -22,12 +22,14 @@
 import logging
 import time
 
-import nidaqmx
 import numpy as np
 from PyQt5 import QtCore
-from nidaqmx import stream_readers
-from nidaqmx.constants import Edge, AcquisitionType
-
+try:
+    import nidaqmx
+    from nidaqmx import stream_readers
+    from nidaqmx.constants import Edge, AcquisitionType
+except:
+    print('no nidaqmx package found, only simulations available')
 from utilities.math import gaussian_fwhm, gaussian, sech2_fwhm, transient_1expdec
 from utilities.settings import parse_setting
 
@@ -123,7 +125,7 @@ class FastScanStreamer(QtCore.QObject):
                 self.logger.debug('simulating measurement cycle #{}'.format(i))
                 t0 = time.time()
 
-                self.data = simulate_measure(self.data,function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=300)
+                self.data = simulate_measure(self.data,function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=50)
                 dt = time.time() - t0
                 time.sleep(max(self.n_samples / 273000 - dt, 0))
                 self.newData.emit(self.data)

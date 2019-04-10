@@ -38,8 +38,8 @@ def gaussian_fwhm(x, A,x0, fwhm,c):
     sig = fwhm*2/2.355
     return A*np.exp(-np.power(x - x0, 2.) / (2 * np.power(sig, 2.)))+c
 
-def sin(x,A,f,p):
-    return A* np.sin(x/f + p)
+def sin(x,A,f,p,o):
+    return A* np.sin(x/f + p)+o
 
 def globalcounter(idx,M):
     counterlist = idx[::-1]

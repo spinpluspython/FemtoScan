@@ -22,6 +22,7 @@
 import logging
 import multiprocessing as mp
 import os
+import time
 
 import numpy as np
 import xarray as xr
@@ -94,7 +95,7 @@ class FastScanThreadManager(QtCore.QObject):
         for processor, ready in zip(self.processors, self.processor_ready):
 
             if ready and not self.__stream_queue.empty():
-                self.logger.debug('processing data with processor {}'.format(processor.id))
+                self.logger.debug('processing data with processor {} - queue lenght {}'.format(processor.id,self.__stream_queue.qsize()))
                 processor.project(self.__stream_queue.get(), use_dark_control=self.dark_control)
 
 
@@ -117,7 +118,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def stop_streamer(self):
-        self.logger.debug('FastScan Streamer is stopping.')
+        self.logger.debug('\n\nFastScan Streamer is stopping.\n\n')
         self.streamer.stop_acquisition()
         self.streamer_thread.exit()
 
@@ -179,7 +180,7 @@ class FastScanThreadManager(QtCore.QObject):
         # TODO: add save data
         # self.__processor_queue.put(processed_dataarray)
         self.newProcessedData.emit(processed_dataarray)
-
+        t0 = time.time()
         if self.all_curves is None:
             self.all_curves = processed_dataarray
             self.running_average = processed_dataarray.dropna('time')
@@ -194,6 +195,7 @@ class FastScanThreadManager(QtCore.QObject):
                 break
         self.newProcessedData.emit(processed_dataarray)
         self.newAverage.emit(self.running_average)
+        self.logger.debug('calculated average in {:.2f} ms'.format((time.time()-t0)*1000))
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self,fitDict):

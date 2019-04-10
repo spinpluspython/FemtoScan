@@ -23,9 +23,9 @@ import logging
 import time
 
 import numpy as np
-import xarray as xr
 import pyqtgraph as pg
 import qdarkstyle
+import xarray as xr
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
@@ -66,14 +66,14 @@ class FastScanMainWindow(QMainWindow):
         #   define attributes    #
         #########################
 
-
         self.settings = {'dark_control': False,
-                         'processor_buffer': 21000,
+                         'processor_buffer': 42000,
                          'streamer_buffer': 42000,
                          'number_of_processors': 6,
-                         'simulate':True,
-                         'n_averages':1
+                         'simulate': True,
+                         'n_averages': 1
                          }
+
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
 
         self.fps_l = []
@@ -81,7 +81,6 @@ class FastScanMainWindow(QMainWindow):
         self.main_clock = make_timer(1000. / 60, self.on_main_clock, start=True)
         self.setupUi()
         self.show()
-
 
     def setupUi(self):
         central_widget = QWidget(self)
@@ -190,7 +189,6 @@ class FastScanMainWindow(QMainWindow):
         self.fit_sech2_checkbox = QRadioButton('average')
         autocorrelation_box_layout.addWidget(self.fit_sech2_checkbox, 0, 2, 1, 1)
 
-
         self.fit_off_checkbox.setChecked(True)
 
         font = QFont()
@@ -267,10 +265,9 @@ class FastScanMainWindow(QMainWindow):
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
 
     @QtCore.pyqtSlot(dict)
-    def on_fit_result(self,fitDict):
+    def on_fit_result(self, fitDict):
 
         self.pulse_duration_label.setText('{:.3} ps'.format(fitDict['popt'][2]))
-
 
     def on_streamer_data(self, data):
         n_samples = data.shape[1]

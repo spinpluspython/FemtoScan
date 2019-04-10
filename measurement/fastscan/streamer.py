@@ -57,6 +57,11 @@ class FastScanStreamer(QtCore.QObject):
         self.dark_control = dark_control
         self.should_stop = True
 
+        self.sim_clock = QtCore.QTimer()
+        self.sim_clock.setInterval(n_samples / 273000)
+        self.sim_clock.timeout.connect(self.on_sim_clock)
+        # self.sim_clock.start()
+
     @QtCore.pyqtSlot()
     def start_acquisition(self):
         if self.simulate:
@@ -107,6 +112,8 @@ class FastScanStreamer(QtCore.QObject):
         self.newData.emit(self.data)
 
     def start_simulated_acquisition(self):
+        self.logger.debug('Starting simulation')
+
         self.should_stop = False
 
         if self.iterations is None:
@@ -114,69 +121,83 @@ class FastScanStreamer(QtCore.QObject):
             while not self.should_stop:
                 i += 1
                 self.logger.debug('simulating measurement cycle #{}'.format(i))
-                self.simulate_measure()
+                t0 = time.time()
+
+                self.data = simulate_measure(self.data,function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=300)
+                dt = time.time() - t0
+                time.sleep(max(self.n_samples / 273000 - dt, 0))
+                self.newData.emit(self.data)
+
+                self.newData.emit(self.data)
+                self.logger.debug(
+                    'simulated data in {:.2f} ms - real would take {:.2f} - '
+                    'outputting array of shape {}'.format(dt * 1000,
+                                                    self.n_samples / 273,
+                                                    self.data.shape))
         else:
             for i in range(self.iterations):
                 self.logger.debug('simulating measurement cycle #{} of {}'.format(i, self.iterations))
                 self.simulate_measure()
 
-    def simulate_measure(self, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10):
-        data = self.data
-        t0 = time.time()
-        args_ = args[:]
+    def on_sim_clock(self):
+        if not self.should_stop:
+            self.logger.debug('simulating measurement cycle')
+            t0 = time.time()
+
+            self.data = simulate_measure(self.data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10)
+            dt = time.time() - t0
+            time.sleep(max(self.n_samples / 273000 - dt, 0))
+            self.newData.emit(self.data)
+            self.logger.debug(
+                'simulated data in {:.2f} ms - real would take {:.2f} - '
+                'outputting array of shape {}'.format(dt * 1000,
+                                                      self.n_samples / 273,
+                                                      self.data.shape))
+
+
+def simulate_measure(data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10):
+    args_ = args[:]
+    step = parse_setting('fastscan', 'shaker_position_step')
+    ps_per_step = parse_setting('fastscan', 'shaker_ps_per_step')  # ADC step size - corresponds to 25fs
+
+    if function == 'gauss_fwhm':
+        f = gaussian_fwhm
+        args_[1] *= step / ps_per_step  # transform ps to voltage
+        args_[2] *= step / ps_per_step  # transform ps to voltage
+    elif function == 'gaussian':
+        f = gaussian
         step = parse_setting('fastscan', 'shaker_position_step')
-        ps_per_step =  parse_setting('fastscan','shaker_ps_per_step')# ADC step size - corresponds to 25fs
+        args_[1] *= step / ps_per_step  # transform ps to voltage
+        args_[2] *= step / ps_per_step  # transform ps to voltage
+        args_.pop(0)
+        args_.pop(-1)
+    elif function == 'sech2_fwhm':
+        f = sech2_fwhm
+        step = parse_setting('fastscan', 'shaker_position_step')
+        args_[1] *= step / ps_per_step  # transform ps to voltage
+        args_[2] *= step / ps_per_step  # transform ps to voltage
+    elif function == 'transient_1expdec':
+        f = transient_1expdec
+        step = parse_setting('fastscan', 'shaker_position_step')
 
-        if function == 'gauss_fwhm':
-            f = gaussian_fwhm
-            args_[1] *= step/ps_per_step  # transform ps to voltage
-            args_[2] *= step/ps_per_step  # transform ps to voltage
-        elif function == 'gaussian':
-            f = gaussian
-            step = parse_setting('fastscan','shaker_position_step')
-            args_[1] *= step/ps_per_step  # transform ps to voltage
-            args_[2] *= step/ps_per_step  # transform ps to voltage
-            args_.pop(0)
-            args_.pop(-1)
-        elif function == 'sech2_fwhm':
-            f = sech2_fwhm
-            step = parse_setting('fastscan','shaker_position_step')
-            args_[1] *= step/ps_per_step  # transform ps to voltage
-            args_[2] *= step/ps_per_step  # transform ps to voltage
-        elif function == 'transient_1expdec':
-            f = transient_1expdec
-            step = parse_setting('fastscan','shaker_position_step')
+        args_ = [2, 20, 1, 1, .01, -10]
+        args_[1] *= step / ps_per_step  # transform ps to voltage
+        args_[2] *= step / ps_per_step  # transform ps to voltage
+        args_[5] *= step / ps_per_step  # transform ps to voltage
+    else:
+        raise NotImplementedError('no funcion called {}, please use gauss or sech2'.format(function))
+    #########
+    n = np.arange(len(data[0]))
+    noise = np.random.rand(len(n))
+    phase = noise[0] * 2 * np.pi
 
-            args_ = [2, 20, 1, 1, .01, -10]
-            args_[1] *= step/ps_per_step  # transform ps to voltage
-            args_[2] *= step/ps_per_step  # transform ps to voltage
-            args_[5] *= step/ps_per_step  # transform ps to voltage
+    amplitude = amplitude * step / ps_per_step * (1 + .02 * np.random.uniform(-1, 1))
 
-        else:
-            raise NotImplementedError('no funcion called {}, please use gauss or sech2'.format(function))
-        #########
-        n = np.arange(len(data[0]))
-        noise = np.random.rand(len(n))
-        phase = noise[0] * 2 * np.pi
+    data[0, :] = np.cos(2 * np.pi * n / 30000 + phase) * amplitude / 2  # in volt
 
-        amplitude = amplitude * step/ps_per_step * (1 + .02 * np.random.uniform(-1, 1))
+    data[1, 1::2] = data[0, 1::2] / 3
+    data[1, ::2] = f(data[0, ::2], *args_) + noise[::2] + data[0, ::2] / 3
+    data[2, ::2] = True
+    data[2, 1::2] = False
 
-
-        data[0, :] = np.cos(2 * np.pi * n / 30000 + phase) * amplitude / 2  # in volt
-
-        data[1, 1::2] = data[0, 1::2] / 3
-        data[1, ::2] = f(data[0, ::2], *args_) + noise[::2] + data[0, ::2] / 3
-        data[2, ::2] = True
-        data[2, 1::2] = False
-        ####
-        dt = time.time() - t0
-
-        # QtCore.QTimer.singleShot(max(self.n_samples / 273000 - dt, 0),self.emit_data)
-        time.sleep(max(self.n_samples / 273000 - dt, 0))
-        self.logger.debug(
-            'simulated data in {:.2f} ms - real would take {:.2f} - '
-            'outputting array of {}'.format(dt * 1000, self.n_samples / 273, self.data.shape))
-
-        self.newData.emit(self.data)
-    def emit_data(self):
-        self.newData.emit(self.data)
+    return data

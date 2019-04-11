@@ -23,7 +23,7 @@ import logging
 import multiprocessing as mp
 import os
 import time
-
+import h5py
 import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
@@ -58,11 +58,11 @@ class FastScanThreadManager(QtCore.QObject):
         self.logger.info('Created Thread Manager')
 
         self.settings = {'dark_control': False,
-                         'processor_buffer': 21000,
-                         'streamer_buffer': 42000,
+                         'processor_buffer': 14000,
+                         'streamer_buffer': 14000,
                          'number_of_processors': 2,
                          'simulate':True,
-                         'n_averages':1
+                         'n_averages':1,
                          }
 
         if settings is not None:
@@ -205,6 +205,20 @@ class FastScanThreadManager(QtCore.QObject):
     def reset_data(self):
         self.running_average = None
         self.all_curves = None
+
+    def save_data(self,filename):
+        if not '.h5' in filename:
+            filename += '.h5'
+
+        with h5py.File(filename, 'w') as f:
+            # f.create_dataset('/raw/spos', data=data[0], shape=(42000,), dtype=float)
+            # f.create_dataset('/raw/signal', data=data[1], shape=(42000,), dtype=float)
+            # f.create_dataset('/raw/dark_control', data=data[2], shape=(42000,), dtype=float)
+
+            f.create_dataset('/all_data/data', data=self.all_curves.values)
+            f.create_dataset('/all_data/time_axis', data=self.all_curves.time)
+            f.create_dataset('/avg/data', data=self.running_average.values)
+            f.create_dataset('/avg/time_axis', data=self.running_average.time)
 
     @QtCore.pyqtSlot()
     def close(self):

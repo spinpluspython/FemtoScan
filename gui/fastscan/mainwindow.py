@@ -67,11 +67,11 @@ class FastScanMainWindow(QMainWindow):
         #########################
 
         self.settings = {'dark_control': False,
-                         'processor_buffer': 42000,
-                         'streamer_buffer': 42000,
+                         'processor_buffer': 14000,
+                         'streamer_buffer': 14000,
                          'number_of_processors': 6,
                          'simulate': True,
-                         'n_averages': 1
+                         'n_averages': 1,
                          }
 
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
@@ -298,7 +298,8 @@ class FastScanMainWindow(QMainWindow):
         self.data_manager.streamer_buffer_size = val
 
     def save_data(self):
-        pass
+        filename = self.save_name_ledit.text()
+        self.data_manager.save_data(str(filename))
 
     @QtCore.pyqtSlot(Exception)
     def on_thread_error(self, e):

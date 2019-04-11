@@ -56,7 +56,7 @@ class FastScanStreamer(QtCore.QObject):
         self.iterations = iterations
         self.data = np.zeros((3, n_samples))
         self.acquisition_mode = parse_setting('fastscan','acquisition_mode')
-        self.simulate = simulate
+        self.simulate = parse_setting('fastscan','simulate') #todo: remove reference for simulation from everywhere else
         self.dark_control = dark_control
         self.should_stop = True
 
@@ -137,7 +137,7 @@ class FastScanStreamer(QtCore.QObject):
             while True:
                 i += 1
                 self.logger.debug('measuring cycle {}'.format(i))
-                self.data = task.read(number_of_samples_per_channel=self.n_samples)
+                self.data = np.array(task.read(number_of_samples_per_channel=self.n_samples))
 
                 self.newData.emit(self.data)
 

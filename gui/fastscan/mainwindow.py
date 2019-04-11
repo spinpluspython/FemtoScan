@@ -36,13 +36,6 @@ from measurement.fastscan.threadmanager import FastScanThreadManager
 from utilities.qt import SpinBox, labeled_qitem, make_timer
 from utilities.settings import parse_category, parse_setting, write_setting
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
-
 
 class FastScanMainWindow(QMainWindow):
 
@@ -66,7 +59,7 @@ class FastScanMainWindow(QMainWindow):
         #   define attributes    #
         #########################
 
-        self.settings = parse_category('fastscan') # import all
+        self.settings = parse_category('fastscan')  # import all
 
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
 
@@ -122,7 +115,7 @@ class FastScanMainWindow(QMainWindow):
         self.reset_button.setEnabled(True)
 
         self.radio_simulate = QRadioButton('Simulate')
-        self.radio_simulate.setChecked(parse_setting('fastscan','simulate'))
+        self.radio_simulate.setChecked(parse_setting('fastscan', 'simulate'))
         acquisition_box_layout.addWidget(self.radio_simulate, 1, 0, 1, 1)
         self.radio_simulate.clicked.connect(self.toggle_simulation_mode)
 
@@ -156,7 +149,7 @@ class FastScanMainWindow(QMainWindow):
         settings_box_layout.addWidget(self.label_processor_fps)
 
         self.radio_dark_control = QRadioButton('Dark Control')
-        self.radio_dark_control.setChecked(parse_setting('fastscan','dark_control'))
+        self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
 
         self.apply_settings_button = QPushButton('Apply')
@@ -233,10 +226,10 @@ class FastScanMainWindow(QMainWindow):
         return manager, manager_thread
 
     def toggle_simulation_mode(self):
-        write_setting(self.radio_simulate.isChecked(), 'fastscan','simulate')
+        write_setting(self.radio_simulate.isChecked(), 'fastscan', 'simulate')
 
     def toggle_darkcontrol_mode(self):
-        write_setting(self.radio_simulate.isChecked(), 'fastscan','dark_control')
+        write_setting(self.radio_simulate.isChecked(), 'fastscan', 'dark_control')
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
@@ -295,3 +288,7 @@ class FastScanMainWindow(QMainWindow):
         self.logger.info('Closing window: terminating all threads.')
         self.data_manager.close()
         self.data_manager_thread.exit()
+
+
+if __name__ == '__main__':
+    pass

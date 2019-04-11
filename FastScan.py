@@ -19,7 +19,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import sys
 #
 # import nidaqmx
 # import numpy as np
@@ -29,15 +28,14 @@ import sys
 #     QGroupBox
 # from nidaqmx.constants import Edge, AcquisitionType
 
-import sys
 import logging
+import sys
 from logging.config import fileConfig
+
 from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtWidgets import  QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication
 
-from utilities import math
 from gui.fastscan.mainwindow import FastScanMainWindow
-
 
 
 def main():
@@ -47,8 +45,7 @@ def main():
     # Set the exception hook to our wrapping function
     sys.excepthook = my_exception_hook
 
-
-    #create main logger
+    # create main logger
     fileConfig('./cfg/logging_config.ini')
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -68,152 +65,6 @@ def main():
         app.exec_()
     except:
         print('exiting')
-
-class DEPRECATED_FastScanMainWindow(QMainWindow):
-    _SIMULATE = True
-
-    def __init__(self):
-        super(DEPRECATED_FastScanMainWindow, self).__init__()
-        self.setWindowTitle('Fast Scan')
-        self.setGeometry(100, 50, 1024, 768)
-
-        self.status_bar = self.statusBar()
-        self.status_bar.showMessage('ready')
-
-        # set the cool dark theme and other plotting settings
-        # self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-        pg.setConfigOption('background', .1)
-        pg.setConfigOption('foreground', .9)
-        pg.setConfigOptions(antialias=True)
-
-        self.main_clock = QTimer()
-        self.set_clock_frequency(2)
-        # self.main_clock.setInterval(1. / 60)
-        self.main_clock.timeout.connect(self.on_timer)
-        self.main_clock_running = False
-
-        self.setupUi()
-
-    def setupUi(self):
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-        self.central_layout = QHBoxLayout()
-        self.central_widget.setLayout(self.central_layout)
-        # self.main_layout = QGridLayout(self)
-        # self.central_widget.setLayout(self.main_layout)
-
-        self.control_widget = QWidget()
-        self.central_layout.addWidget(self.control_widget)
-        self.control_layout = QVBoxLayout()
-        self.control_widget.setLayout(self.control_layout)
-        self.visual_widget = QWidget()
-        self.central_layout.addWidget(self.visual_widget)
-
-        self.visual_layout = QGridLayout()
-        self.visual_widget.setLayout(self.visual_layout)
-
-        self.plot_area = pg.PlotWidget(name='plot')
-        self.visual_layout.addWidget(self.plot_area, 0, 0, 5, 5)
-        self.setup_plot_area()
-
-
-        self.controlbox = QGroupBox('controls')
-        self.control_layout.addWidget(self.controlbox)
-        self.controlbox_layout = QGridLayout()
-        self.controlbox.setLayout(self.controlbox_layout)
-
-        self.start_stop_button = QPushButton('start/stop')
-        self.controlbox_layout.addWidget(self.start_stop_button, 0, 0, 1, 1)
-        self.start_stop_button.clicked.connect(self.start_stop_timer)
-
-        #
-        # self.fit_checkbox = QRadioButton('fit')
-        # self.controlbox_layout.addWidget(self.fit_checkbox, 1, 0, 1, 1)
-        # self.fit_button = QPushButton('force refit')
-        # self.controlbox_layout.addWidget(self.fit_button, 1, 1, 1, 1)
-        # self.fit_button.clicked.connect(self.fit_peaks)
-        #
-        # self.resultsbox = QGroupBox('Fit Results')
-        # self.main_layout.addWidget(self.resultsbox, 1, 3, 1, 2)
-        # self.resultsbox_layout = QGridLayout()
-        # self.resultsbox.setLayout(self.resultsbox_layout)
-        #
-        # self.fit_results_text = QLabel('Start fitting to show results')
-        # self.fit_results_text.setFont(QFont("Times", 8, QFont.Bold))
-        # self.resultsbox_layout.addWidget(self.fit_results_text, 0, 0)
-        # self.fit_mainresults_text = QLabel('')
-        # self.fit_mainresults_text.setFont(QFont("Times", 12, QFont.Bold))
-        # self.resultsbox_layout.addWidget(self.fit_mainresults_text, 0, 1)
-        #
-        # # self.plt_widget = MatplotlibWidget.MatplotlibWidget()
-        # # self.main_layout.addWidget(self.plt_widget,0,0,5,5)
-        # # self.subplot = self.plt_widget.getFigure().add_subplot(111)
-
-    def setup_plot_area(self):
-        self.plot = self.plot_area.plot()
-        self.plot.setPen(pg.mkPen(255 , 255, 255))
-        self.plot_area.setLabel('left', 'Value', units='V')
-        self.plot_area.setLabel('bottom', 'Time', units='s')
-        # self.plot_area.setXRange(0, 2)
-        # self.plot_area.setYRange(0, 1e-10)
-        # rect = QtGui.QGraphicsRectItem(QtCore.QRectF(0, 0, 1, 5))
-        # rect.setPen(pg.mkPen(100, 200, 100))
-        # self.plot_area.addItem(rect)
-
-    def set_clock_frequency(self, frequency=2):
-        self.main_clock.setInterval(1./frequency)
-
-    def start_stop_timer(self):
-        if self.main_clock_running:
-            self.main_clock.stop()
-            self.main_clock_running = False
-            self.status_bar.showMessage('Main Clock Started')
-        else:
-            self.main_clock.start()
-            self.main_clock_running = True
-            self.status_bar.showMessage('Main Clock Stopped')
-
-    def on_timer(self):
-
-        shaker_position, signal,n = self.measure()
-        self.draw_plot(n,shaker_position)
-
-    def draw_plot(self,xd,yd):
-        self.plot.setData(x=xd,y=yd)
-
-
-
-
-
-    def measure(self, laser_freq=300000, shaker_freq=10, n_periods=2):
-        if self._SIMULATE:
-            N_samples = int((laser_freq / shaker_freq) * n_periods)
-            n = np.linspace(0, 1, N_samples)
-            shaker_position = math.sin(n, 1, .1, np.random.rand() * np.pi)
-            signal = math.sin(n, 1, 10, np.random.rand() * np.pi) / 4
-            return shaker_position, signal,n
-        else:
-            with nidaqmx.Task() as task:
-                N_samples = int((laser_freq / shaker_freq) * n_periods)
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
-                task.timing.cfg_samp_clk_timing(100000, samps_per_chan=N_samples, source="/Dev1/PFI0",
-                                                active_edge=Edge.RISING,
-                                                sample_mode=AcquisitionType.FINITE)  # external clock chanel
-                task.start()
-                task.wait_until_done()
-                data = task.read(number_of_samples_per_channel=N_samples)
-                shaker_position = data[0]
-                signal = data[1]
-                dark_control = data[2]
-            return shaker_position, signal
-
-    def closeEvent(self, event):
-        # geometry = self.saveGeometry()
-        # self.qsettings.setValue('geometry', geometry)
-        super(FastScanMainWindow, self).closeEvent(event)
-        print('quitted properly')
 
 
 if __name__ == '__main__':

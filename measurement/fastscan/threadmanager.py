@@ -23,18 +23,15 @@ import logging
 import multiprocessing as mp
 import os
 import time
+
 import h5py
 import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
 
-from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.processor import FastScanProcessor
+from measurement.fastscan.streamer import FastScanStreamer
 from utilities.settings import parse_setting, parse_category, write_setting
-
-
-def main():
-    pass
 
 
 class FastScanThreadManager(QtCore.QObject):
@@ -80,7 +77,8 @@ class FastScanThreadManager(QtCore.QObject):
         for processor, ready in zip(self.processors, self.processor_ready):
 
             if ready and not self.__stream_queue.empty():
-                self.logger.debug('processing data with processor {} - queue lenght {}'.format(processor.id,self.__stream_queue.qsize()))
+                self.logger.debug('processing data with processor {} - queue lenght {}'.format(processor.id,
+                                                                                               self.__stream_queue.qsize()))
                 processor.project(self.__stream_queue.get(), use_dark_control=self.dark_control)
             elif self.should_stop:
                 self.streamer_thread.exit()
@@ -110,7 +108,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.should_stop = True
 
     @QtCore.pyqtSlot(np.ndarray)
-    def on_streamer_data(self, streamer_data): #TODO: remove or change the queue method
+    def on_streamer_data(self, streamer_data):  # TODO: remove or change the queue method
         """divide data in smaller chunks, for faster data processing.
 
         Splits data from streamer in chunks whose size is defined by
@@ -133,7 +131,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.logger.debug('added {} chunks to queue'.format(n_chunks))
         self.newStreamerData.emit(streamer_data)
 
-    def create_processors(self): # TODO: change to QTrheadPool
+    def create_processors(self):  # TODO: change to QTrheadPool
         """ create n_processors number of threads for processing streamer data"""
         if not hasattr(self, 'processor_ready'):
             self.processors = []
@@ -172,7 +170,7 @@ class FastScanThreadManager(QtCore.QObject):
             self.running_average = processed_dataarray.dropna('time')
 
         else:
-            self.all_curves = xr.concat([self.all_curves[-self.n_averages+1:], processed_dataarray], 'avg')
+            self.all_curves = xr.concat([self.all_curves[-self.n_averages + 1:], processed_dataarray], 'avg')
             self.running_average = self.all_curves.mean('avg').dropna('time')
 
         for processor, ready in zip(self.processors, self.processor_ready):
@@ -181,19 +179,19 @@ class FastScanThreadManager(QtCore.QObject):
                 break
         self.newProcessedData.emit(processed_dataarray)
         self.newAverage.emit(self.running_average)
-        self.logger.debug('calculated average in {:.2f} ms'.format((time.time()-t0)*1000))
+        self.logger.debug('calculated average in {:.2f} ms'.format((time.time() - t0) * 1000))
 
     @QtCore.pyqtSlot(dict)
-    def on_fit_result(self,fitDict):
+    def on_fit_result(self, fitDict):
         self.newFitResult.emit(fitDict)
 
     @QtCore.pyqtSlot()
     def reset_data(self):
-        #TODO: add popup check window
+        # TODO: add popup check window
         self.running_average = None
         self.all_curves = None
 
-    def save_data(self,filename):
+    def save_data(self, filename):
         if not '.h5' in filename:
             filename += '.h5'
 
@@ -217,22 +215,22 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def dark_control(self):
-        return parse_setting('fastscan','dark_control')
+        return parse_setting('fastscan', 'dark_control')
 
     @dark_control.setter
     def dark_control(self, val):
         assert isinstance(val, bool), 'dark control must be boolean.'
-        write_setting(val, 'fastscan','dark_control')
+        write_setting(val, 'fastscan', 'dark_control')
 
     @property
     def n_processors(self):
-        return parse_setting('fastscan','n_processors')
+        return parse_setting('fastscan', 'n_processors')
 
     @n_processors.setter
     def n_processors(self, val):
         assert isinstance(val, int), 'dark control must be boolean.'
         assert val < os.cpu_count(), 'Too many processors, cant be more than cpu count: {}'.format(os.cpu_count())
-        write_setting(val, 'fastscan','n_processors')
+        write_setting(val, 'fastscan', 'n_processors')
         self.create_processors()
 
     @property
@@ -240,26 +238,26 @@ class FastScanThreadManager(QtCore.QObject):
         try:
             return self._n_averages
         except:
-            self._n_averages = parse_setting('fastscan','n_averages')
+            self._n_averages = parse_setting('fastscan', 'n_averages')
             return self._n_averages
 
     @n_averages.setter
     def n_averages(self, val):
         assert val > 0, 'cannot set below 1'
-        write_setting(val, 'fastscan','n_averages')
+        write_setting(val, 'fastscan', 'n_averages')
         self._n_averages = val
         self.logger.debug('n_averages set to {}'.format(val))
 
     @property
     def n_samples(self):
-        return parse_setting('fastscan','n_samples')
+        return parse_setting('fastscan', 'n_samples')
 
     @n_samples.setter
     def n_samples(self, val):
         assert val > 0, 'cannot set below 1'
-        write_setting(val, 'fastscan','n_samples')
+        write_setting(val, 'fastscan', 'n_samples')
         self.logger.debug('n_samples set to {}'.format(val))
 
 
 if __name__ == '__main__':
-    main()
+    pass

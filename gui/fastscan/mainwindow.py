@@ -34,7 +34,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGro
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
 from utilities.qt import SpinBox, labeled_qitem, make_timer
-
+from utilities.settings import parse_category, parse_setting, write_setting
 
 def main():
     pass
@@ -66,13 +66,7 @@ class FastScanMainWindow(QMainWindow):
         #   define attributes    #
         #########################
 
-        self.settings = {'dark_control': False,
-                         'processor_buffer': 14000,
-                         'streamer_buffer': 14000,
-                         'number_of_processors': 6,
-                         'simulate': True,
-                         'n_averages': 1,
-                         }
+        self.settings = parse_category('fastscan') # import all
 
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
 
@@ -128,15 +122,16 @@ class FastScanMainWindow(QMainWindow):
         self.reset_button.setEnabled(True)
 
         self.radio_simulate = QRadioButton('Simulate')
-        self.radio_simulate.setChecked(True)
+        self.radio_simulate.setChecked(parse_setting('fastscan','simulate'))
         acquisition_box_layout.addWidget(self.radio_simulate, 1, 0, 1, 1)
         self.radio_simulate.clicked.connect(self.toggle_simulation_mode)
-        self.toggle_simulation_mode()
 
         self.n_averages_spinbox = QSpinBox()
         self.n_averages_spinbox.setMinimum(1)
         self.n_averages_spinbox.setValue(10)
-        self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
+        # self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
+        self.n_averages_spinbox.valueChanged[int].connect(lambda: write_setting())
+
         acquisition_box_layout.addWidget(QLabel('Averages: '), 2, 0, 1, 1)
         acquisition_box_layout.addWidget(self.n_averages_spinbox, 2, 1, 1, 1)
 
@@ -150,15 +145,10 @@ class FastScanMainWindow(QMainWindow):
 
         settings_items = []
 
-        self.spinbox_streamer_buffer = SpinBox(
-            name='streamer buffer', layout_list=settings_items,
-            type=int, value=self.settings['streamer_buffer'], step=1, max='max')
-        self.spinbox_streamer_buffer.valueChanged.connect(self.set_streamer_buffer)
-
-        self.spinbox_processor_buffer = SpinBox(
-            name='processor buffer', layout_list=settings_items,
-            type=int, value=self.settings['processor_buffer'], step=1, max='max')
-        self.spinbox_processor_buffer.valueChanged.connect(self.set_processor_buffer)
+        self.spinbox_n_samples = SpinBox(
+            name='n° of samples', layout_list=settings_items,
+            type=int, value=self.settings['n_samples'], step=1, max='max')
+        self.spinbox_n_samples.valueChanged.connect(self.set_n_samples)
 
         for item in settings_items:
             settings_box_layout.addWidget(labeled_qitem(*item))
@@ -166,9 +156,8 @@ class FastScanMainWindow(QMainWindow):
         settings_box_layout.addWidget(self.label_processor_fps)
 
         self.radio_dark_control = QRadioButton('Dark Control')
-        self.radio_dark_control.setChecked(True)
+        self.radio_dark_control.setChecked(parse_setting('fastscan','dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
-        self.toggle_darkcontrol_mode()
 
         self.apply_settings_button = QPushButton('Apply')
         settings_box_layout.addWidget(self.apply_settings_button)
@@ -231,7 +220,7 @@ class FastScanMainWindow(QMainWindow):
 
     def initialize_data_manager(self):
 
-        manager = FastScanThreadManager(self.settings)
+        manager = FastScanThreadManager()
         manager.newProcessedData.connect(self.on_processed_data)
         manager.newStreamerData.connect(self.on_streamer_data)
         manager.newFitResult.connect(self.on_fit_result)
@@ -244,10 +233,10 @@ class FastScanMainWindow(QMainWindow):
         return manager, manager_thread
 
     def toggle_simulation_mode(self):
-        self.data_manager.simulate = self.radio_simulate.isChecked()
+        write_setting(self.radio_simulate.isChecked(), 'fastscan','simulate')
 
     def toggle_darkcontrol_mode(self):
-        self.data_manager.dark_control = self.radio_dark_control.isChecked()
+        write_setting(self.radio_simulate.isChecked(), 'fastscan','dark_control')
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
@@ -285,17 +274,12 @@ class FastScanMainWindow(QMainWindow):
     def reset_data(self):
         self.data_manager.reset_data()
 
-    def set_n_samples(self):
-        pass
+    def set_n_samples(self, var):
+        self.data_manager.n_samples = var
 
+    @QtCore.pyqtSlot(int)
     def set_n_averages(self, val):
         self.data_manager.n_averages = val
-
-    def set_processor_buffer(self, val):
-        self.data_manager.processor_buffer_size = val
-
-    def set_streamer_buffer(self, val):
-        self.data_manager.streamer_buffer_size = val
 
     def save_data(self):
         filename = self.save_name_ledit.text()
@@ -305,27 +289,6 @@ class FastScanMainWindow(QMainWindow):
     def on_thread_error(self, e):
         self.logger.critical('Thread error: {}'.format(e))
         raise e
-
-    def apply_setings(self):
-        try:
-            streamer_buffer = self.spinbox_streamer_buffer.value()
-            self.data_manager.streamer_buffer_size = streamer_buffer
-            processor_buffer = self.spinbox_processor_buffer.value()
-            self.data_manager.processor_buffer_size = processor_buffer
-
-            shaker_amplitude = self.spinbox_streamer_buffer.value()
-            self.data_manager.shaker_amplitude = shaker_amplitude
-
-            dark_control = self.radio_dark_control.isChecked()
-            self.data_manager.toggle_darkcontrol(dark_control)
-
-            self.settings = {'streamer_buffer': streamer_buffer,
-                             'processor_buffer': processor_buffer,
-                             'shaker_amplitude': shaker_amplitude,
-                             'dark_control': dark_control
-                             }
-        except Exception as e:
-            self.logger.warning('error while attemting to apply setings: \n\t{}'.format(e))
 
     def closeEvent(self, event):
         super(FastScanMainWindow, self).closeEvent(event)

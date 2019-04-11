@@ -31,7 +31,7 @@ try:
 except:
     print('no nidaqmx package found, only simulations available')
 from utilities.math import gaussian_fwhm, gaussian, sech2_fwhm, transient_1expdec
-from utilities.settings import parse_setting
+from utilities.settings import parse_setting, parse_category
 
 
 def main():
@@ -47,23 +47,17 @@ class FastScanStreamer(QtCore.QObject):
     newData = QtCore.pyqtSignal(np.ndarray)
     error = QtCore.pyqtSignal(Exception)
 
-    def __init__(self, n_samples, iterations=None, dark_control=True, simulate=False):
+    def __init__(self, ):
         super().__init__()
         self.logger = logging.getLogger('{}.FastScanStreamer'.format(__name__))
         self.logger.info('Created FastScanStreamer')
 
-        self.n_samples = n_samples
-        self.iterations = iterations
-        self.data = np.zeros((3, n_samples))
-        self.acquisition_mode = parse_setting('fastscan','acquisition_mode')
-        self.simulate = parse_setting('fastscan','simulate') #todo: remove reference for simulation from everywhere else
-        self.dark_control = dark_control
-        self.should_stop = True
+        for k,v in parse_category('fastscan').items():
+            setattr(self,k,v)
 
-        self.sim_clock = QtCore.QTimer()
-        self.sim_clock.setInterval(n_samples / 273000)
-        self.sim_clock.timeout.connect(self.on_sim_clock)
-        # self.sim_clock.start()
+        self.data = np.zeros((3, self.n_samples))
+
+        self.should_stop = True
 
     @QtCore.pyqtSlot()
     def start_acquisition(self):
@@ -102,98 +96,71 @@ class FastScanStreamer(QtCore.QObject):
 
                 self.should_stop = False
                 i = 0
-                while True:
+                while self.should_stop:
                     i += 1
                     self.logger.debug('measuring cycle {}'.format(i))
                     self.reader.read_many_sample(self.data, number_of_samples_per_channel=self.n_samples)
                     self.logger.debug('Recieved data from NI card: mean axis 0 = {}'.format(self.data[0].mean()))
                     self.newData.emit(self.data)
-                    if self.iterations is not None and i >= self.iterations:
-                        self.should_stop = True
-                    if self.should_stop:
-                        self.logger.warning('Acquisition stopped.')
-                        self.finished.emit()
-                        break
+
+                self.logger.warning('Acquisition stopped.')
+                self.finished.emit()
 
         except Exception as e:
             self.logger.warning('Error while starting streamer: \n{}'.format(e))
             self.error.emit(e)
 
     def measure_triggered(self):
-        with nidaqmx.Task() as task:
-            task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
-            task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
-            task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
+        try:
+            with nidaqmx.Task() as task:
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
 
-            task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/Dev1/PFI1",
-                                                                trigger_edge=Edge.RISING)
-            task.timing.cfg_samp_clk_timing(100000, samps_per_chan=self.n_samples,
-                                            source="/Dev1/PFI0",
-                                            active_edge=Edge.RISING,
-                                            sample_mode=AcquisitionType.FINITE)  # external clock chanel
+                task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/Dev1/PFI1",
+                                                                    trigger_edge=Edge.RISING)
+                task.timing.cfg_samp_clk_timing(100000, samps_per_chan=self.n_samples,
+                                                source="/Dev1/PFI0",
+                                                active_edge=Edge.RISING,
+                                                sample_mode=AcquisitionType.FINITE)  # external clock chanel
 
-            self.should_stop = False
-            i = 0
-            while True:
-                i += 1
-                self.logger.debug('measuring cycle {}'.format(i))
-                self.data = np.array(task.read(number_of_samples_per_channel=self.n_samples))
+                self.should_stop = False
+                i = 0
+                while not self.should_stop:
+                    i += 1
+                    self.logger.debug('measuring cycle {}'.format(i))
+                    self.data = np.array(task.read(number_of_samples_per_channel=self.n_samples))
 
-                self.newData.emit(self.data)
+                    self.newData.emit(self.data)
 
-                if self.iterations is not None and i >= self.iterations:
-                    self.should_stop = True
-                if self.should_stop:
-                    self.logger.warning('Acquisition stopped.')
-                    self.finished.emit()
-                    break
+                self.logger.warning('Acquisition stopped.')
+                self.finished.emit()
+        except Exception as e:
+            self.logger.warning('Error while starting streamer: \n{}'.format(e))
+            self.error.emit(e)
 
     def measure_simulated(self):
         self.should_stop = False
-
-        if self.iterations is None:
-            i = 0
-            while not self.should_stop:
-                i += 1
-                self.logger.debug('simulating measurement cycle #{}'.format(i))
-                t0 = time.time()
-
-                self.data = simulate_measure(self.data,
-                                             function='sech2_fwhm',
-                                             args=[.5, -2, .085, 1],
-                                             amplitude=50,
-                                             mode=self.acquisition_mode)
-                dt = time.time() - t0
-                time.sleep(max(self.n_samples / 273000 - dt, 0))
-                self.newData.emit(self.data)
-
-                self.newData.emit(self.data)
-                self.logger.debug(
-                    'simulated data in {:.2f} ms - real would take {:.2f} - '
-                    'outputting array of shape {}'.format(dt * 1000,
-                                                    self.n_samples / 273,
-                                                    self.data.shape))
-        else:
-            for i in range(self.iterations):
-                self.logger.debug('simulating measurement cycle #{} of {}'.format(i, self.iterations))
-                self.simulate_measure()
-
-    def on_sim_clock(self):
-        if not self.should_stop:
-            self.logger.debug('simulating measurement cycle')
+        i = 0
+        while not self.should_stop:
+            i += 1
+            self.logger.debug('simulating measurement cycle #{}'.format(i))
             t0 = time.time()
-
-            self.data = simulate_measure(self.data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10)
+            self.data = simulate_measure(self.data,
+                                         function='sech2_fwhm',
+                                         args=[.5, -2, .085, 1],
+                                         amplitude=50,
+                                         mode=self.acquisition_mode)
             dt = time.time() - t0
             time.sleep(max(self.n_samples / 273000 - dt, 0))
+            self.newData.emit(self.data)
+
             self.newData.emit(self.data)
             self.logger.debug(
                 'simulated data in {:.2f} ms - real would take {:.2f} - '
                 'outputting array of shape {}'.format(dt * 1000,
-                                                      self.n_samples / 273,
-                                                      self.data.shape))
-
-
+                                                self.n_samples / 273,
+                                                self.data.shape))
 
 
 def simulate_measure(data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10, mode='triggered'):

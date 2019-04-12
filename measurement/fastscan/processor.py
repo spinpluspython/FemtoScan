@@ -20,7 +20,6 @@
 
 """
 import logging
-import time
 
 import numpy as np
 import xarray as xr
@@ -28,6 +27,7 @@ from PyQt5 import QtCore
 from scipy.optimize import curve_fit
 
 from utilities.math import sech2_fwhm, sin
+from utilities.settings import parse_category, parse_setting
 
 
 class FastScanProcessor(QtCore.QObject):
@@ -61,11 +61,16 @@ class FastScanProcessor(QtCore.QObject):
             xarray containing projected data and relative time scale.
 
         """
-
+        time.sleep(5)
         self.logger.debug('Processor ID:{} started processing data with shape {}'.format(self.id, stream_data.shape))
         t0 = time.time()
+        adc_step = parse_setting('fastscan', 'shaker_position_step')
+        ps_per_step = parse_setting('fastscan', 'shaker_ps_per_step')  # ADC step size - corresponds to 25fs
+        ps_per_step *= parse_setting('fastscan', 'shaker_gain')  # correct for shaker gain factor
+
         try:
-            result = project(stream_data, use_dark_control=use_dark_control)
+            result = project(stream_data, use_dark_control=use_dark_control,
+                             adc_step=adc_step, time_step=ps_per_step)
             self.newData.emit(result)
 
             self.logger.debug('Projected {} points to a {} pts array, with {} nans in : {:.2f} ms'.format(
@@ -82,40 +87,38 @@ class FastScanProcessor(QtCore.QObject):
         self.isReady.emit(self.id)
         self.logger.debug('Processor ID:{} is ready for new stream_data'.format(self.id))
 
+    @QtCore.pyqtSlot()
     def fit_sech2(self, da):
 
-        da_ = da.dropna('time')
-        # guess = [1, 0, .1, 0]
-        xc = da_.time[np.argmax(da_.values)]
-        off = da_[da_.time - xc > .2].mean()
-        a = da_.max() - off
-        guess = [a, xc, .1, off]
         try:
-            popt, pcov = curve_fit(sech2_fwhm, da_.time, da_, p0=guess)
-            fitDict = {'popt': popt,
-                       'pcov': pcov,
-                       'perr': np.sqrt(np.diag(pcov)),
-                       'curve': xr.DataArray(sech2_fwhm(da_.time, *popt), coords={'time': da_.time}, dims='time')
-                       }
-            self.logger.debug('Fitting successful')
-
+            fitDict = fit_autocorrelation(da)
             self.newFit.emit(fitDict)
-
-
+        except RuntimeError as e:
+            self.logger.critical('Fitting failed: Runtime error: {}'.format(e))
         except Exception as e:
             self.logger.critical('Fitting failed: {}'.format(e))
 
 
-def make_time_bins(min_t, max_t, step):
-    bins = np.arange(step * np.floor(min_t / step) - step / 2, step * np.ceil(max_t / step) + step / 2, step)
-    axis = bins[:-1] + step / 2
-    return axis, bins
+def fit_autocorrelation(da, expected_pulse_duration=.1):
+    """ fits the given data to a sech2 pulse shape"""
+    da_ = da.dropna('time')
+
+    xc = da_.time[np.argmax(da_.values)]
+    off = da_[da_.time - xc > .2].mean()
+    a = da_.max() - off
+
+    guess = [a, xc, expected_pulse_duration, off]
+
+    popt, pcov = curve_fit(sech2_fwhm, da_.time, da_, p0=guess)
+    fitDict = {'popt': popt,
+               'pcov': pcov,
+               'perr': np.sqrt(np.diag(pcov)),
+               'curve': xr.DataArray(sech2_fwhm(da_.time, *popt), coords={'time': da_.time}, dims='time')
+               }
+    return fitDict
 
 
-def project(stream_data, use_dark_control=True):
-    adc_step = 0.000152587890625
-    time_step = .05  # ps
-
+def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time_step=.05):
     spos_analog = stream_data[0]
     x = np.arange(0, len(spos_analog), 1)
 
@@ -150,6 +153,13 @@ def project(stream_data, use_dark_control=True):
     result /= norm_array
     time_axis = np.arange(spos_range[0], spos_range[1] + 1, 1) * time_step
     return xr.DataArray(result, coords={'time': time_axis}, dims='time').dropna('time')
+
+
+from PyQt5.QtCore import *
+import time
+import traceback, sys
+
+
 
 
 if __name__ == '__main__':

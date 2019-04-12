@@ -20,6 +20,7 @@
 
 """
 import sys
+import numpy
 
 
 def main():
@@ -109,6 +110,11 @@ class TwoWayDict(dict):
         """Returns the number of connections"""
         return dict.__len__(self) // 2
 
+
+def make_time_bins(min_t, max_t, step):
+    bins = np.arange(step * np.floor(min_t / step) - step / 2, step * np.ceil(max_t / step) + step / 2, step)
+    axis = bins[:-1] + step / 2
+    return axis, bins
 
 if __name__ == '__main__':
     main()

@@ -25,7 +25,7 @@ import xarray as xr
 import numpy as np
 import multiprocessing as mp
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QCheckBox
 from pyqtgraph.Qt import QtCore, QtGui
 import logging
 
@@ -35,47 +35,48 @@ class FastScanPlotWidget(QWidget):
         super(FastScanPlotWidget, self).__init__()
         self.logger = logging.getLogger('-.{}.PlotWidget'.format(__name__))
         self.logger.info('Created PlotWidget')
-        self.main_plot_lines = {}
-        self.secondary_plot_lines = {}
+
+
         self.clock = QTimer()
         self.clock.setInterval(1000./30)
         self.clock.timeout.connect(self.on_clock)
         self.clock.start()
 
-        self.show_average = False
 
-        self.plot_queue = mp.Queue()
-        self.all_data = None
         layout = QVBoxLayout()
         self.setLayout(layout)
 
         self.main_plot_widget = pg.PlotWidget(name='raw_data_plot')
         self.setup_plot_widget(self.main_plot_widget, title='Signal')
-        # self.main_legend = pg.LegendItem() #TODO: find a way to add legends
-        # self.main_legend.setParentItem(self.main_plot_widget.getPlotItem())
 
-        self.secondary_plot_widget = pg.PlotWidget(name='raw_data_plot')
-        self.setup_plot_widget(self.secondary_plot_widget, title='raw data stream')
+        self.controls = QGroupBox('Plot Settings')
+        controls_layout = QVBoxLayout()
+        self.controls.setLayout(controls_layout)
 
-        self.raw_data_plot = self.secondary_plot_widget.plot()
-        self.raw_data_plot.setPen(pg.mkPen(255, 255, 255))
+        self.cb_last_curve = QCheckBox('last curve')
+        controls_layout.addWidget(self.cb_last_curve)
+        self.cb_last_curve.setChecked(True)
+        self.cb_avg_curve = QCheckBox('average curve')
+        controls_layout.addWidget(self.cb_avg_curve)
+        self.cb_avg_curve.setChecked(False)
+
+        self.cb_fit_curve = QCheckBox('fit curve')
+        controls_layout.addWidget(self.cb_fit_curve)
+        self.cb_fit_curve.setChecked(True)
 
         self.last_curve = self.main_plot_widget.plot()
-        self.last_curve.setPen((pg.mkPen(255, 255, 255)))
-        self.average_curve = self.main_plot_widget.plot()
-        self.average_curve.setPen((pg.mkPen(100, 255, 100)))
+        self.last_curve.setPen((pg.mkPen(200, 200, 200)))
+        self.avg_curve = self.main_plot_widget.plot()
+        self.avg_curve.setPen((pg.mkPen(100, 255, 100)))
+        self.fit_curve = self.main_plot_widget.plot()
+        self.fit_curve.setPen((pg.mkPen(255, 100, 100)))
 
         vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         vsplitter.addWidget(self.main_plot_widget)
-        vsplitter.addWidget(self.secondary_plot_widget)
+        vsplitter.addWidget(self.controls)
 
         layout.addWidget(vsplitter)
 
-        # self.da = None
-        # self.last_curve = None
-        # self.add_main_plot_line('last_curve',(255,255,255))
-        # self.average_curve = None
-        # self.add_main_plot_line('average_curve',(100,255,100))
 
     def setup_plot_widget(self, plot_widget, title='Plot'):
         plot_widget.showAxis('top', True)
@@ -91,107 +92,24 @@ class FastScanPlotWidget(QWidget):
         self.main_plot_widget.setMinimumHeight(int(h * .7))
         self.main_plot_widget.setMinimumWidth(500)
 
-    @QtCore.pyqtSlot(dict) # DEPRECATED
-    def update_dataset(self,data_dict):
-        self.plot_queue.put(data_dict)
 
-    @QtCore.pyqtSlot(xr.DataArray)
-    def append_curve(self, data_dict):
-        self.plot_queue.put(data_dict)
-        # if 'all' in dataset.data_vars:
-        #     ds = dataset['all'][-1,...]
-        #     self.plot_main('last',x=np.array(ds),y=np.array(ds.time),pen=(255,255,255))
-        # if 'average' in dataset.data_vars:
-        #     ds = dataset['average'][-1,...]
-        #     self.plot_main('last',x=np.array(ds),y=np.array(ds.time),pen=(255,255,255))
-
-    def add_main_plot_line(self, name, pen):
-        if name not in self.main_plot_lines.keys():
-            plot_line = self.main_plot_widget.plot()
-            if isinstance(pen, tuple):
-                pen = pg.mkPen(pen)
-            plot_line.setPen(pen)
-            self.main_plot_lines[name] = {'plot': plot_line}
-        else:
-            self.main_plot_lines[name]['plot'].setPen(pen)
+    def plot_last_curve(self,da):
+        if self.cb_last_curve.isChecked():
+            self.last_curve.setData(da.time, da)
 
 
-    def add_secondary_plot_line(self, name, pen):
-        if name not in self.secondary_plot_lines.keys():
-            plot_line = self.secondary_plot_widget.plot()
-            if isinstance(pen, tuple):
-                pen = pg.mkPen(pen)
-            plot_line.setPen(pen)
-            self.secondary_plot_lines[name] = {'plot': plot_line}
-        else:
-            self.secondary_plot_lines[name]['plot'].setPen(pen)
+    def plot_avg_curve(self,da):
+        if self.cb_avg_curve.isChecked():
+            self.avg_curve.setData(da.time, da)
 
-    def plot_main(self, name, x=None, y=None,pen=(255,255,255)):
-        if name not in self.main_plot_lines.keys():
-            self.logger.debug('adding {} curve to main plot'.format(name))
-            self.add_main_plot_line(name, pen)
-        self.main_plot_lines[name]['x'] = x
-        self.main_plot_lines[name]['y'] = y
 
-    def plot_secondary(self, name, x=None, y=None,pen=(255,255,255)):
-        if name not in self.secondary_plot_lines.keys():
-            self.logger.debug('adding {} curve to secondary plot'.format(name))
-            self.add_secondary_plot_line(name, pen)
-        self.secondary_plot_lines[name]['x'] = x
-        self.secondary_plot_lines[name]['y'] = y
-
-    def plot_main_xr(self, name, dataArray,pen=(255,255,255)):
-        if name not in self.main_plot_lines.keys():
-            self.logger.debug('adding {} curve to main plot'.format(name))
-            self.add_main_plot_line(name, pen)
-
-        self.main_plot_lines[name]['x'] = dataArray.time
-        self.main_plot_lines[name]['y'] = dataArray
-        self.main_plot_lines[name]['plot'].setData(dataArray.time,dataArray)
-
-    def plot_secondary_xr(self, name, dataArray,pen=(255,255,255)):
-        if name not in self.secondary_plot_lines.keys():
-            self.logger.debug('adding {} curve to secondary plot'.format(name))
-            self.add_secondary_plot_line(name, pen)
-
-        self.secondary_plot_lines[name]['x'] = dataArray.time
-        self.secondary_plot_lines[name]['y'] = dataArray
-
+    def plot_fit_curve(self,da):
+        if self.cb_fit_curve.isChecked():
+            self.fit_curve.setData(da.time, da)
 
 
     def on_clock(self):
-        if not self.plot_queue.empty():
-            newData = self.plot_queue.get()
-
-
-            if self.all_data is None:
-                self.all_data = newData
-
-            elif self.show_average: # todo: improve performance, its too slow!
-
-                self.all_data = xr.concat([self.all_data, newData], 'avg')
-                avg_da = self.all_data.mean('avg')
-                time_axis = np.arange(-100,100,.1) #todo: generalize for the right amplitde
-                avg_binned = avg_da.groupby_bins('time',time_axis).mean()
-                d = xr.DataArray(np.array(avg_binned),coords={'time':time_axis[:-1]+.05},dims='time')
-                d = d.dropna('time')
-                self.average_curve.setData(d.time,d)
-
-            # for key, array in newData.items():
-            #     if key == 'all':
-            #         if 'avg' in array.dims:
-            #             self.plot_main_xr('last',array[-1])
-            #     else:
-            #         self.plot_main_xr(key,array,pen=(0,255,0))
-            self.last_curve.setData(newData.time,newData)
-
-            # try:
-            #     avg = self.all_data.groupBy_bins('time',100,.sum('avg')
-            #     print('all: {}\n\n\n'.format(self.all_data))
-            #     print('avg: {}\n\n\n'.format(avg))
-            #     self.average_curve.setData(avg.time, avg)
-            # except:
-            #     pass
+        pass
 
 
 

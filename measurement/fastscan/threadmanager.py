@@ -29,8 +29,9 @@ import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
 
-from measurement.fastscan.processor import FastScanProcessor
+from measurement.fastscan.processor import project, fit_autocorrelation
 from measurement.fastscan.streamer import FastScanStreamer
+from measurement.fastscan.threadpool import Runnable
 from utilities.settings import parse_setting, parse_category, write_setting
 
 
@@ -56,7 +57,6 @@ class FastScanThreadManager(QtCore.QObject):
         self.logger.info('Created Thread Manager')
 
         self.__stream_queue = mp.Queue()  # Queue where to store unprocessed streamer data
-        self.__processor_queue = mp.Queue()
 
         self.all_curves = None
         self.running_average = None
@@ -64,24 +64,40 @@ class FastScanThreadManager(QtCore.QObject):
         self.should_stop = False
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(1.)
+        self.timer.setInterval(50.)
         self.timer.timeout.connect(self.on_timer)
         self.timer.start()
 
-        self.create_processors()
+        self.pool = QtCore.QThreadPool()
+        self.pool.setMaxThreadCount(self.n_processors)
+
+        # self.create_processors()
         self.create_streamer()
+
+    def project(self, stream_data):
+        runnable = Runnable(project, stream_data, self.dark_control,
+                            self.shaker_position_step, self.shaker_ps_per_step)
+        self.pool.start(runnable)
+        runnable.signals.result.connect(self.on_processor_data)
+
+    def fit_autocorrelation(self, da):
+        runnable = Runnable(fit_autocorrelation, da, expected_pulse_duration=.1)
+        self.pool.start(runnable)
+        # runnable.signals.result.connect(self.on_fit_result)
+        runnable.signals.result.connect(self.newFitResult.emit)
 
     @QtCore.pyqtSlot()
     def on_timer(self):
         """ For each idle processor, start evaluating an element in the streamer queue"""
-        for processor, ready in zip(self.processors, self.processor_ready):
+        #
 
-            if ready and not self.__stream_queue.empty():
-                self.logger.debug('processing data with processor {} - queue lenght {}'.format(processor.id,
-                                                                                               self.__stream_queue.qsize()))
-                processor.project(self.__stream_queue.get(), use_dark_control=self.dark_control)
-            elif self.should_stop:
-                self.streamer_thread.exit()
+        # if not self.__stream_queue.empty():
+        #     # self.project(self.__stream_queue.get())
+        #     self.logger.debug('picked data from stream queue, remaining lenght: {}'.format(self.__stream_queue.qsize()))
+        if self.should_stop:
+            self.logger.debug('no data in queue, killing streamer')
+            self.streamer_thread.exit()
+            self.should_stop = False
 
     def create_streamer(self):
         self.streamer_thread = QtCore.QThread()
@@ -108,62 +124,21 @@ class FastScanThreadManager(QtCore.QObject):
         self.should_stop = True
 
     @QtCore.pyqtSlot(np.ndarray)
-    def on_streamer_data(self, streamer_data):  # TODO: remove or change the queue method
-        """divide data in smaller chunks, for faster data processing.
-
-        Splits data from streamer in chunks whose size is defined by
-        self.processor_buffer_size. If the last chunk is smaller than this, it keeps it
-        and will append the next data recieved to it.
-        """
-        try:
-            if self.rest_from_previous.shape[1] > 0:
-                streamer_data = np.append(self.rest_from_previous, streamer_data, axis=1)
-        except:
-            pass
-        n_chunks = 1  # streamer_data.shape[1] // self.processor_buffer_size
-
-        chunks = np.array_split(streamer_data, n_chunks, axis=1)
-        if chunks[-1].shape[1] < self.n_samples:
-            self.rest_from_previous = chunks.pop(-1)
-        for chunk in chunks:
-            self.__stream_queue.put(chunk)
-
-        self.logger.debug('added {} chunks to queue'.format(n_chunks))
+    def on_streamer_data(self, streamer_data):
+        """ """
         self.newStreamerData.emit(streamer_data)
 
-    def create_processors(self):  # TODO: change to QTrheadPool
-        """ create n_processors number of threads for processing streamer data"""
-        if not hasattr(self, 'processor_ready'):
-            self.processors = []
-            self.processor_threads = []
-            self.processor_ready = []
-
-        for i in range(self.n_processors):
-            self.processors.append(FastScanProcessor(i))
-            self.processor_threads.append(QtCore.QThread())
-            self.processor_ready.append(False)
-            self.processors[i].newData[np.ndarray].connect(self.on_processor_data)
-            self.processors[i].newFit[dict].connect(self.on_fit_result)
-            self.processors[i].error.connect(self.error.emit)
-            self.processors[i].isReady.connect(self.set_processor_ready)
-            # self.processors[i].newDatadict.connect(self.overwrite_datadict)
-
-            # self.processors[i].finished.connect(self.on_processor_finished)
-
-            self.processors[i].moveToThread(self.processor_threads[i])
-            self.processor_threads[i].started.connect(self.processors[i].initialize)
-            self.processor_threads[i].start()
-
-    @QtCore.pyqtSlot(int)
-    def set_processor_ready(self, id):
-        self.processor_ready[id] = True
+        self.__stream_queue.put(streamer_data)
+        self.logger.debug('added data to stream queue')
+        self.project(self.__stream_queue.get())
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processor_data(self, processed_dataarray):
         """ called when new processed data is available
         This emits data to the main window, so it can be plotted..."""
-        # self.__processor_queue.put(processed_dataarray)
+
         self.newProcessedData.emit(processed_dataarray)
+
         t0 = time.time()
         if self.all_curves is None:
             self.all_curves = processed_dataarray
@@ -173,13 +148,11 @@ class FastScanThreadManager(QtCore.QObject):
             self.all_curves = xr.concat([self.all_curves[-self.n_averages + 1:], processed_dataarray], 'avg')
             self.running_average = self.all_curves.mean('avg').dropna('time')
 
-        for processor, ready in zip(self.processors, self.processor_ready):
-            if ready:
-                processor.fit_sech2(self.running_average)
-                break
-        self.newProcessedData.emit(processed_dataarray)
         self.newAverage.emit(self.running_average)
+
         self.logger.debug('calculated average in {:.2f} ms'.format((time.time() - t0) * 1000))
+
+        self.fit_autocorrelation(processed_dataarray)
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
@@ -208,8 +181,8 @@ class FastScanThreadManager(QtCore.QObject):
     @QtCore.pyqtSlot()
     def close(self):
         self.stop_streamer()
-        for thread in self.processor_threads:
-            thread.exit()
+        # for thread in self.processor_threads:
+        #     thread.exit()
 
     ### Properties
 
@@ -257,6 +230,24 @@ class FastScanThreadManager(QtCore.QObject):
         assert val > 0, 'cannot set below 1'
         write_setting(val, 'fastscan', 'n_samples')
         self.logger.debug('n_samples set to {}'.format(val))
+
+    @property
+    def shaker_gain(self):
+        return parse_setting('fastscan', 'shaker_gain')
+
+    @shaker_gain.setter
+    def shaker_gain(self, val):
+        assert val in [1, 10, 100], 'gain can be 1,10,100 only'
+        write_setting(val, 'fastscan', 'shaker_gain')
+        self.logger.debug('n_samples set to {}'.format(val))
+
+    @property
+    def shaker_position_step(self):
+        return parse_setting('fastscan', 'shaker_position_step')
+
+    @property
+    def shaker_ps_per_step(self):
+        return parse_setting('fastscan', 'shaker_ps_per_step')
 
 
 if __name__ == '__main__':

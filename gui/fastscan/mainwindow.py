@@ -123,7 +123,7 @@ class FastScanMainWindow(QMainWindow):
         self.n_averages_spinbox.setMinimum(1)
         self.n_averages_spinbox.setValue(10)
         # self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
-        self.n_averages_spinbox.valueChanged[int].connect(lambda: write_setting())
+        self.n_averages_spinbox.valueChanged[int].connect(lambda x: write_setting(x,'fastscan','n_averages'))
 
         acquisition_box_layout.addWidget(QLabel('Averages: '), 2, 0, 1, 1)
         acquisition_box_layout.addWidget(self.n_averages_spinbox, 2, 1, 1, 1)
@@ -217,6 +217,7 @@ class FastScanMainWindow(QMainWindow):
         manager.newProcessedData.connect(self.on_processed_data)
         manager.newStreamerData.connect(self.on_streamer_data)
         manager.newFitResult.connect(self.on_fit_result)
+        manager.newAverage.connect(self.on_avg_data)
         manager.error.connect(self.on_thread_error)
 
         manager_thread = QtCore.QThread()
@@ -243,19 +244,24 @@ class FastScanMainWindow(QMainWindow):
             self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
         except:
             self.processor_tick = time.time()
-        self.visual_widget.append_curve(data_array)
+        self.visual_widget.plot_last_curve(data_array)
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
-
         self.pulse_duration_label.setText('{:.3} ps'.format(fitDict['popt'][2]))
+        self.visual_widget.plot_fit_curve(fitDict['curve'])
+
+    @QtCore.pyqtSlot(xr.DataArray)
+    def on_avg_data(self, da):
+        self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
-        n_samples = data.shape[1]
-        x = np.linspace(0, n_samples - 1, n_samples)
-        self.visual_widget.plot_secondary('stage pos', x=x, y=data[0])
-        self.visual_widget.plot_secondary('raw signal', x=x, y=data[1])
+        pass
+        # n_samples = data.shape[1]
+        # x = np.linspace(0, n_samples - 1, n_samples)
+        # self.visual_widget.plot_secondary('stage pos', x=x, y=data[0])
+        # self.visual_widget.plot_secondary('raw signal', x=x, y=data[1])
 
     def start_acquisition(self):
         self.data_manager.create_streamer()

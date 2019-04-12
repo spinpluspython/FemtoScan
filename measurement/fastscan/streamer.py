@@ -135,19 +135,31 @@ class FastScanStreamer(QtCore.QObject):
     def measure_simulated(self):
         self.should_stop = False
         i = 0
+        sim_parameters = parse_category('fastscan - simulation')
+        fit_parameters = [sim_parameters['amplitude'],
+                          sim_parameters['center_position'],
+                          sim_parameters['fwhm'],
+                          sim_parameters['offset']
+                          ]
+        step = parse_setting('fastscan', 'shaker_position_step')
+        ps_per_step = parse_setting('fastscan', 'shaker_ps_per_step')  # ADC step size - corresponds to 25fs
+        ps_per_step *= parse_setting('fastscan', 'shaker_gain')  # correct for shaker gain factor
+
         while not self.should_stop:
             i += 1
             self.logger.debug('simulating measurement cycle #{}'.format(i))
             t0 = time.time()
+
             self.data = simulate_measure(self.data,
-                                         function='sech2_fwhm',
-                                         args=[.5, -2, .085, 1],
-                                         amplitude=50,
-                                         mode=self.acquisition_mode)
+                                         function=sim_parameters['function'],
+                                         args=fit_parameters,
+                                         amplitude=sim_parameters['shaker_amplitude'],
+                                         mode=self.acquisition_mode,
+                                         step=step,
+                                         ps_per_step=ps_per_step,
+                                         )
             dt = time.time() - t0
             time.sleep(max(self.n_samples / 273000 - dt, 0))
-            self.newData.emit(self.data)
-
             self.newData.emit(self.data)
             self.logger.debug(
                 'simulated data in {:.2f} ms - real would take {:.2f} - '
@@ -156,10 +168,10 @@ class FastScanStreamer(QtCore.QObject):
                                                       self.data.shape))
 
 
-def simulate_measure(data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplitude=10, mode='triggered'):
+def simulate_measure(data, function='sech2_fwhm', args=[.5, -2, .085, 1],
+                     amplitude=10, mode='triggered',
+                     step=0.000152587890625,ps_per_step=.05):
     args_ = args[:]
-    step = parse_setting('fastscan', 'shaker_position_step')
-    ps_per_step = parse_setting('fastscan', 'shaker_ps_per_step')  # ADC step size - corresponds to 25fs
 
     if function == 'gauss_fwhm':
         f = gaussian_fwhm
@@ -167,20 +179,16 @@ def simulate_measure(data, function='sech2_fwhm', args=[.5, -2, .085, 1], amplit
         args_[2] *= step / ps_per_step  # transform ps to voltage
     elif function == 'gaussian':
         f = gaussian
-        step = parse_setting('fastscan', 'shaker_position_step')
         args_[1] *= step / ps_per_step  # transform ps to voltage
         args_[2] *= step / ps_per_step  # transform ps to voltage
         args_.pop(0)
         args_.pop(-1)
     elif function == 'sech2_fwhm':
         f = sech2_fwhm
-        step = parse_setting('fastscan', 'shaker_position_step')
         args_[1] *= step / ps_per_step  # transform ps to voltage
         args_[2] *= step / ps_per_step  # transform ps to voltage
     elif function == 'transient_1expdec':
         f = transient_1expdec
-        step = parse_setting('fastscan', 'shaker_position_step')
-
         args_ = [2, 20, 1, 1, .01, -10]
         args_[1] *= step / ps_per_step  # transform ps to voltage
         args_[2] *= step / ps_per_step  # transform ps to voltage

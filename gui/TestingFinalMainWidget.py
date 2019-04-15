@@ -179,6 +179,6 @@ class Ui_MainWindow(object):
         self.actionEdit.setText(_translate("MainWindow", "Help"))
         self.actionAbout.setText(_translate("MainWindow", "About"))
 
-from gui.ManTabWidget import StackedExample2
+from gui.instrumentControlWidgets import StackedExample2
 from gui.ParamTreeTests import CustomParamTree
 from gui.ScanTabWidgetTests import StackedExample

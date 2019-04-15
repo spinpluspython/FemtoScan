@@ -34,7 +34,7 @@ from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.threadpool import Runnable
 from utilities.math import update_average
 from utilities.settings import parse_setting, parse_category, write_setting
-
+from instruments.delaystage import DelayStage
 
 class FastScanThreadManager(QtCore.QObject):
     """
@@ -62,16 +62,20 @@ class FastScanThreadManager(QtCore.QObject):
         self.all_curves = None
         self.running_average = None
         self.streamer_average = None
-        self.n_streamer_averages = None
+        self.n_streamer_averages = 0
 
         self._calculate_autocorrelation = None
-
         self.should_stop = False
+        self.streamerRunning = False
+
+        self.delay_stage = DelayStage()
+
 
         self.timer = QtCore.QTimer()
         self.timer.setInterval(50.)
         self.timer.timeout.connect(self.on_timer)
         self.timer.start()
+        self.counter = 0
 
         self.pool = QtCore.QThreadPool()
         self.pool.setMaxThreadCount(self.n_processors)
@@ -90,6 +94,81 @@ class FastScanThreadManager(QtCore.QObject):
         # runnable.signals.result.connect(self.on_fit_result)
         runnable.signals.result.connect(self.newFitResult.emit)
 
+
+    def calibrate_shaker(self, iterations, integration):
+        assert not self.streamerRunning, 'Cannot run Shaker calibration while streamer is running'
+
+        import matplotlib.pyplot as plt
+        from scipy.optimize import curve_fit
+
+        # self.start_streamer()
+        write_setting(0, 'fastscan - simulation', 'center_position')
+
+        self.create_streamer()
+        stream = self.streamer.simulate_single_shot(integration)
+        projected = project(stream,self.dark_control,
+                            self.shaker_position_step, 0.05)
+        min_ = projected.time.min()
+        max_ = projected.time.max()
+        print('\n - ')
+        calib_positions_ = np.linspace(min_*.7,max_*.7,iterations//2)
+        # calib_positions_ = np.linspace(min_,max_,20)
+        calib_positions = np.concatenate((calib_positions_,calib_positions_[::-1]))
+        centers = []
+
+        for pos in calib_positions:
+            print('\n - moving stage')
+
+            self.delay_stage.move_absolute(pos)
+            if parse_setting('fastscan','simulate'):
+                write_setting(pos,'fastscan - simulation','center_position')
+
+            stream = self.streamer.simulate_single_shot(integration)
+            projected = project(stream, self.dark_control,
+                                self.shaker_position_step, 1)
+            res = fit_autocorrelation(projected)
+            print('\n - fitted, result it: {}'.format(res['popt'][1]))
+            centers.append(res['popt'][1])
+            plt.plot(projected)
+        plt.show()
+
+        steps = []
+        calib_steps = []
+        print('\n - calculating shift')
+
+        for i in range(len(centers)-1):
+            dy = np.abs(centers[i]-centers[i+1])
+            dx = np.abs(calib_positions[i]-calib_positions[i+1])
+            if dx != 0:
+                steps.append(dy/dx)
+
+        mean = np.mean(steps)
+        std = np.std(steps)
+        good_steps = [x for x in steps if (np.abs(x-mean) < 2*std)]
+
+        # correction_factor = np.mean(calib_steps)/np.mean(steps)
+
+        # write_setting('fastscan', 'shaker_ps_per_step', pos)
+        print('\n\n Shaker Calibration result: {} or {}'.format(1./np.mean(steps), 1./np.mean(good_steps)))
+
+
+        def lin(x,a,b):
+            return a*x +b
+
+        plt.plot(calib_positions,centers,'ob')
+
+
+        try:
+            popt,pcov = curve_fit(lin,calib_positions,centers)
+
+            plt.plot(calib_positions_,lin(calib_positions_,*popt),'-')
+        except:
+            pass
+        print('\n\n Shaker Calibration result:  {} | {}'.format(1./np.mean(good_steps), 1./popt[0]))
+
+        plt.show()
+
+
     @QtCore.pyqtSlot()
     def on_timer(self):
         """ For each idle processor, start evaluating an element in the streamer queue"""
@@ -97,6 +176,18 @@ class FastScanThreadManager(QtCore.QObject):
             self.logger.debug('no data in queue, killing streamer')
             self.streamer_thread.exit()
             self.should_stop = False
+            self.streamerRunning = False
+
+        self.counter += 1
+
+    def wait(self,n,timeout=1000):
+        self.counter=0
+        i=0
+        while self.counter<n:
+            i+=1
+            if i>timeout:
+                break
+
 
     def create_streamer(self):
         self.streamer_thread = QtCore.QThread()
@@ -111,7 +202,7 @@ class FastScanThreadManager(QtCore.QObject):
     @QtCore.pyqtSlot()
     def start_streamer(self):
         self.should_stop = False
-
+        self.streamerRunning = True
         self.create_streamer()
         self.streamer_thread.start()
         self.logger.info('FastScanStreamer started')
@@ -123,6 +214,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.streamer.stop_acquisition()
         self.should_stop = True
 
+
     @QtCore.pyqtSlot(np.ndarray)
     def on_streamer_data(self, streamer_data):
         """ """
@@ -132,7 +224,7 @@ class FastScanThreadManager(QtCore.QObject):
             self.n_streamer_averages = 1
         else:
             self.n_streamer_averages += 1
-            self.streamer_average = update_average(streamer_data,self.streamer_average,self.n_streamer_averages)
+            self.streamer_average = update_average(streamer_data, self.streamer_average, self.n_streamer_averages)
 
         self.__stream_queue.put(streamer_data)
         self.logger.debug('added data to stream queue')
@@ -161,7 +253,6 @@ class FastScanThreadManager(QtCore.QObject):
         if self._calculate_autocorrelation:
             self.fit_autocorrelation(self.running_average)
 
-
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
         self.newFitResult.emit(fitDict)
@@ -186,19 +277,17 @@ class FastScanThreadManager(QtCore.QObject):
             f.create_dataset('/avg/data', data=self.running_average.values)
             f.create_dataset('/avg/time_axis', data=self.running_average.time)
 
-            for k,v in parse_category('fastscan').items():
-                if isinstance(v,bool):
-                    f.create_dataset('/settings/{}'.format(k), data=v,dtype=bool)
+            for k, v in parse_category('fastscan').items():
+                if isinstance(v, bool):
+                    f.create_dataset('/settings/{}'.format(k), data=v, dtype=bool)
                 else:
                     f.create_dataset('/settings/{}'.format(k), data=v)
 
             # f.create_group('/settings')
 
-
     @QtCore.pyqtSlot()
     def close(self):
         self.stop_streamer()
-
 
     ### Properties
 
@@ -265,6 +354,14 @@ class FastScanThreadManager(QtCore.QObject):
     @property
     def shaker_ps_per_step(self):
         return parse_setting('fastscan', 'shaker_ps_per_step')
+
+    @property
+    def stage_position(self):
+        return self.delay_stage.position_get()
+
+    @stage_position.setter
+    def stage_position(self,val):
+        self.delay_stage.move_absolute(val)
 
 
 if __name__ == '__main__':

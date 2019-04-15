@@ -71,10 +71,12 @@ class DelayStage(generic.Instrument):
             print('position is out of range')
 
     def set_zero_position(self):
+        print('Zero position set to ' + str(self.position_current))
         self.position_zero = self.position_current
         self.position_max = self.position_max - self.position_current
         self.position_min = self.position_min - self.position_current
         self.position_current = 0
+
 
     def position_get(self):
         return self.position_current

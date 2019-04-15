@@ -132,6 +132,60 @@ class FastScanStreamer(QtCore.QObject):
             self.logger.warning('Error while starting streamer: \n{}'.format(e))
             self.error.emit(e)
 
+    def measure_single_shot(self,n):
+        try:
+            with nidaqmx.Task() as task:
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
+
+                task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/Dev1/PFI1",
+                                                                    trigger_edge=Edge.RISING)
+                task.timing.cfg_samp_clk_timing(100000, samps_per_chan=self.n_samples,
+                                                source="/Dev1/PFI0",
+                                                active_edge=Edge.RISING,
+                                                sample_mode=AcquisitionType.FINITE)  # external clock chanel
+
+                self.should_stop = False
+                i = 0
+                data = np.zeros((n,*self.data.shape))
+                for i in range(n):
+                    self.logger.debug('measuring cycle {}'.format(i))
+                    data[i,...] = np.array(task.read(number_of_samples_per_channel=self.n_samples))
+                return(data.mean(axis=0))
+
+        except Exception as e:
+            self.logger.warning('Error while starting streamer: \n{}'.format(e))
+            self.error.emit(e)
+
+    def simulate_single_shot(self,n):
+        self.should_stop = False
+        i = 0
+        sim_parameters = parse_category('fastscan - simulation')
+        fit_parameters = [sim_parameters['amplitude'],
+                          sim_parameters['center_position'],
+                          sim_parameters['fwhm'],
+                          sim_parameters['offset']
+                          ]
+        step = parse_setting('fastscan', 'shaker_position_step')
+        ps_per_step = parse_setting('fastscan', 'shaker_ps_per_step')  # ADC step size - corresponds to 25fs
+        ps_per_step *= parse_setting('fastscan', 'shaker_gain')  # correct for shaker gain factor
+
+
+        data = np.zeros((n,*self.data.shape))
+        for i in range(n):
+            self.logger.debug('measuring cycle {}'.format(i))
+            data[i,...] = simulate_measure(self.data,
+                                 function=sim_parameters['function'],
+                                 args=fit_parameters,
+                                 amplitude=sim_parameters['shaker_amplitude'],
+                                 mode=self.acquisition_mode,
+                                 step=step,
+                                 ps_per_step=ps_per_step,
+                                 )
+
+        return(data.mean(axis=0))
+
     def measure_simulated(self):
         self.should_stop = False
         i = 0

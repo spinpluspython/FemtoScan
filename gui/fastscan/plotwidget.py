@@ -49,6 +49,7 @@ class FastScanPlotWidget(QWidget):
         self.main_plot_widget = pg.PlotWidget(name='raw_data_plot')
         self.setup_plot_widget(self.main_plot_widget, title='Signal')
 
+
         self.controls = QGroupBox('Plot Settings')
         controls_layout = QVBoxLayout()
         self.controls.setLayout(controls_layout)

@@ -35,7 +35,7 @@ from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
 from utilities.qt import SpinBox, labeled_qitem, make_timer
 from utilities.settings import parse_category, parse_setting, write_setting
-
+from gui.instrumentControlWidgets import DelayStageWidget
 
 class FastScanMainWindow(QMainWindow):
 
@@ -190,6 +190,38 @@ class FastScanMainWindow(QMainWindow):
         layout.addWidget(autocorrelation_box)
 
         # ----------------------------------------------------------------------
+        # Stage Control Box
+        # ----------------------------------------------------------------------
+
+
+        self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
+        layout.addWidget(self.delay_stage_widget)
+
+
+        shaker_calib_gbox = QGroupBox('Shaker Calibration')
+        shaker_calib_layout = QGridLayout()
+        shaker_calib_gbox.setLayout(shaker_calib_layout)
+        self.shaker_calib_btn = QPushButton('Shaker Calibration')
+        shaker_calib_layout.addWidget(self.shaker_calib_btn,0,0,2,2)
+        self.shaker_calib_btn.clicked.connect(self.on_shaker_calib)
+        self.shaker_calib_iterations = QSpinBox()
+        self.shaker_calib_iterations.setValue(50)
+        self.shaker_calib_iterations.setMinimum(4)
+        self.shaker_calib_iterations.setMaximum(100000)
+        self.shaker_calib_integration = QSpinBox()
+        self.shaker_calib_integration.setValue(5)
+        self.shaker_calib_integration.setMinimum(1)
+        self.shaker_calib_integration.setMaximum(100000)
+
+        shaker_calib_layout.addWidget(QLabel('iterations:'),0,2,1,1)
+        shaker_calib_layout.addWidget(QLabel('integrations:'),1,2,1,1)
+        shaker_calib_layout.addWidget(self.shaker_calib_iterations,0,3,1,1)
+        shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
+
+
+        layout.addWidget(shaker_calib_gbox)
+
+        # ----------------------------------------------------------------------
         # Save Box
         # ----------------------------------------------------------------------
 
@@ -249,6 +281,9 @@ class FastScanMainWindow(QMainWindow):
     def toggle_calculate_autocorrelation(self):
         self.data_manager._calculate_autocorrelation = self.calculate_autocorrelation_box.isChecked()
 
+    def on_shaker_calib(self):
+        self.data_manager.calibrate_shaker(self.shaker_calib_iterations.value(),self.shaker_calib_integration.value())
+
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
         try:
@@ -281,7 +316,7 @@ class FastScanMainWindow(QMainWindow):
         # self.visual_widget.plot_secondary('raw signal', x=x, y=data[1])
 
     def start_acquisition(self):
-        self.data_manager.create_streamer()
+        # self.data_manager.create_streamer()
         self.data_manager.start_streamer()
 
     def stop_acquisition(self):

@@ -32,6 +32,7 @@ from PyQt5 import QtCore
 from measurement.fastscan.processor import project, fit_autocorrelation
 from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.threadpool import Runnable
+from utilities.math import update_average
 from utilities.settings import parse_setting, parse_category, write_setting
 
 
@@ -60,6 +61,10 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.all_curves = None
         self.running_average = None
+        self.streamer_average = None
+        self.n_streamer_averages = None
+
+        self._calculate_autocorrelation = None
 
         self.should_stop = False
 
@@ -71,7 +76,6 @@ class FastScanThreadManager(QtCore.QObject):
         self.pool = QtCore.QThreadPool()
         self.pool.setMaxThreadCount(self.n_processors)
 
-        # self.create_processors()
         self.create_streamer()
 
     def project(self, stream_data):
@@ -89,11 +93,6 @@ class FastScanThreadManager(QtCore.QObject):
     @QtCore.pyqtSlot()
     def on_timer(self):
         """ For each idle processor, start evaluating an element in the streamer queue"""
-        #
-
-        # if not self.__stream_queue.empty():
-        #     # self.project(self.__stream_queue.get())
-        #     self.logger.debug('picked data from stream queue, remaining lenght: {}'.format(self.__stream_queue.qsize()))
         if self.should_stop:
             self.logger.debug('no data in queue, killing streamer')
             self.streamer_thread.exit()
@@ -106,13 +105,14 @@ class FastScanThreadManager(QtCore.QObject):
         self.streamer.newData[np.ndarray].connect(self.on_streamer_data)
         self.streamer.error.connect(self.error.emit)
         # self.streamer.finished.connect(self.on_streamer_finished)
-
         self.streamer.moveToThread(self.streamer_thread)
         self.streamer_thread.started.connect(self.streamer.start_acquisition)
 
     @QtCore.pyqtSlot()
     def start_streamer(self):
         self.should_stop = False
+
+        self.create_streamer()
         self.streamer_thread.start()
         self.logger.info('FastScanStreamer started')
         self.logger.debug('streamer settings: {}'.format(parse_category('fastscan')))
@@ -127,6 +127,12 @@ class FastScanThreadManager(QtCore.QObject):
     def on_streamer_data(self, streamer_data):
         """ """
         self.newStreamerData.emit(streamer_data)
+        if self.streamer_average is None:
+            self.streamer_average = streamer_data
+            self.n_streamer_averages = 1
+        else:
+            self.n_streamer_averages += 1
+            self.streamer_average = update_average(streamer_data,self.streamer_average,self.n_streamer_averages)
 
         self.__stream_queue.put(streamer_data)
         self.logger.debug('added data to stream queue')
@@ -152,7 +158,9 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.logger.debug('calculated average in {:.2f} ms'.format((time.time() - t0) * 1000))
 
-        self.fit_autocorrelation(processed_dataarray)
+        if self._calculate_autocorrelation:
+            self.fit_autocorrelation(self.running_average)
+
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
@@ -163,26 +171,34 @@ class FastScanThreadManager(QtCore.QObject):
         # TODO: add popup check window
         self.running_average = None
         self.all_curves = None
+        self.n_streamer_averages = None
+        self.streamer_average = None
 
     def save_data(self, filename):
         if not '.h5' in filename:
             filename += '.h5'
 
         with h5py.File(filename, 'w') as f:
-            # f.create_dataset('/raw/spos', data=data[0], shape=(42000,), dtype=float)
-            # f.create_dataset('/raw/signal', data=data[1], shape=(42000,), dtype=float)
-            # f.create_dataset('/raw/dark_control', data=data[2], shape=(42000,), dtype=float)
+            f.create_dataset('/raw/avg', data=self.streamer_average)
 
             f.create_dataset('/all_data/data', data=self.all_curves.values)
             f.create_dataset('/all_data/time_axis', data=self.all_curves.time)
             f.create_dataset('/avg/data', data=self.running_average.values)
             f.create_dataset('/avg/time_axis', data=self.running_average.time)
 
+            for k,v in parse_category('fastscan').items():
+                if isinstance(v,bool):
+                    f.create_dataset('/settings/{}'.format(k), data=v,dtype=bool)
+                else:
+                    f.create_dataset('/settings/{}'.format(k), data=v)
+
+            # f.create_group('/settings')
+
+
     @QtCore.pyqtSlot()
     def close(self):
         self.stop_streamer()
-        # for thread in self.processor_threads:
-        #     thread.exit()
+
 
     ### Properties
 
@@ -208,11 +224,12 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def n_averages(self):
-        try:
-            return self._n_averages
-        except:
-            self._n_averages = parse_setting('fastscan', 'n_averages')
-            return self._n_averages
+        # try:
+        #     return self._n_averages
+        # except:
+        #     self._n_averages = parse_setting('fastscan', 'n_averages')
+        #     return self._n_averages
+        return parse_setting('fastscan', 'n_averages')
 
     @n_averages.setter
     def n_averages(self, val):

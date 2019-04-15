@@ -27,6 +27,14 @@ def make_settings():
         settings.write(configfile)
 
 
+def set_default_settings():
+    default_settings = ConfigParser()
+    default_settings.read('utilities/defaultSETTINGS.ini')
+
+    with open('SETTINGS.ini', 'w') as configfile:
+        default_settings.write(configfile)
+
+
 def parse_category(category, settings_file='default'):
     """ parse setting file and return desired value
 

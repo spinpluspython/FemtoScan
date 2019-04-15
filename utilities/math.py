@@ -60,6 +60,11 @@ def transient_1expdec(t, A1, tau1, sigma, y0, off, t0):
     tmp = .5 * (1- tmp) * np.exp(sigma ** 2. / (11.09 * tau1 ** 2.))
     return y0 + tmp * (A1 * (np.exp(-t / tau1)) + off)
 
+def update_average(new,avg,n):
+    'recalculate average with new dataset.'
+    return (avg  * (n - 1) + new) / n
+
+
 def main():
     pass
 

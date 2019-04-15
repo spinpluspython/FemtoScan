@@ -21,7 +21,7 @@
 """
 import logging
 import time
-
+import sys, os
 import numpy as np
 import pyqtgraph as pg
 import qdarkstyle
@@ -29,7 +29,7 @@ import xarray as xr
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
-    QRadioButton, QLabel, QLineEdit, QSpinBox
+    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
@@ -51,6 +51,7 @@ class FastScanMainWindow(QMainWindow):
         self.status_bar.showMessage('ready')
         # set the cool dark theme and other plotting settings
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+
         pg.setConfigOption('background', (25, 35, 45))
         pg.setConfigOption('foreground', 'w')
         pg.setConfigOptions(antialias=True)
@@ -65,7 +66,11 @@ class FastScanMainWindow(QMainWindow):
 
         self.fps_l = []
 
-        self.main_clock = make_timer(1000. / 60, self.on_main_clock, start=True)
+        self.main_clock = QtCore.QTimer()
+        self.main_clock.setInterval(.100)
+        self.main_clock.start()
+        self.main_clock.timeout.connect(self.on_main_clock)
+
         self.setupUi()
         self.show()
 
@@ -121,7 +126,9 @@ class FastScanMainWindow(QMainWindow):
 
         self.n_averages_spinbox = QSpinBox()
         self.n_averages_spinbox.setMinimum(1)
-        self.n_averages_spinbox.setValue(10)
+        self.n_averages_spinbox.setMaximum(999999)
+
+        self.n_averages_spinbox.setValue(parse_setting('fastscan', 'n_averages'))
         # self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
         self.n_averages_spinbox.valueChanged[int].connect(lambda x: write_setting(x,'fastscan','n_averages'))
 
@@ -164,36 +171,30 @@ class FastScanMainWindow(QMainWindow):
         autocorrelation_box_layout = QGridLayout()
         autocorrelation_box.setLayout(autocorrelation_box_layout)
 
-        self.fit_off_checkbox = QRadioButton('Off')
-        autocorrelation_box_layout.addWidget(self.fit_off_checkbox, 0, 0, 1, 1)
-        self.fit_gauss_checkbox = QRadioButton('last curve')
-        autocorrelation_box_layout.addWidget(self.fit_gauss_checkbox, 0, 1, 1, 1)
-        self.fit_sech2_checkbox = QRadioButton('average')
-        autocorrelation_box_layout.addWidget(self.fit_sech2_checkbox, 0, 2, 1, 1)
+        self.calculate_autocorrelation_box = QCheckBox('Acvtive')
+        autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box)
+        self.calculate_autocorrelation_box.setChecked(False)
+        self.calculate_autocorrelation_box.clicked.connect(self.toggle_calculate_autocorrelation)
 
-        self.fit_off_checkbox.setChecked(True)
 
         font = QFont()
         font.setBold(True)
         font.setPointSize(16)
-        self.fit_report_label = QLabel('Fit parameters:\n')
-        autocorrelation_box_layout.addWidget(self.fit_report_label, 2, 0)
-        self.pulse_duration_label = QLabel('0 fs')
 
+        self.pulse_duration_label = QLabel('0 fs')
         self.pulse_duration_label.setFont(font)
 
         autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'), 3, 0)
         autocorrelation_box_layout.addWidget(self.pulse_duration_label, 3, 1)
 
         layout.addWidget(autocorrelation_box)
-        # layout.addItem(self.__verticalSpacer)
 
         # ----------------------------------------------------------------------
         # Save Box
         # ----------------------------------------------------------------------
 
         save_box = QGroupBox('Save')
-        savebox_layout = QHBoxLayout()
+        savebox_layout = QVBoxLayout()
         save_box.setLayout(savebox_layout)
         self.save_name_ledit = QLineEdit('D:/data/fastscan/test01')
         savebox_layout.addWidget(self.save_name_ledit)
@@ -202,10 +203,23 @@ class FastScanMainWindow(QMainWindow):
         self.save_data_button.clicked.connect(self.save_data)
         layout.addWidget(save_box)
 
+        self.datasize_label = QLabel('data Size')
+        savebox_layout.addWidget(self.datasize_label)
+
         return widget
 
     def on_main_clock(self):
-        pass
+        try:
+            streamer_shape = self.data_manager.streamer_average.shape
+            projected_shape = self.data_manager.all_curves.shape
+        except AttributeError:
+            streamer_shape = projected_shape = (0,0)
+
+        string = 'Data Size :\n streamer: {} - {:10.3f} Kb\n projected: {} - {:10.3f} Kb'.format(
+            streamer_shape, np.prod(streamer_shape)/(1024), projected_shape, np.prod(projected_shape)/(1024)
+        )
+        self.datasize_label.setText(string)
+
         # x = np.linspace(0, 99, 100)
         # y = np.random.rand(100)
         # # self.visual_widget.add_main_plot_line('test',(255,255,255))
@@ -232,6 +246,9 @@ class FastScanMainWindow(QMainWindow):
     def toggle_darkcontrol_mode(self):
         write_setting(self.radio_simulate.isChecked(), 'fastscan', 'dark_control')
 
+    def toggle_calculate_autocorrelation(self):
+        self.data_manager._calculate_autocorrelation = self.calculate_autocorrelation_box.isChecked()
+
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
         try:
@@ -249,7 +266,7 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
-        self.pulse_duration_label.setText('{:.3} ps'.format(fitDict['popt'][2]))
+        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]))
         self.visual_widget.plot_fit_curve(fitDict['curve'])
 
     @QtCore.pyqtSlot(xr.DataArray)

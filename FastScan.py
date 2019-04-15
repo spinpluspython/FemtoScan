@@ -28,14 +28,16 @@
 #     QGroupBox
 # from nidaqmx.constants import Edge, AcquisitionType
 
+
 import logging
-import sys
+import sys, os
 from logging.config import fileConfig
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtWidgets import QApplication
 
 from gui.fastscan.mainwindow import FastScanMainWindow
+from utilities.settings import set_default_settings
 
 
 def main():
@@ -68,4 +70,9 @@ def main():
 
 
 if __name__ == '__main__':
+    # print('asd')
+    # if not os.path.isfile('SETTINGS.ini'):
+    #     print('creating settings file')
+    #     set_default_settings()
+
     main()

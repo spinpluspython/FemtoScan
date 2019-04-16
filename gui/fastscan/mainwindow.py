@@ -27,6 +27,7 @@ import pyqtgraph as pg
 import qdarkstyle
 import xarray as xr
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
     QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
@@ -84,7 +85,8 @@ class FastScanMainWindow(QMainWindow):
 
         control_widget = self.make_controlwidget()
         self.visual_widget = FastScanPlotWidget()
-
+        self.visual_widget.setSizePolicy(QSizePolicy.Maximum,QSizePolicy.Maximum)
+        control_widget.setSizePolicy(QSizePolicy.MinimumExpanding,QSizePolicy.MinimumExpanding)
         main_splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         main_splitter.addWidget(control_widget)
         main_splitter.addWidget(self.visual_widget)
@@ -180,12 +182,17 @@ class FastScanMainWindow(QMainWindow):
         font = QFont()
         font.setBold(True)
         font.setPointSize(16)
+        report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
+            'Amp','Xc','FWHM','off',.0,.0,.0,.0)
+        self.autocorrelation_report_label= QLabel(report)
 
         self.pulse_duration_label = QLabel('0 fs')
         self.pulse_duration_label.setFont(font)
+        autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box,0, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.autocorrelation_report_label, 0, 1, 1, 2)
+        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'),         2, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.pulse_duration_label,         2, 1, 1, 2)
 
-        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'), 3, 0)
-        autocorrelation_box_layout.addWidget(self.pulse_duration_label, 3, 1)
 
         layout.addWidget(autocorrelation_box)
 
@@ -301,7 +308,11 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
-        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]))
+        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]*.65))
+        report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
+            'Amp','Xc','FWHM','off',*fitDict['popt'])
+        self.autocorrelation_report_label.setText(report)
+
         self.visual_widget.plot_fit_curve(fitDict['curve'])
 
     @QtCore.pyqtSlot(xr.DataArray)

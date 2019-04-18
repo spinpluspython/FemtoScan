@@ -161,7 +161,8 @@ class FastScanMainWindow(QMainWindow):
         self.radio_dark_control = QRadioButton('Dark Control')
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
-
+        self.radio_dark_control.clicked.connect(self.toggle_darkcontrol_mode)
+        
         self.apply_settings_button = QPushButton('Apply')
         settings_box_layout.addWidget(self.apply_settings_button)
         # self.apply_settings_button.clicked.connect(self.apply_settings)

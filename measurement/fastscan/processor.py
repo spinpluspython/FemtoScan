@@ -20,6 +20,7 @@
 
 """
 import logging
+import time
 
 import numpy as np
 import xarray as xr
@@ -27,7 +28,7 @@ from PyQt5 import QtCore
 from scipy.optimize import curve_fit
 
 from utilities.math import sech2_fwhm, sin
-from utilities.settings import parse_category, parse_setting
+from utilities.settings import parse_setting
 
 
 class FastScanProcessor(QtCore.QObject):
@@ -108,8 +109,10 @@ def fit_autocorrelation(da, expected_pulse_duration=.1):
     a = da_.max() - off
 
     guess = [a, xc, expected_pulse_duration, off]
-
-    popt, pcov = curve_fit(sech2_fwhm, da_.time, da_, p0=guess)
+    try:
+        popt, pcov = curve_fit(sech2_fwhm, da_.time, da_, p0=guess)
+    except RuntimeError:
+        popt, pcov = [0, 0, 0, 0], np.zeros((4, 4))
     fitDict = {'popt': popt,
                'pcov': pcov,
                'perr': np.sqrt(np.diag(pcov)),
@@ -153,13 +156,6 @@ def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time
     result /= norm_array
     time_axis = np.arange(spos_range[0], spos_range[1] + 1, 1) * time_step
     return xr.DataArray(result, coords={'time': time_axis}, dims='time').dropna('time')
-
-
-from PyQt5.QtCore import *
-import time
-import traceback, sys
-
-
 
 
 if __name__ == '__main__':

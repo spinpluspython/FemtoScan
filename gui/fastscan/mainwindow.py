@@ -29,7 +29,8 @@ import xarray as xr
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
+    QGroupBox, QGridLayout, QPushButton, \
     QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
@@ -320,7 +321,8 @@ class FastScanMainWindow(QMainWindow):
         self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
-        pass
+        self.visual_widget.plot_stream_curve(data[0])
+
         # n_samples = data.shape[1]
         # x = np.linspace(0, n_samples - 1, n_samples)
         # self.visual_widget.plot_secondary('stage pos', x=x, y=data[0])

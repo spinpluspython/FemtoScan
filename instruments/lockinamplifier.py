@@ -26,11 +26,16 @@ import time
 import numpy as np
 import serial
 
-from instruments import generic
-from utilities.exceptions import DeviceNotConnectedError
+import os
+os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+import generic
+#os.chdir('U:\\Dokumente\program\Spin+python\Instruments\utilities')
+#import DeviceNotConnectedError
+#import parse_setting
 
 
 class LockInAmplifier(generic.Instrument):
+    #__verbose = parse_setting('general', 'verbose')
 
     def __init__(self):
         super(LockInAmplifier, self).__init__()
@@ -211,6 +216,8 @@ class SR830(LockInAmplifier):
 
         # settings
         self.should_sync = True  # to keep track if all settings are up to date with device state
+        self.output_dict = {'X': 1, 'Y': 2, 'R': 3, 'Theta': 4, 'Aux1': 5, 'Aux2': 6, 'Aux3': 7,
+                            'Aux4': 8, 'Reference Frequency': 9, 'CH1 display': 10, 'CH2 diplay': 11}
         self._channel_names = ['X', 'Y', 'R', 'Theta', 'Aux1', 'Aux2', 'Aux3',
                                'Aux4', 'Reference Frequency', 'CH1 display',
                                'CH2 diplay']
@@ -280,7 +287,8 @@ class SR830(LockInAmplifier):
 
         Comands which started with ++ goes to the prologix adapter, others go directly to device(LockInAmplifier)
         """
-        if not self.connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        if not self.ser.isOpen():
+            raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         try:
             self.ser.write((Command + '\r\n').encode('utf-8'))
         except Exception as e:
@@ -364,13 +372,11 @@ class SR830(LockInAmplifier):
             value: float
                 value output by the lockin
         """
-        if not self.connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
-        assert parameter in self._channel_names, '{} is not a valid parameter to read from the SR830'.format(parameter)
-        command = 'OUTP ?' + str(self._channel_names.index(parameter))
-        value = float(self.read(command))  # returns value as a float
-        self.logger.info('Read_value: {} V'.format(value))
-        # if self.__verbose: print(str(value) + ' V')
-        return value
+        assert parameter in self.output_dict, '{} is not a valid parameter to read from the SR830'.format(parameter)
+        Command = 'OUTP ?' + str(self.output_dict[parameter])
+        Value = float(self.read(Command))  # returns value as a float
+        print(str(Value) + ' V')
+        return Value
 
     def read_snap(self, parameters):
         """Read chosen Values from LockInAmplifier simultaneously.

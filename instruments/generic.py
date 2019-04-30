@@ -22,6 +22,9 @@ Created on Sat Apr 21 16:08:39 2018
 """
 import logging
 from configparser import ConfigParser
+import os
+os.chdir('U:\\Dokumente\\program\\Spin+python\\Instruments\\')
+
 from utilities.exceptions import DeviceNotFoundError, DeviceNotConnectedError
 
 

@@ -22,8 +22,9 @@ Created on Sat Apr 21 16:22:35 2018
 """
 import sys
 import time
-
-from instruments import generic
+import os
+os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+import generic
 
 try:
     import clr
@@ -79,7 +80,7 @@ class DelayStage(generic.Instrument):
     def position_get(self):
         return self.position_current
 
-
+#%%
 class NewportXPS(DelayStage):
 
     def __init__(self):
@@ -115,7 +116,7 @@ class NewportXPS(DelayStage):
         self.XPS_Open()
         self.myXPS.GroupKill(System.String(self.StageName), System.String(""))
         self.myXPS.GroupInitialize(System.String(self.StageName), System.String(""))
-        time.sleep(10)
+        time.sleep(1)
         self.myXPS.GroupHomeSearch(System.String(self.StageName), System.String(""))
         self.myXPS.GroupMotionEnable(System.String(self.StageName), System.String(""))
         self.move_absolute(self.position_zero)
@@ -159,3 +160,70 @@ class NewportXPS(DelayStage):
             else:
                 print('ControllerStatusGet Error => ', errString)
         return result, state
+#%%standa stage
+    
+class StandaStage(DelayStage):
+    def __init__(self):
+        super(StandaStage, self).__init__()
+        os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+        import _PyUSMC
+        self.standa=_PyUSMC.StepperMotorController()
+        self.stage_N=0
+        self.mm_in_step=0.000125 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for styanda 026424
+        
+    def connect(self):
+        self.standa.Init()
+        print(str(len(self.standa.motors))+' stages were connected. Change self.stage_N to switch between stages')
+        self.motor=self.standa.motors[self.stage_N]
+        
+        self.motor.position.maxSpeed = 200.0
+        
+        # Set controller parameters
+        self.motor.parameters.Set(
+            MaxTemp = 70.0,
+            AccelT = 200.0,
+            DecelT = 200.0,
+            BTimeout1 = 0.0,
+            BTimeout2 = 1000.0,
+            BTimeout3 = 1000.0,
+            BTimeout4 = 1000.0,
+            BTO1P = 10.0,
+            BTO2P = 100.0,
+            BTO3P = 400.0,
+            BTO4P = 800.0,
+            MinP = 500.0,
+            BTimeoutR = 500.0,
+            LoftPeriod = 500.0,
+            RTDelta = 200,
+            RTMinError = 15,
+            EncMult = 2.5,
+            MaxLoft = 32,
+            PTimeout = 100.0,
+            SynOUTP = 1)
+
+        # Set start parameters
+        self.motor.startParameters.Set(
+            SDivisor = 8,
+            DefDir = False,
+            LoftEn = False,
+            SlStart = False,
+            WSyncIN = False,
+            SyncOUTR = False,
+            ForceLoft = False)
+        
+        # Power on
+        self.motor.mode.PowerOn()
+        
+    def move_absolute(self, new_position):
+        self.motor.Start(int(new_position/self.mm_in_step))
+        self.position_current = new_position
+    
+    def position_get(self):
+        '''returns current position in mm (accurding to the mm in step parametr)'''
+        self.position_current =self.motor.GetPos()*self.mm_in_step
+        print(self.motor.GetPos()*self.mm_in_step)
+        return self.motor.GetPos()*self.mm_in_step
+    
+    def disconnect(self):
+        self.standa.StopMotors(True)
+        self.standa.Close()

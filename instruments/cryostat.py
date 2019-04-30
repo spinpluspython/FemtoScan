@@ -23,8 +23,11 @@ Created on Tue Oct  9 22:30:31 2018
 import time
 import logging
 import serial
+import os
+os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+import generic
 
-from instruments import generic
+
 
 # logger = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ class Cryostat(generic.Instrument):
         self.temperature_target = temperature
         print('temperature is setted to' + str(temperature) + '. Wait untill real temperature become desired')
 
-    def change_temperature(self, temperature, tolerance=0.1):
+    def change_temperature(self, temperature, tolerance=0.2):
         '''set temperature to the desired Value, wait untll real temperature will become desired and stable. tolerance in kelvin'''
         self.set_temperature(temperature)
 
@@ -73,13 +76,14 @@ class Cryostat(generic.Instrument):
             if len(temp) > 10:
                 temp.pop(0)
                 diff = max([abs(x - self.temperature_target) for x in temp])
+                print(diff)
                 # diff = abs(self.temperature_current - self.temperature_set)
 
 
 class MercuryITC(Cryostat):
     def __init__(self):
         super(MercuryITC, self).__init__()
-        self.COMPort = 'COM8'
+        self.COMPort = 'COM7'
         self.Baud = 115200
         self.ser = serial.Serial()
         self.ser.baudrate = self.Baud
@@ -146,11 +150,13 @@ class MercuryITC(Cryostat):
 
     def set_temperature(self, temperature):
         '''Sets temperature on the device, temperature should be givet in kelvin.'''
+        
         try:
             command = ['SET', 'DEV', 'MB1.T1', 'TEMP', 'LOOP', 'TSET', str(temperature)]
             self.ser.write(self.writestring(command))
             responce = str(self.ser.readline())
             print(responce)
+            self.temperature_target=temperature
             # if response.split(sep=':')[-1]='VALID':
 
 
@@ -168,7 +174,10 @@ class MercuryITC(Cryostat):
             print(response)
             temperature1 = str(response).split(sep=':')[6]
             temperature = float(temperature1[:-5])
+            print('T='+str(temperature))
+            self.temperature_current=temperature
             return (temperature)
+            
         except Exception as xui:
             print('error' + str(xui))
             self.ser.close

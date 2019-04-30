@@ -4,7 +4,7 @@ Created on Wed Oct 10 10:47:48 2018
 
 @author: vgrigore
 """
-from instruments import cryostat, delaystage, lockinamplifier
+from instruments import  delaystage, lockinamplifier
 
 """STEP SCAN"""
 import numpy as np
@@ -17,7 +17,7 @@ class stepscan_measurements(object):
     def __init__(self):
         self.lockin_amplifier = lockinamplifier.SR830()
         self.delay_stage = delaystage.NewportXPS()
-        self.cryostat = cryostat.ITC503s()
+        #self.cryostat = cryostat.ITC503s()
 
     def init_instruments(self):
         #self.lockin_amplifier.connect()
@@ -54,8 +54,8 @@ class stepscan_measurements(object):
         Y = []
         for item in X:
             self.delay_stage.move_absolute(item)
-            # time.sleep(0.0)
-            Y.append(self.lockin_amplifier.measure_avg())
+            time.sleep(1)
+            Y.append(self.lockin_amplifier.read_value('R'))
         self.lockin_amplifier.disconnect()
         matplotlib.pyplot.plot(X, Y)
         self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
@@ -64,7 +64,7 @@ class stepscan_measurements(object):
     def finish(self):
         self.lockin_amplifier.disconnect()
         self.delay_stage.disconnect()
-        self.cryostat.disconnect()
+        #self.cryostat.disconnect()
 
 
 # %%
@@ -73,12 +73,12 @@ def main():
         
     meas = stepscan_measurements()
     meas.init_instruments()
-    for temperature in range(297,305):
-        meas.cryostat.connect()
-        meas.cryostat.change_temperature(temperature)
-        meas.cryostat.disconnect()
-        file_name = 'test'+str(temperature)
-        meas.stepscan_measure(file_name, -100, 0, 10)
+    #or temperature in range(297,305):
+     #   meas.cryostat.connect()
+      #  meas.cryostat.change_temperature(temperature)
+       # meas.cryostat.disconnect()
+    file_name = 'test'#+str(temperature)
+    meas.stepscan_measure(file_name, -45.4, -45.3, 100)
     meas.finish()
 
 

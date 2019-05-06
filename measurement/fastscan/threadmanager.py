@@ -105,7 +105,9 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.create_streamer()
 
-        stream = self.streamer.simulate_single_shot(integration)
+        # stream = self.streamer.simulate_single_shot(integration)
+        stream = self.streamer.measure_single_shot(integration)
+
         projected = project(stream, self.dark_control,
                             self.shaker_position_step, 0.05)
         min_ = projected.time.min()
@@ -122,7 +124,8 @@ class FastScanThreadManager(QtCore.QObject):
             if parse_setting('fastscan', 'simulate'):
                 write_setting(pos, 'fastscan - simulation', 'center_position')
 
-            stream = self.streamer.simulate_single_shot(integration)
+            # stream = self.streamer.simulate_single_shot(integration)
+            stream = self.streamer.measure_single_shot(integration)
             projected = project(stream, self.dark_control,
                                 self.shaker_position_step, 1)
             res = fit_autocorrelation(projected)

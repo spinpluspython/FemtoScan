@@ -23,7 +23,7 @@ Created on Sat Apr 21 16:22:35 2018
 import sys
 import time
 import os
-os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+
 import instruments.generic as generic
 import instruments._PyUSMC as _PyUSMC
 
@@ -168,8 +168,6 @@ class NewportXPS(DelayStage):
 class StandaStage(DelayStage):
     def __init__(self):
         super(StandaStage, self).__init__()
-        os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
-        import _PyUSMC
         self.standa=_PyUSMC.StepperMotorController()
         self.stage_N=0
         self.mm_in_step=0.000325 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for standa 026424

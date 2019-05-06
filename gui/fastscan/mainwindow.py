@@ -27,15 +27,17 @@ import pyqtgraph as pg
 import qdarkstyle
 import xarray as xr
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout, QPushButton, \
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
+    QGroupBox, QGridLayout, QPushButton, \
     QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
 from utilities.qt import SpinBox, labeled_qitem, make_timer
 from utilities.settings import parse_category, parse_setting, write_setting
-
+from gui.instrumentControlWidgets import DelayStageWidget
 
 class FastScanMainWindow(QMainWindow):
 
@@ -84,7 +86,8 @@ class FastScanMainWindow(QMainWindow):
 
         control_widget = self.make_controlwidget()
         self.visual_widget = FastScanPlotWidget()
-
+        self.visual_widget.setSizePolicy(QSizePolicy.Maximum,QSizePolicy.Maximum)
+        control_widget.setSizePolicy(QSizePolicy.MinimumExpanding,QSizePolicy.MinimumExpanding)
         main_splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         main_splitter.addWidget(control_widget)
         main_splitter.addWidget(self.visual_widget)
@@ -158,7 +161,8 @@ class FastScanMainWindow(QMainWindow):
         self.radio_dark_control = QRadioButton('Dark Control')
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
-
+        self.radio_dark_control.clicked.connect(self.toggle_darkcontrol_mode)
+        
         self.apply_settings_button = QPushButton('Apply')
         settings_box_layout.addWidget(self.apply_settings_button)
         # self.apply_settings_button.clicked.connect(self.apply_settings)
@@ -180,14 +184,51 @@ class FastScanMainWindow(QMainWindow):
         font = QFont()
         font.setBold(True)
         font.setPointSize(16)
+        report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
+            'Amp','Xc','FWHM','off',.0,.0,.0,.0)
+        self.autocorrelation_report_label= QLabel(report)
 
         self.pulse_duration_label = QLabel('0 fs')
         self.pulse_duration_label.setFont(font)
+        autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box,0, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.autocorrelation_report_label, 0, 1, 1, 2)
+        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'),         2, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.pulse_duration_label,         2, 1, 1, 2)
 
-        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'), 3, 0)
-        autocorrelation_box_layout.addWidget(self.pulse_duration_label, 3, 1)
 
         layout.addWidget(autocorrelation_box)
+
+        # ----------------------------------------------------------------------
+        # Stage Control Box
+        # ----------------------------------------------------------------------
+
+
+        self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
+        layout.addWidget(self.delay_stage_widget)
+
+
+        shaker_calib_gbox = QGroupBox('Shaker Calibration')
+        shaker_calib_layout = QGridLayout()
+        shaker_calib_gbox.setLayout(shaker_calib_layout)
+        self.shaker_calib_btn = QPushButton('Shaker Calibration')
+        shaker_calib_layout.addWidget(self.shaker_calib_btn,0,0,2,2)
+        self.shaker_calib_btn.clicked.connect(self.on_shaker_calib)
+        self.shaker_calib_iterations = QSpinBox()
+        self.shaker_calib_iterations.setValue(50)
+        self.shaker_calib_iterations.setMinimum(4)
+        self.shaker_calib_iterations.setMaximum(100000)
+        self.shaker_calib_integration = QSpinBox()
+        self.shaker_calib_integration.setValue(5)
+        self.shaker_calib_integration.setMinimum(1)
+        self.shaker_calib_integration.setMaximum(100000)
+
+        shaker_calib_layout.addWidget(QLabel('iterations:'),0,2,1,1)
+        shaker_calib_layout.addWidget(QLabel('integrations:'),1,2,1,1)
+        shaker_calib_layout.addWidget(self.shaker_calib_iterations,0,3,1,1)
+        shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
+
+
+        layout.addWidget(shaker_calib_gbox)
 
         # ----------------------------------------------------------------------
         # Save Box
@@ -249,6 +290,9 @@ class FastScanMainWindow(QMainWindow):
     def toggle_calculate_autocorrelation(self):
         self.data_manager._calculate_autocorrelation = self.calculate_autocorrelation_box.isChecked()
 
+    def on_shaker_calib(self):
+        self.data_manager.calibrate_shaker(self.shaker_calib_iterations.value(),self.shaker_calib_integration.value())
+
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
         try:
@@ -266,7 +310,11 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
-        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]))
+        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]*.65))
+        report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
+            'Amp','Xc','FWHM','off',*fitDict['popt'])
+        self.autocorrelation_report_label.setText(report)
+
         self.visual_widget.plot_fit_curve(fitDict['curve'])
 
     @QtCore.pyqtSlot(xr.DataArray)
@@ -274,14 +322,15 @@ class FastScanMainWindow(QMainWindow):
         self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
-        pass
+        self.visual_widget.plot_stream_curve(data[0])
+
         # n_samples = data.shape[1]
         # x = np.linspace(0, n_samples - 1, n_samples)
         # self.visual_widget.plot_secondary('stage pos', x=x, y=data[0])
         # self.visual_widget.plot_secondary('raw signal', x=x, y=data[1])
 
     def start_acquisition(self):
-        self.data_manager.create_streamer()
+        # self.data_manager.create_streamer()
         self.data_manager.start_streamer()
 
     def stop_acquisition(self):

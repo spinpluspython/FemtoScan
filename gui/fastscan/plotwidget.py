@@ -25,7 +25,7 @@ import xarray as xr
 import numpy as np
 import multiprocessing as mp
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QCheckBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QGridLayout, QHBoxLayout
 from pyqtgraph.Qt import QtCore, QtGui
 import logging
 
@@ -48,10 +48,26 @@ class FastScanPlotWidget(QWidget):
 
         self.main_plot_widget = pg.PlotWidget(name='raw_data_plot')
         self.setup_plot_widget(self.main_plot_widget, title='Signal')
+        self.main_plot_widget.showAxis('top', True)
+        self.main_plot_widget.showAxis('right', True)
+        self.main_plot_widget.showGrid(True, True, .2)
+        self.main_plot_widget.setLabel('left', 'Value', units='V')
+        self.main_plot_widget.setLabel('bottom', 'Time', units='s')
+        self.small_plot_widget = pg.PlotWidget(name='stream_data_plot')
+        self.setup_plot_widget(self.small_plot_widget, title='Stream')
+        self.small_plot_widget.showAxis('top', True)
+        self.small_plot_widget.showAxis('right', True)
+        self.small_plot_widget.showGrid(True, True, .2)
+        self.small_plot_widget.setLabel('left', 'Value', units='V')
+        self.small_plot_widget.setLabel('bottom', 'Time', units='samples')
 
-        self.controls = QGroupBox('Plot Settings')
+        # self.small_plot_widget.setMinimumHeight(int(h * .7))
+        self.small_plot_widget.setMaximumWidth(400)
+        self.small_plot_widget.setMinimumWidth(200)
+
+        controls = QGroupBox('Plot Settings')
         controls_layout = QVBoxLayout()
-        self.controls.setLayout(controls_layout)
+        controls.setLayout(controls_layout)
 
         self.cb_last_curve = QCheckBox('last curve')
         controls_layout.addWidget(self.cb_last_curve)
@@ -71,9 +87,15 @@ class FastScanPlotWidget(QWidget):
         self.fit_curve = self.main_plot_widget.plot()
         self.fit_curve.setPen((pg.mkPen(255, 100, 100)))
 
+        self.stream_curve = self.small_plot_widget.plot()
+        self.stream_curve.setPen((pg.mkPen(255, 100, 100)))
+
         vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+        hsplitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         vsplitter.addWidget(self.main_plot_widget)
-        vsplitter.addWidget(self.controls)
+        vsplitter.addWidget(hsplitter)
+        hsplitter.addWidget(controls)
+        hsplitter.addWidget(self.small_plot_widget)
 
         layout.addWidget(vsplitter)
 
@@ -95,17 +117,21 @@ class FastScanPlotWidget(QWidget):
 
     def plot_last_curve(self,da):
         if self.cb_last_curve.isChecked():
-            self.last_curve.setData(da.time, da)
+            self.last_curve.setData(da.time*10**-12, da)
 
 
     def plot_avg_curve(self,da):
         if self.cb_avg_curve.isChecked():
-            self.avg_curve.setData(da.time, da)
+            self.avg_curve.setData(da.time*10**-12, da)
 
 
     def plot_fit_curve(self,da):
         if self.cb_fit_curve.isChecked():
-            self.fit_curve.setData(da.time, da)
+            self.fit_curve.setData(da.time*10**-12, da)
+
+    def plot_stream_curve(self,da):
+        x = np.arange(len(da))
+        self.stream_curve.setData(x, da)
 
 
     def on_clock(self):

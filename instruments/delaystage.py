@@ -24,7 +24,8 @@ import sys
 import time
 import os
 os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
-import generic
+import instruments.generic as generic
+import instruments._PyUSMC as _PyUSMC
 
 try:
     import clr
@@ -171,7 +172,7 @@ class StandaStage(DelayStage):
         import _PyUSMC
         self.standa=_PyUSMC.StepperMotorController()
         self.stage_N=0
-        self.mm_in_step=0.000125 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for styanda 026424
+        self.mm_in_step=0.000325 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for standa 026424
         
     def connect(self):
         self.standa.Init()

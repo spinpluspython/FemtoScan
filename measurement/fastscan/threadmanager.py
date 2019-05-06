@@ -29,7 +29,7 @@ import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
 
-from instruments.delaystage import DelayStage
+from instruments.delaystage import StandaStage as DelayStage
 from measurement.fastscan.processor import project, fit_autocorrelation
 from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.threadpool import Runnable

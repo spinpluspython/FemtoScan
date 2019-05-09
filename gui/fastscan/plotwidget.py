@@ -90,6 +90,9 @@ class FastScanPlotWidget(QWidget):
         self.stream_curve = self.small_plot_widget.plot()
         self.stream_curve.setPen((pg.mkPen(255, 100, 100)))
 
+        self.stream_curve_dc = self.small_plot_widget.plot()
+        self.stream_curve_dc.setPen((pg.mkPen(100, 255, 100)))
+		
         vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         hsplitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         vsplitter.addWidget(self.main_plot_widget)
@@ -132,6 +135,10 @@ class FastScanPlotWidget(QWidget):
     def plot_stream_curve(self,da):
         x = np.arange(len(da))
         self.stream_curve.setData(x, da)
+
+    def plot_stream_curve_(self,da):
+        x = np.arange(len(da))
+        self.stream_curve_dc.setData(x, da)
 
 
     def on_clock(self):

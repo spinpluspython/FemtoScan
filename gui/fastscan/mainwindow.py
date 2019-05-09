@@ -322,7 +322,9 @@ class FastScanMainWindow(QMainWindow):
         self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
-        self.visual_widget.plot_stream_curve(data[0])
+        self.visual_widget.plot_stream_curve(data[1,1::2])
+        self.visual_widget.plot_stream_curve_(data[1,0::2])
+
 
         # n_samples = data.shape[1]
         # x = np.linspace(0, n_samples - 1, n_samples)

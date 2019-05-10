@@ -26,11 +26,12 @@ import numpy as np
 import pyqtgraph as pg
 import qdarkstyle
 import xarray as xr
+from scipy.signal import butter, filtfilt
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
-    QGroupBox, QGridLayout, QPushButton, \
+    QGroupBox, QGridLayout, QPushButton, QDoubleSpinBox, \
     QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
@@ -162,7 +163,14 @@ class FastScanMainWindow(QMainWindow):
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
         self.radio_dark_control.clicked.connect(self.toggle_darkcontrol_mode)
-        
+        self.filter_checkbox = QCheckBox('filter')
+        settings_box_layout.addWidget(self.filter_checkbox)
+        self.filter_frequency_spinbox = QDoubleSpinBox()
+        settings_box_layout.addWidget(self.filter_frequency_spinbox)
+        #self.filter_frequency_spinbox.setMaximum(1.)
+        #self.filter_frequency_spinbox.setMinimum(0.0)
+        self.filter_frequency_spinbox.setValue(.3)        
+        self.filter_checkbox.setChecked(False)        
         self.apply_settings_button = QPushButton('Apply')
         settings_box_layout.addWidget(self.apply_settings_button)
         # self.apply_settings_button.clicked.connect(self.apply_settings)
@@ -201,7 +209,7 @@ class FastScanMainWindow(QMainWindow):
         # ----------------------------------------------------------------------
         # Stage Control Box
         # ----------------------------------------------------------------------
-
+		
 
         self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
         layout.addWidget(self.delay_stage_widget)
@@ -228,7 +236,7 @@ class FastScanMainWindow(QMainWindow):
         shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
 
 
-        layout.addWidget(shaker_calib_gbox)
+        #layout.addWidget(shaker_calib_gbox)
 
         # ----------------------------------------------------------------------
         # Save Box
@@ -319,12 +327,16 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_avg_data(self, da):
+        if self.filter_checkbox.isChecked():
+            try:
+                b,a = butter(2,self.filter_frequency_spinbox.value())
+                da.data = filtfilt(b,a,da)
+            except:
+                pass
         self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
-        self.visual_widget.plot_stream_curve(data[1,1::2])
-        self.visual_widget.plot_stream_curve_(data[1,0::2])
-
+        self.visual_widget.plot_stream_curve(data)
 
         # n_samples = data.shape[1]
         # x = np.linspace(0, n_samples - 1, n_samples)

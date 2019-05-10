@@ -21,6 +21,7 @@
 """
 
 import pyqtgraph as pg
+from scipy.signal import butter, filtfilt
 import xarray as xr
 import numpy as np
 import multiprocessing as mp
@@ -90,9 +91,11 @@ class FastScanPlotWidget(QWidget):
         self.stream_curve = self.small_plot_widget.plot()
         self.stream_curve.setPen((pg.mkPen(255, 100, 100)))
 
-        self.stream_curve_dc = self.small_plot_widget.plot()
-        self.stream_curve_dc.setPen((pg.mkPen(100, 255, 100)))
-		
+        self.stream_signal_dc0 = self.small_plot_widget.plot()
+        self.stream_signal_dc0.setPen((pg.mkPen(100, 255, 100)))
+        self.stream_signal_dc1 = self.small_plot_widget.plot()
+        self.stream_signal_dc1.setPen((pg.mkPen(100, 100, 255)))
+
         vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         hsplitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         vsplitter.addWidget(self.main_plot_widget)
@@ -132,9 +135,18 @@ class FastScanPlotWidget(QWidget):
         if self.cb_fit_curve.isChecked():
             self.fit_curve.setData(da.time*10**-12, da)
 
-    def plot_stream_curve(self,da):
-        x = np.arange(len(da))
-        self.stream_curve.setData(x, da)
+    def plot_stream_curve(self,data):
+        x = np.arange(len(data[0]))
+        pos = data[0,:]
+        if data[2,1]>data[2,0]:
+            sig_dc0 = data[1,1::2]
+            sig_dc1 = data[1,0::2]
+        else:
+            sig_dc1 = data[1,1::2]
+            sig_dc0 = data[1,0::2]
+        self.stream_curve.setData(x, pos)
+        self.stream_signal_dc0.setData(x[::2], sig_dc0)
+        self.stream_signal_dc1.setData(x[::2], sig_dc1)
 
     def plot_stream_curve_(self,da):
         x = np.arange(len(da))

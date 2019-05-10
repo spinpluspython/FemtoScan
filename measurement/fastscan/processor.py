@@ -142,16 +142,15 @@ def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time
     norm_array = np.zeros(spos_range[1] - spos_range[0] + 1)
 
     if use_dark_control:
-        dc_pulse = True
+
         for i in range(len(signal[::2])):
             pos = int((spos[2*i]+spos[2*i+1])//2)-spos_range[0]
             dc = (dark_control[2*i],dark_control[2*i+1])
-            dc_pulse = not dc_pulse
-            if i//2 == 0:#dc_pulse:# dc[1]>dc[0]:
+            if dc[1]<dc[0]:
                 val = signal[2*i]-signal[2*i+1]
             else:
                 val = signal[2*i+1]-signal[2*i]
-            result[pos] = val
+            result[pos] += val
             norm_array[pos] += 1
 #        dc_threshold = (min(dark_control[:10]) + max(dark_control[:10])) /2
 #        for val, pos, dc in zip(signal, spos - spos_range[0], dark_control):

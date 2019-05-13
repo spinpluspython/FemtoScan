@@ -163,17 +163,36 @@ class FastScanMainWindow(QMainWindow):
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
         self.radio_dark_control.clicked.connect(self.toggle_darkcontrol_mode)
-        self.filter_checkbox = QCheckBox('filter')
-        settings_box_layout.addWidget(self.filter_checkbox)
-        self.filter_frequency_spinbox = QDoubleSpinBox()
-        settings_box_layout.addWidget(self.filter_frequency_spinbox)
+
         #self.filter_frequency_spinbox.setMaximum(1.)
         #self.filter_frequency_spinbox.setMinimum(0.0)
-        self.filter_frequency_spinbox.setValue(.3)        
-        self.filter_checkbox.setChecked(False)        
-        self.apply_settings_button = QPushButton('Apply')
-        settings_box_layout.addWidget(self.apply_settings_button)
+
         # self.apply_settings_button.clicked.connect(self.apply_settings)
+
+        # self.apply_settings_button = QPushButton('Apply')
+        # settings_box_layout.addWidget(self.apply_settings_button)
+
+        # ----------------------------------------------------------------------
+        # Filter Box
+        # ----------------------------------------------------------------------
+        filter_box = QGroupBox('Filter')
+        layout.addWidget(filter_box)
+        filter_box_layout = QGridLayout()
+        filter_box.setLayout(filter_box_layout)
+
+        self.butter_filter_checkbox = QCheckBox('Butter')
+        filter_box_layout.addWidget(self.butter_filter_checkbox, 0, 0)
+        self.filter_order_spinbox = QSpinBox()
+        self.filter_order_spinbox.setValue(2)
+        filter_box_layout.addWidget(QLabel('Order:'),0,1)
+        filter_box_layout.addWidget(self.filter_order_spinbox,0,2)
+
+        self.filter_frequency_spinbox = QDoubleSpinBox()
+        self.filter_frequency_spinbox.setValue(.3)
+
+        filter_box_layout.addWidget(QLabel('Cut (0.-1.):'),0,3)
+        filter_box_layout.addWidget(self.filter_frequency_spinbox,0,4)
+        self.butter_filter_checkbox.setChecked(False)
 
         # ----------------------------------------------------------------------
         # Autocorrelation Box
@@ -183,7 +202,7 @@ class FastScanMainWindow(QMainWindow):
         autocorrelation_box_layout = QGridLayout()
         autocorrelation_box.setLayout(autocorrelation_box_layout)
 
-        self.calculate_autocorrelation_box = QCheckBox('Acvtive')
+        self.calculate_autocorrelation_box = QCheckBox('Fit')
         autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box)
         self.calculate_autocorrelation_box.setChecked(False)
         self.calculate_autocorrelation_box.clicked.connect(self.toggle_calculate_autocorrelation)
@@ -212,7 +231,7 @@ class FastScanMainWindow(QMainWindow):
 		
 
         self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
-        layout.addWidget(self.delay_stage_widget)
+        # layout.addWidget(self.delay_stage_widget)
 
 
         shaker_calib_gbox = QGroupBox('Shaker Calibration')
@@ -243,21 +262,49 @@ class FastScanMainWindow(QMainWindow):
         # ----------------------------------------------------------------------
 
         save_box = QGroupBox('Save')
-        savebox_layout = QVBoxLayout()
-        save_box.setLayout(savebox_layout)
-        self.save_name_ledit = QLineEdit('D:/data/fastscan/test01')
-        savebox_layout.addWidget(self.save_name_ledit)
-        self.save_data_button = QPushButton('Save')
-        savebox_layout.addWidget(self.save_data_button)
-        self.save_data_button.clicked.connect(self.save_data)
+        savebox_layout = QGridLayout()
         layout.addWidget(save_box)
 
+        save_box.setLayout(savebox_layout)
+        h5_dir = parse_setting('paths','h5_data')
+        i=0
+        names  = [x for x in os.listdir(h5_dir) if 'noname_' in x]
+        filename = ''
+        while True:
+            filename = 'noname_{:03}'.format(i)
+            if f'{filename}.h5' in names:
+                i+=1
+            else:
+                break
+
+
+        self.save_name_ledit = QLineEdit(filename)
+        savebox_layout.addWidget(QLabel('Name:'),0,0)
+        savebox_layout.addWidget(self.save_name_ledit,0,1)
+        self.save_dir_ledit = QLineEdit(h5_dir)
+        savebox_layout.addWidget(QLabel('dir :'),1,0)
+        savebox_layout.addWidget(self.save_dir_ledit,1,1)
+
+        self.save_data_button = QPushButton('Save')
+        savebox_layout.addWidget(self.save_data_button,2,0,1,2)
+        self.save_data_button.clicked.connect(self.save_data)
+
+        # self.autosave_checkbox = QCheckBox('autosave')
+        # savebox_layout.addWidget(self.autosave_checkbox,3,0)
+        # self.autosave_timeout = QDoubleSpinBox()
+        # self.autosave_timeout.setValue(1)
+        # savebox_layout.addWidget(QLabel('timeout (s)'),3,1)
+        # savebox_layout.addWidget(self.autosave_timeout,3,2)
+
+
+
         self.datasize_label = QLabel('data Size')
-        savebox_layout.addWidget(self.datasize_label)
+        savebox_layout.addWidget(self.datasize_label,4,0,3,2)
 
         return widget
 
     def on_main_clock(self):
+        # self.main_clock.setInterval(self.autosave_timeout.value())
         try:
             streamer_shape = self.data_manager.streamer_average.shape
             projected_shape = self.data_manager.all_curves.shape
@@ -268,11 +315,11 @@ class FastScanMainWindow(QMainWindow):
             streamer_shape, np.prod(streamer_shape)/(1024), projected_shape, np.prod(projected_shape)/(1024)
         )
         self.datasize_label.setText(string)
-
-        # x = np.linspace(0, 99, 100)
-        # y = np.random.rand(100)
-        # # self.visual_widget.add_main_plot_line('test',(255,255,255))
-        # self.visual_widget.plot_main('test', x, y)
+        # if self.autosave_checkbox.isChecked():
+        #     try:
+        #         self.save_data()
+        #     except (TypeError,AttributeError):
+        #         pass
 
     def initialize_data_manager(self):
 
@@ -313,6 +360,7 @@ class FastScanMainWindow(QMainWindow):
             self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
         except:
             self.processor_tick = time.time()
+        self.apply_filter(data_array)
         self.visual_widget.plot_last_curve(data_array)
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
 
@@ -327,21 +375,19 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_avg_data(self, da):
-        if self.filter_checkbox.isChecked():
-            try:
-                b,a = butter(2,self.filter_frequency_spinbox.value())
-                da.data = filtfilt(b,a,da)
-            except:
-                pass
+        self.apply_filter(da)
         self.visual_widget.plot_avg_curve(da)
 
     def on_streamer_data(self, data):
         self.visual_widget.plot_stream_curve(data)
 
-        # n_samples = data.shape[1]
-        # x = np.linspace(0, n_samples - 1, n_samples)
-        # self.visual_widget.plot_secondary('stage pos', x=x, y=data[0])
-        # self.visual_widget.plot_secondary('raw signal', x=x, y=data[1])
+    def apply_filter(self,data_array):
+        if self.butter_filter_checkbox.isChecked():
+            try:
+                b, a = butter(2, self.filter_frequency_spinbox.value())
+                data_array.data = filtfilt(b, a, data_array)
+            except:
+                pass
 
     def start_acquisition(self):
         # self.data_manager.create_streamer()
@@ -361,8 +407,10 @@ class FastScanMainWindow(QMainWindow):
         self.data_manager.n_averages = val
 
     def save_data(self):
+        dir = self.save_dir_ledit.text()
         filename = self.save_name_ledit.text()
-        self.data_manager.save_data(str(filename))
+
+        self.data_manager.save_data(os.path.join(dir,filename))
 
     @QtCore.pyqtSlot(Exception)
     def on_thread_error(self, e):

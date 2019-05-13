@@ -96,6 +96,8 @@ def parse_setting(category, name, settings_file='default'):
         return None
     except ValueError:
         return settings[category][name]
+    except SyntaxError:
+        return settings[category][name]
 
 def write_setting(value, category, name, settings_file='default'):
     """ Write enrty in the settings file

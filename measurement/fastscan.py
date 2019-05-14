@@ -37,40 +37,12 @@ class FastScan(Experiment):
         self.logger = logging.getLogger('{}.StepScan'.format(__name__))
         self.logger.info('Created instance of StepScan.')
 
-        self.required_instruments = [LockInAmplifier, DelayStage]
+        self.required_instruments = []
 
         self.worker = FastScanWorker
         # define settings to pass to worker. these can be set as variables,
         # since they are class properties! see below...
-        self.measurement_settings = {'averages': 2,
-                                     'stage_positions': np.linspace(-1, 3, 10),
-                                     'time_zero': -.5,
-                                     }
-
-    @property
-    def stage_positions(self):
-        return self.measurement_settings['stage_positions']
-
-    @stage_positions.setter
-    def stage_positions(self, array):
-        if isinstance(array, list):
-            array = np.array(array)
-        assert isinstance(array, np.ndarray), 'must be a 1d array'
-        assert len(array.shape) == 1, 'must be a 1d array'
-        assert monotonically_increasing(array), 'array must be monotonically increasing'
-        max_resolution = 0
-        for i in range(len(array) - 1):
-            step = array[i + 1] - array[i]
-            if step < max_resolution:
-                max_resolution = step
-        self.logger.info('Stage positions changed: {} steps'.format(len(array)))
-        self.logger.debug(
-            'Current stage_positions configuration: {} steps from {} to {} with max resolution {}'.format(len(array),
-                                                                                                          array[0],
-                                                                                                          array[-1],
-                                                                                                          max_resolution))
-
-        self.measurement_settings['stage_positions'] = array
+        self.measurement_settings = {'averages': 2,'time_zero':0}
 
     @property
     def averages(self):
@@ -126,10 +98,7 @@ class FastScanWorker(Worker):
 
     def check_requirements(self):
         assert hasattr(self, 'averages'), 'No number of averages was passed!'
-        assert hasattr(self, 'stage_positions'), 'no values of the stage positions were passed!'
         assert hasattr(self, 'time_zero'), 'Need to tell where time zero is!'
-        assert hasattr(self, 'lockin'), 'No Lockin Amplifier found: attribute name should be "lockin"'
-        assert hasattr(self, 'delay_stage'), 'No stage found: attribute name should be "delay_stage"'
 
         self.logger.info('worker has all it needs. Ready to measure_avg!')
 
@@ -139,7 +108,14 @@ class FastScanWorker(Worker):
         Performs numberOfScans scans in which each moves the stage to the position defined in stagePositions, waits
         for the dwelltime, and finally records the values contained in lockinParameters from the Lock-in amplifier.
         """
-        raise NotImplementedError('no Fast Scan measurement implemented.')
+        self.logger.info('---- New measurement started ----')
+
+        groupname = 'raw_data/'
+        for i, idx in enumerate(self.current_index):
+            groupname += str(self.values[i][idx]) + self.units[i] + ' - '
+        groupname = groupname[:-3]
+        # with h5py.File(self.file, 'a') as f:
+        #     f.create_group(groupname)
 
 
 def main():

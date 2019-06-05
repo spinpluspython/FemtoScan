@@ -20,12 +20,12 @@ Created on Sat Apr 21 16:22:35 2018
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import sys
 import time
-import os
+import sys
+sys.path.insert(0,'./..')
 
-import instruments.generic as generic
-import instruments._PyUSMC as _PyUSMC
+from instruments import generic 
+#import _PyUSMC as _PyUSMC
 
 try:
     import clr
@@ -177,7 +177,7 @@ class StandaStage(DelayStage):
         print(str(len(self.standa.motors))+' stages were connected. Change self.stage_N to switch between stages')
         self.motor=self.standa.motors[self.stage_N]
         
-        self.motor.position.maxSpeed = 200.0
+        self.motor.position.maxSpeed = 500.0
         
         # Set controller parameters
         self.motor.parameters.Set(

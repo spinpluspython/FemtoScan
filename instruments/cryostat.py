@@ -25,6 +25,8 @@ import logging
 import serial
 import os
 # os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
+import sys
+sys.path.insert(0,'./..')
 from instruments import generic
 
 
@@ -88,6 +90,7 @@ class MercuryITC(Cryostat):
         self.ser = serial.Serial()
         self.ser.baudrate = self.Baud
         self.ser.port = self.COMPort
+        self.ser.timeout=1
 
     # %%
     def connect(self):

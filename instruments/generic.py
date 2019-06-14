@@ -22,7 +22,8 @@ Created on Sat Apr 21 16:08:39 2018
 """
 import logging
 from configparser import ConfigParser
-import os
+import sys
+sys.path.insert(0,'./..')
 
 from utilities.exceptions import DeviceNotFoundError, DeviceNotConnectedError
 

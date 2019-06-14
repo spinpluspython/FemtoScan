@@ -4,7 +4,7 @@ Created on Wed Oct 10 10:47:48 2018
 
 @author: vgrigore
 """
-from instruments import  delaystage, lockinamplifier
+from instruments import  delaystage, lockinamplifier, cryostat
 
 """STEP SCAN"""
 import numpy as np
@@ -54,11 +54,11 @@ class stepscan_measurements(object):
         Y = []
         for item in X:
             self.delay_stage.move_absolute(item)
-            time.sleep(1)
-            Y.append(self.lockin_amplifier.read_value('R'))
+        
+            Y.append(self.lockin_amplifier.measure_avg(sleep=1))
         self.lockin_amplifier.disconnect()
         matplotlib.pyplot.plot(X, Y)
-        self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
+        #self.save(name + str(start) + '-' + str(stop) + '-' + str(N), X, Y)
         return X, Y
 
     def finish(self):
@@ -78,7 +78,7 @@ def main():
       #  meas.cryostat.change_temperature(temperature)
        # meas.cryostat.disconnect()
     file_name = 'test'#+str(temperature)
-    meas.stepscan_measure(file_name, -45.4, -45.3, 100)
+    meas.stepscan_measure(file_name, 142.58, 142.68, 100)
     meas.finish()
 
 

@@ -26,12 +26,12 @@ import time
 import numpy as np
 import serial
 
-import os
-os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
-import generic
-#os.chdir('U:\\Dokumente\program\Spin+python\Instruments\utilities')
-#import DeviceNotConnectedError
-#import parse_setting
+import sys
+sys.path.insert(0,'./..')
+from instruments import generic
+
+from utilities.exceptions import DeviceNotConnectedError
+from utilities.settings import parse_setting
 
 
 class LockInAmplifier(generic.Instrument):
@@ -236,6 +236,7 @@ class SR830(LockInAmplifier):
                 self.ser.write(
                     '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
                 val = self.ser.readline()  # reads version
+                #print(val)
                 self.logger.debug('SR830 Lockin is Connected')
                 return True
             except Exception:
@@ -257,9 +258,9 @@ class SR830(LockInAmplifier):
         try:
             self.ser.open()  # opens COM port with values in this class, Opens ones so after using use disconnecnt function to close it
             self.logger.debug('serial open')
-            self.ser.write(
-                '++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
-            value = self.ser.readline()  # reads version
+            self.ser.write('++ver\r\n'.encode('utf-8'))  # query version of the prologix USB-GPIB adapter to test connection
+            value = self.ser.readline()# reads version
+            self._connected=True
             self.logger.info('Encoder version: {}'.format(value))
             # self.ser.close()
             self.write('++eoi 1')  # enable the eoi signal mode, which signals about and of the line
@@ -269,7 +270,7 @@ class SR830(LockInAmplifier):
             self.logger.debug('assigned GPIB address to {}'.format(self.GPIB_address))
             idn = self.read('*IDN?')
             self.logger.debug('IDN response from lockin: {}'.format(idn))
-            self._connected = True
+            #self._connected = True
         except Exception as e:
             self.ser.close()
             self.logger.error('Connection Error: {} - Closing serial port'.format(e), exc_info=True)
@@ -304,7 +305,7 @@ class SR830(LockInAmplifier):
             value:
                 answer from lockin as byte
         """
-        if not self.connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        if not self._connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         try:
             # query info from lockin. adapter reads answer automaticaly and store it
             self.write(command)
@@ -314,6 +315,7 @@ class SR830(LockInAmplifier):
             self.ser.write(('++read eoi\r\n').encode('utf-8'))
             value = self.ser.readline()  # reads answer
             self.logger.debug('serial response: {}'.format(value))
+            print(value)
             return value
 
         except Exception as e:
@@ -342,7 +344,7 @@ class SR830(LockInAmplifier):
             list (list): list of float values as returned by the lockin.
         """
 
-        if not self.connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        if not self._connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         if parameters == 'default':
             parameters = ['X', 'Y', 'Aux1', 'Aux2', 'Aux3', 'Aux4']
         # calculate sleep time from memory, without asking the lockin.+
@@ -388,19 +390,24 @@ class SR830(LockInAmplifier):
             output: list of float
                 list corresponding in position to the parameters given.
         """
-        if not self.connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
+        if not self._connected: raise DeviceNotConnectedError('COM port is closed. Device is not connected.')
         assert isinstance(parameters, list), 'parameters need to be a tuple or list'
         assert False not in [isinstance(x, str) for x in parameters], 'items in the list must be strings'
         assert 2 <= len(parameters) <= 6, 'read_snap requires 2 to 6 parameters'
         command = 'SNAP ? '
+        #parameters.sort(key=self.sortparam)
         for item in parameters:
             # compose command string with parameters in input
-            command = command + str(self._channel_names.index(item)) + ', '
+            command = command + str(self._channel_names.index(item)+1) + ', '
         command = command[:-2]  # cut last ', '
+        print(command)
         string = str(self.read(command))[2:-3]  # reads answer, transform it to string, cut system characters
+        print(string)
         values = [float(x) for x in string.split(',')]  # split answer to separated values and turn them to floats
         self.logger.info('Read_Snap: {} for {}'.format(values, parameters))
         return values
+        
+
 
     def measure_avg(self, avg=10, sleep=None, var='R'):
         ''' [DEPRECATED] Perform one action of mesurements, average signal(canceling function in case of not real values should be implemeted), sleep time could be set manualy or automaticaly sets tim constant of lockin x 3'''
@@ -417,13 +424,15 @@ class SR830(LockInAmplifier):
             val = sum(signal) / avg
         return val
 
+ 
+        
     # settings property generators:
     @property
     def sensitivity(self):
         """ return the value on lockin or if disconnected the locally set value"""
         setting = 'sensitivity'
         try:
-            command = self._settings[setting]['cmd'] + '?'
+            command = self._settings[setting]['cmd'] + ' ?'
             value_idx = int(self.read(command))
             value = self._settings[setting]['allowed_values'][value_idx]
             old_value = self._settings[setting]['value']
@@ -442,7 +451,7 @@ class SR830(LockInAmplifier):
         setting = 'sensitivity'
         try:
             cmd = self._settings[setting]['cmd']
-            cmd += str(self._settings[setting]['allowed_values'].index(value))
+            cmd += ' '+str(self._settings[setting]['allowed_values'].index(value))
             self.write(cmd)
             old_val = self._settings[setting]['value']
             self._settings[setting]['value'] = value
@@ -460,7 +469,7 @@ class SR830(LockInAmplifier):
         """ return the value on lockin or if disconnected the locally set value"""
         setting = 'time_constant'
         try:
-            command = self._settings[setting]['cmd'] + '?'
+            command = self._settings[setting]['cmd'] + ' ?'
             value_idx = int(self.read(command))
             value = self._settings[setting]['allowed_values'][value_idx]
             old_value = self._settings[setting]['value']
@@ -480,7 +489,7 @@ class SR830(LockInAmplifier):
         assert value in self._settings[setting]['allowed_values']
         try:
             cmd = self._settings[setting]['cmd']
-            cmd += str(self._settings[setting]['allowed_values'].index(value))
+            cmd += ' '+str(self._settings[setting]['allowed_values'].index(value))
             self.write(cmd)
             old_val = self._settings[setting]['value']
             self._settings[setting]['value'] = value
@@ -976,6 +985,10 @@ class SR830(LockInAmplifier):
 
 
 if __name__ == '__main__':
-    # sys.path.append('\\fs02\vgrigore$\Dokumente\program\Spin+python\Instruments\\')
+    la=SR830()
+    la.connect()
+    la.read_value('R')
+    la.read_snap(['R','X','Y'])
+    la.disconnect()
 
     pass

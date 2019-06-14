@@ -20,15 +20,14 @@
 
 """
 
-import pyqtgraph as pg
-from scipy.signal import butter, filtfilt
-import xarray as xr
-import numpy as np
-import multiprocessing as mp
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QGridLayout, QHBoxLayout
-from pyqtgraph.Qt import QtCore, QtGui
 import logging
+
+import numpy as np
+import pyqtgraph as pg
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox,QPushButton
+from pyqtgraph.Qt import QtCore, QtGui
+
 
 class FastScanPlotWidget(QWidget):
 
@@ -37,24 +36,26 @@ class FastScanPlotWidget(QWidget):
         self.logger = logging.getLogger('-.{}.PlotWidget'.format(__name__))
         self.logger.info('Created PlotWidget')
 
-
         self.clock = QTimer()
-        self.clock.setInterval(1000./30)
+        self.clock.setInterval(1000. / 30)
         self.clock.timeout.connect(self.on_clock)
         self.clock.start()
 
+        self.curves = {}
 
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        self.main_plot_widget = pg.PlotWidget(name='raw_data_plot')
-        self.setup_plot_widget(self.main_plot_widget, title='Signal')
+        self.main_plot_widget = pg.PlotWidget(name='main_plot')
+        self.main_plot = self.main_plot_widget.getPlotItem()
+        self.setup_plot_widget(self.main_plot_widget, title='Main')
         self.main_plot_widget.showAxis('top', True)
         self.main_plot_widget.showAxis('right', True)
         self.main_plot_widget.showGrid(True, True, .2)
         self.main_plot_widget.setLabel('left', 'Value', units='V')
         self.main_plot_widget.setLabel('bottom', 'Time', units='s')
-        self.small_plot_widget = pg.PlotWidget(name='stream_data_plot')
+        self.small_plot_widget = pg.PlotWidget(name='stream_plot')
+        self.small_plot = self.small_plot_widget.getPlotItem()
         self.setup_plot_widget(self.small_plot_widget, title='Stream')
         self.small_plot_widget.showAxis('top', True)
         self.small_plot_widget.showAxis('right', True)
@@ -81,11 +82,11 @@ class FastScanPlotWidget(QWidget):
         controls_layout.addWidget(self.cb_fit_curve)
         self.cb_fit_curve.setChecked(True)
 
-        self.last_curve = self.main_plot_widget.plot()
+        self.last_curve = self.main_plot_widget.plot(name='last')
         self.last_curve.setPen((pg.mkPen(200, 200, 200)))
-        self.avg_curve = self.main_plot_widget.plot()
+        self.avg_curve = self.main_plot_widget.plot(name='avg')
         self.avg_curve.setPen((pg.mkPen(100, 255, 100)))
-        self.fit_curve = self.main_plot_widget.plot()
+        self.fit_curve = self.main_plot_widget.plot(name='fit')
         self.fit_curve.setPen((pg.mkPen(255, 100, 100)))
 
         self.stream_curve = self.small_plot_widget.plot()
@@ -105,7 +106,6 @@ class FastScanPlotWidget(QWidget):
 
         layout.addWidget(vsplitter)
 
-
     def setup_plot_widget(self, plot_widget, title='Plot'):
         plot_widget.showAxis('top', True)
         plot_widget.showAxis('right', True)
@@ -120,42 +120,56 @@ class FastScanPlotWidget(QWidget):
         self.main_plot_widget.setMinimumHeight(int(h * .7))
         self.main_plot_widget.setMinimumWidth(500)
 
+    def add_curve(self,name,color=(255, 255, 255)):
+        self.curves[name] = self.main_plot_widget.plot(name=name)
+        self.curves[name].setPen((pg.mkPen(*color)))
 
-    def plot_last_curve(self,da):
+    def plot_curve(self,name, da):
+        if name in self.curves:
+            self.curves[name].setData(da.time * 10 ** -12, da)
+
+    def plot_last_curve(self, da):
         if self.cb_last_curve.isChecked():
-            self.last_curve.setData(da.time*10**-12, da)
-
-
-    def plot_avg_curve(self,da):
-        if self.cb_avg_curve.isChecked():
-            self.avg_curve.setData(da.time*10**-12, da)
-
-
-    def plot_fit_curve(self,da):
-        if self.cb_fit_curve.isChecked():
-            self.fit_curve.setData(da.time*10**-12, da)
-
-    def plot_stream_curve(self,data):
-        x = np.arange(len(data[0]))
-        pos = data[0,:]
-        if data[2,1]>data[2,0]:
-            sig_dc0 = data[1,1::2]
-            sig_dc1 = data[1,0::2]
+            if 'last' not in self.curves:
+                self.add_curve('last',color=(200, 200, 200))
+            self.plot_curve('last', da)
         else:
-            sig_dc1 = data[1,1::2]
-            sig_dc0 = data[1,0::2]
+            if 'last' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('last'))
+
+    def plot_avg_curve(self, da):
+        if self.cb_avg_curve.isChecked():
+            if 'avg' not in self.curves:
+                self.add_curve('avg',color=(255, 100, 100))
+            self.plot_curve('avg', da)
+        else:
+            if 'avg' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('avg'))
+
+    def plot_fit_curve(self, da):
+        if self.cb_fit_curve.isChecked():
+            if 'fit' not in self.curves:
+                self.add_curve('fit',color=(100, 255, 100))
+            self.plot_curve('fit', da)
+        else:
+            if 'fit' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('fit'))
+
+    def plot_stream_curve(self, data):
+        x = np.arange(len(data[0]))
+        pos = data[0, :]
+        if data[2, 1] > data[2, 0]:
+            sig_dc0 = data[1, 1::2]
+            sig_dc1 = data[1, 0::2]
+        else:
+            sig_dc1 = data[1, 1::2]
+            sig_dc0 = data[1, 0::2]
         self.stream_curve.setData(x, pos)
         self.stream_signal_dc0.setData(x[::2], sig_dc0)
         self.stream_signal_dc1.setData(x[::2], sig_dc1)
 
-    # def plot_stream_curve_(self,da):
-    #     x = np.arange(len(da))
-    #     self.stream_curve_dc.setData(x, da)
-
-
     def on_clock(self):
         pass
-
 
 
 def main():

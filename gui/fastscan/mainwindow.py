@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
     QGroupBox, QGridLayout, QPushButton, QDoubleSpinBox, \
-    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox, QComboBox
+    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox, QComboBox, QMessageBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
@@ -112,10 +112,10 @@ class FastScanMainWindow(QMainWindow):
 
         self.start_button = QPushButton('start')
         acquisition_box_layout.addWidget(self.start_button, 0, 0, 1, 1)
-        self.start_button.clicked.connect(self.data_manager.start_streamer)
+        self.start_button.clicked.connect(self.start_acquisition)
         self.stop_button = QPushButton('stop')
         acquisition_box_layout.addWidget(self.stop_button, 0, 1, 1, 1)
-        self.stop_button.clicked.connect(self.data_manager.stop_streamer)
+        self.stop_button.clicked.connect(self.stop_acquisition)
         # self.stop_button.setEnabled(False)
 
         self.reset_button = QPushButton('reset')
@@ -168,9 +168,15 @@ class FastScanMainWindow(QMainWindow):
         savebox_layout.addWidget(QLabel('dir :'),1,0)
         savebox_layout.addWidget(self.save_dir_ledit,1,1)
 
+        self.save_all_cb = QCheckBox('Save avgs')
+        self.save_all_cb.setToolTip('If Checked, saves all projected average curves, \nelse it only saves the accumulate average trace.')
+        savebox_layout.addWidget(self.save_all_cb,2,0)
+        self.save_all_cb.setChecked(True)
+
         self.save_data_button = QPushButton('Save')
-        savebox_layout.addWidget(self.save_data_button,2,0,1,2)
+        savebox_layout.addWidget(self.save_data_button,2,1,2,2)
         self.save_data_button.clicked.connect(self.save_data)
+
 
         # self.autosave_checkbox = QCheckBox('autosave')
         # savebox_layout.addWidget(self.autosave_checkbox,3,0)
@@ -437,13 +443,18 @@ class FastScanMainWindow(QMainWindow):
 
     def start_acquisition(self):
         # self.data_manager.create_streamer()
+        self.status_bar.showMessage('Acquisition started')
         self.data_manager.start_streamer()
 
     def stop_acquisition(self):
+        self.status_bar.showMessage('Acquisition Stopped')
         self.data_manager.stop_streamer()
 
+
     def reset_data(self):
+        self.status_bar.showMessage('Data reset')
         self.data_manager.reset_data()
+
 
     def set_n_samples(self, var):
         self.data_manager.n_samples = var
@@ -453,10 +464,12 @@ class FastScanMainWindow(QMainWindow):
         self.data_manager.n_averages = val
 
     def save_data(self):
+
         dir = self.save_dir_ledit.text()
         filename = self.save_name_ledit.text()
-
-        self.data_manager.save_data(os.path.join(dir,filename))
+        filepath = os.path.join(dir,filename)
+        self.data_manager.save_data(filepath, all_data=self.save_all_cb.isChecked())
+        self.status_bar.showMessage('Successfully saved data as {}'.format(filepath))
 
     @QtCore.pyqtSlot(Exception)
     def on_thread_error(self, e):

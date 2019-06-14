@@ -293,25 +293,31 @@ class FastScanThreadManager(QtCore.QObject):
         self.n_streamer_averages = None
         self.streamer_average = None
 
-    def save_data(self, filename):
+    def save_data(self, filename, all_data=True):
         if not '.h5' in filename:
             filename += '.h5'
 
-        with h5py.File(filename, 'w') as f:
-            f.create_dataset('/raw/avg', data=self.streamer_average)
+        if self.streamer_average is not None:
 
-            f.create_dataset('/all_data/data', data=self.all_curves.values)
-            f.create_dataset('/all_data/time_axis', data=self.all_curves.time)
-            f.create_dataset('/avg/data', data=self.running_average.values)
-            f.create_dataset('/avg/time_axis', data=self.running_average.time)
+            with h5py.File(filename, 'w') as f:
 
-            for k, v in parse_category('fastscan').items():
-                if isinstance(v, bool):
-                    f.create_dataset('/settings/{}'.format(k), data=v, dtype=bool)
-                else:
-                    f.create_dataset('/settings/{}'.format(k), data=v)
+                f.create_dataset('/raw/avg', data=self.streamer_average)
+                if all_data:
+                    f.create_dataset('/all_data/data', data=self.all_curves.values)
+                    f.create_dataset('/all_data/time_axis', data=self.all_curves.time)
+                f.create_dataset('/avg/data', data=self.running_average.values)
+                f.create_dataset('/avg/time_axis', data=self.running_average.time)
 
-            # f.create_group('/settings')
+                for k, v in parse_category('fastscan').items():
+                    if isinstance(v, bool):
+                        f.create_dataset('/settings/{}'.format(k), data=v, dtype=bool)
+                    else:
+                        f.create_dataset('/settings/{}'.format(k), data=v)
+
+
+        else:
+            self.logger.info('no data to save yet...')
+                # f.create_group('/settings')
 
     def start_iterative_measurement(self,temperatures,savename):
         assert True

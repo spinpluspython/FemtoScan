@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
     QGroupBox, QGridLayout, QPushButton, QDoubleSpinBox, \
-    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox
+    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox, QComboBox
 
 from gui.fastscan.plotwidget import FastScanPlotWidget
 from measurement.fastscan.threadmanager import FastScanThreadManager
@@ -196,15 +196,27 @@ class FastScanMainWindow(QMainWindow):
 
         settings_items = []
 
-        self.spinbox_n_samples = SpinBox(
-            name='n° of samples', layout_list=settings_items,
-            type=int, value=self.settings['n_samples'], step=1, max='max')
+        self.spinbox_n_samples = QSpinBox()
+        self.spinbox_n_samples.setMaximum(2147483647)
+        self.spinbox_n_samples.setMinimum(100)
+        self.spinbox_n_samples.setValue(parse_setting('fastscan','n_samples'))
+        self.spinbox_n_samples.setSingleStep(100)
         self.spinbox_n_samples.valueChanged.connect(self.set_n_samples)
+        settings_box_layout.addWidget(QLabel('n° of samples'),0,0)
+        settings_box_layout.addWidget(self.spinbox_n_samples,0,1)
 
-        for item in settings_items:
-            settings_box_layout.addWidget(labeled_qitem(*item))
         self.label_processor_fps = QLabel('FPS: 0')
-        settings_box_layout.addWidget(self.label_processor_fps)
+        # settings_box_layout.addWidget(self.label_processor_fps)
+
+        self.shaker_gain_combobox = QComboBox()
+        self.shaker_gain_combobox.addItem('1')
+        self.shaker_gain_combobox.addItem('10')
+        self.shaker_gain_combobox.addItem('100')
+        def set_shaker_gain(val):
+            self.data_manager.shaker_gain=val
+        self.shaker_gain_combobox.activated[str].connect(set_shaker_gain)
+        settings_box_layout.addWidget(QLabel('Shaker Gain'), 1,0)
+        settings_box_layout.addWidget(self.shaker_gain_combobox, 1,1)
 
         self.radio_dark_control = QRadioButton('Dark Control')
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
@@ -277,29 +289,29 @@ class FastScanMainWindow(QMainWindow):
         # ----------------------------------------------------------------------
 		
 
-        self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
-        # layout.addWidget(self.delay_stage_widget)
-
-
-        shaker_calib_gbox = QGroupBox('Shaker Calibration')
-        shaker_calib_layout = QGridLayout()
-        shaker_calib_gbox.setLayout(shaker_calib_layout)
-        self.shaker_calib_btn = QPushButton('Shaker Calibration')
-        shaker_calib_layout.addWidget(self.shaker_calib_btn,0,0,2,2)
-        self.shaker_calib_btn.clicked.connect(self.on_shaker_calib)
-        self.shaker_calib_iterations = QSpinBox()
-        self.shaker_calib_iterations.setValue(50)
-        self.shaker_calib_iterations.setMinimum(4)
-        self.shaker_calib_iterations.setMaximum(100000)
-        self.shaker_calib_integration = QSpinBox()
-        self.shaker_calib_integration.setValue(5)
-        self.shaker_calib_integration.setMinimum(1)
-        self.shaker_calib_integration.setMaximum(100000)
-
-        shaker_calib_layout.addWidget(QLabel('iterations:'),0,2,1,1)
-        shaker_calib_layout.addWidget(QLabel('integrations:'),1,2,1,1)
-        shaker_calib_layout.addWidget(self.shaker_calib_iterations,0,3,1,1)
-        shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
+        # self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
+        # # layout.addWidget(self.delay_stage_widget)
+        #
+        #
+        # shaker_calib_gbox = QGroupBox('Shaker Calibration')
+        # shaker_calib_layout = QGridLayout()
+        # shaker_calib_gbox.setLayout(shaker_calib_layout)
+        # self.shaker_calib_btn = QPushButton('Shaker Calibration')
+        # shaker_calib_layout.addWidget(self.shaker_calib_btn,0,0,2,2)
+        # self.shaker_calib_btn.clicked.connect(self.on_shaker_calib)
+        # self.shaker_calib_iterations = QSpinBox()
+        # self.shaker_calib_iterations.setValue(50)
+        # self.shaker_calib_iterations.setMinimum(4)
+        # self.shaker_calib_iterations.setMaximum(100000)
+        # self.shaker_calib_integration = QSpinBox()
+        # self.shaker_calib_integration.setValue(5)
+        # self.shaker_calib_integration.setMinimum(1)
+        # self.shaker_calib_integration.setMaximum(100000)
+        #
+        # shaker_calib_layout.addWidget(QLabel('iterations:'),0,2,1,1)
+        # shaker_calib_layout.addWidget(QLabel('integrations:'),1,2,1,1)
+        # shaker_calib_layout.addWidget(self.shaker_calib_iterations,0,3,1,1)
+        # shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
 
         # ----------------------------------------------------------------------
         # Iterative Measurement Box

@@ -28,9 +28,11 @@ import h5py
 import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
-
-from instruments.delaystage import StandaStage as DelayStage
-from instruments.cryostat import Cryostat as Cryostat
+try:
+    from instruments.delaystage import StandaStage as DelayStage
+    from instruments.cryostat import Cryostat as Cryostat
+except:
+    print('failed importing devices')
 from measurement.fastscan.processor import project, fit_autocorrelation
 from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.threadpool import Runnable
@@ -72,8 +74,8 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.current_iteration = None
 
-        self.cryo = Cryostat()
-        self.delay_stage = DelayStage()
+        # self.cryo = Cryostat()
+        # self.delay_stage = DelayStage()
 
         self.timer = QtCore.QTimer()
         self.timer.setInterval(50.)
@@ -87,8 +89,11 @@ class FastScanThreadManager(QtCore.QObject):
         self.create_streamer()
 
     def project(self, stream_data):
-        runnable = Runnable(project, stream_data, self.dark_control,
-                            self.shaker_position_step, self.shaker_ps_per_step)
+        runnable = Runnable(project,
+                            stream_data,
+                            use_dark_control = self.dark_control,
+                            adc_step = self.shaker_position_step,
+                            time_step = self.shaker_time_step)
         self.pool.start(runnable)
         runnable.signals.result.connect(self.on_processor_data)
 
@@ -418,6 +423,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @shaker_gain.setter
     def shaker_gain(self, val):
+        if isinstance(val,str): val=int(val)
         assert val in [1, 10, 100], 'gain can be 1,10,100 only'
         write_setting(val, 'fastscan', 'shaker_gain')
         self.logger.debug('n_samples set to {}'.format(val))
@@ -429,6 +435,10 @@ class FastScanThreadManager(QtCore.QObject):
     @property
     def shaker_ps_per_step(self):
         return parse_setting('fastscan', 'shaker_ps_per_step')
+
+    @property
+    def shaker_time_step(self):
+        return self.shaker_position_step / self.shaker_gain
 
     @property
     def stage_position(self):

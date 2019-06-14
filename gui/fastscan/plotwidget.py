@@ -148,9 +148,9 @@ class FastScanPlotWidget(QWidget):
         self.stream_signal_dc0.setData(x[::2], sig_dc0)
         self.stream_signal_dc1.setData(x[::2], sig_dc1)
 
-    def plot_stream_curve_(self,da):
-        x = np.arange(len(da))
-        self.stream_curve_dc.setData(x, da)
+    # def plot_stream_curve_(self,da):
+    #     x = np.arange(len(da))
+    #     self.stream_curve_dc.setData(x, da)
 
 
     def on_clock(self):

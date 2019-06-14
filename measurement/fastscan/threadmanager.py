@@ -30,6 +30,7 @@ import xarray as xr
 from PyQt5 import QtCore
 
 from instruments.delaystage import StandaStage as DelayStage
+from instruments.cryostat import Cryostat as Cryostat
 from measurement.fastscan.processor import project, fit_autocorrelation
 from measurement.fastscan.streamer import FastScanStreamer
 from measurement.fastscan.threadpool import Runnable
@@ -69,6 +70,9 @@ class FastScanThreadManager(QtCore.QObject):
         self.should_stop = False
         self.streamerRunning = False
 
+        self.current_iteration = None
+
+        self.cryo = Cryostat()
         self.delay_stage = DelayStage()
 
         self.timer = QtCore.QTimer()
@@ -183,13 +187,22 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def on_timer(self):
-        """ For each idle processor, start evaluating an element in the streamer queue"""
+        """ """
         if self.should_stop:
             self.logger.debug('no data in queue, killing streamer')
             self.streamer_thread.exit()
             self.should_stop = False
             self.streamerRunning = False
 
+        try:
+            # print(self.all_curves.shape[0], self.n_averages, self.all_curves.shape[0]==self.n_averages, self.recording_iteration)
+            if self.all_curves.shape[0] == self.n_averages and self.recording_iteration:
+                self.logger.info('n of averages reached: ending iteration step')
+
+                self.end_iteration_step()
+        except AttributeError as e:
+            pass
+            # print(e)
         self.counter += 1
 
     def wait(self, n, timeout=1000):
@@ -295,6 +308,63 @@ class FastScanThreadManager(QtCore.QObject):
 
             # f.create_group('/settings')
 
+    def start_iterative_measurement(self,temperatures,savename):
+        assert True
+        self.temperatures = temperatures
+        self.iterative_measurement_name = savename
+        self.logger.info('starting measurement loop')
+        self.current_iteration = 0
+        self.start_streamer()
+        self.start_next_iteration()
+
+    @QtCore.pyqtSlot()
+    def start_next_iteration(self):
+        if self.current_iteration >= len(self.temperatures):
+            self.current_iteration = None
+            print('\n\n\n\nMEASUREMENT FINISHED\n\n\n')
+            self.logger.info('Iterative mesasurement complete!!')
+        else:
+            self.cryo.connect()
+            self.cryo.set_temperature(self.temperatures[self.current_iteration])
+            runnable = Runnable(self.cryo.check_temp,tolerance=.2,sleep_time=.1)
+            self.pool.start(runnable)
+            runnable.signals.finished.connect(self.measure_current_iteration)
+
+
+    def measure_current_iteration(self):
+        self.cryo.disconnect()
+        self.logger.info('Temperature stable, measuring interation {}, {}K'.format(self.current_iteration,self.temperatures[self.current_iteration]))
+        self.reset_data()
+        self.recording_iteration = True
+
+    @QtCore.pyqtSlot()
+    def end_iteration_step(self):
+        print('stopping iteration')
+        self.recording_iteration = False
+        t = self.temperatures[self.current_iteration]
+        print(t)
+        temp_string = '_{:0.2f}K'.format(float(t)).replace('.',',')
+        print(temp_string)
+        savename = self.iterative_measurement_name + temp_string
+        self.logger.info('Iteration ')#{} complete. Saved data as {}'.format(self.current_iteration,savename))
+        self.save_data(savename)
+        self.current_iteration += 1
+        self.start_next_iteration()
+
+    @staticmethod
+    def check_temperature_stability(cryo,tolerance=.2,sleep_time=.1):
+        temp = []
+        diff = 100000.
+        while diff > tolerance:
+            time.sleep(sleep_time)
+            temp.append(cryo.get_temperature())
+            if len(temp) > 10:
+                temp.pop(0)
+                diff = max([abs(x - cryo.temperature_target) for x in temp])
+                print(f'cryo stabilizing: delta={diff}')
+
+
+
     @QtCore.pyqtSlot()
     def close(self):
         self.stop_streamer()
@@ -323,11 +393,6 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def n_averages(self):
-        # try:
-        #     return self._n_averages
-        # except:
-        #     self._n_averages = parse_setting('fastscan', 'n_averages')
-        #     return self._n_averages
         return parse_setting('fastscan', 'n_averages')
 
     @n_averages.setter

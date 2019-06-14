@@ -23,7 +23,8 @@ Created on Tue Oct  9 22:30:31 2018
 import time
 import logging
 import serial
-
+import os
+# os.chdir('U:\\Dokumente\program\Spin+python\Instruments\instruments')
 import sys
 sys.path.insert(0,'./..')
 from instruments import generic
@@ -62,11 +63,11 @@ class Cryostat(generic.Instrument):
         self.temperature_target = temperature
         print('temperature is setted to' + str(temperature) + '. Wait untill real temperature become desired')
 
-    def change_temperature(self, temperature, tolerance=0.2):
+    def change_temperature(self, temperature, tolerance=0.2, check=True):
         '''set temperature to the desired Value, wait untll real temperature will become desired and stable. tolerance in kelvin'''
         self.set_temperature(temperature)
-
-        self.check_temp(tolerance)
+        if check:
+            self.check_temp(tolerance)
 
     def check_temp(self, tolerance, sleep_time=0.1):
         temp = []

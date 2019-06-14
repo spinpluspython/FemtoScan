@@ -139,6 +139,53 @@ class FastScanMainWindow(QMainWindow):
         acquisition_box_layout.addWidget(QLabel('Averages: '), 2, 0, 1, 1)
         acquisition_box_layout.addWidget(self.n_averages_spinbox, 2, 1, 1, 1)
 
+
+        # ----------------------------------------------------------------------
+        # Save Box
+        # ----------------------------------------------------------------------
+
+        save_box = QGroupBox('Save')
+        savebox_layout = QGridLayout()
+        layout.addWidget(save_box)
+
+        save_box.setLayout(savebox_layout)
+        h5_dir = parse_setting('paths','h5_data')
+        i=0
+        names  = [x for x in os.listdir(h5_dir) if 'noname_' in x]
+        filename = ''
+        while True:
+            filename = 'noname_{:03}'.format(i)
+            if f'{filename}.h5' in names:
+                i+=1
+            else:
+                break
+
+
+        self.save_name_ledit = QLineEdit(filename)
+        savebox_layout.addWidget(QLabel('Name:'),0,0)
+        savebox_layout.addWidget(self.save_name_ledit,0,1)
+        self.save_dir_ledit = QLineEdit(h5_dir)
+        savebox_layout.addWidget(QLabel('dir :'),1,0)
+        savebox_layout.addWidget(self.save_dir_ledit,1,1)
+
+        self.save_data_button = QPushButton('Save')
+        savebox_layout.addWidget(self.save_data_button,2,0,1,2)
+        self.save_data_button.clicked.connect(self.save_data)
+
+        # self.autosave_checkbox = QCheckBox('autosave')
+        # savebox_layout.addWidget(self.autosave_checkbox,3,0)
+        # self.autosave_timeout = QDoubleSpinBox()
+        # self.autosave_timeout.setValue(1)
+        # savebox_layout.addWidget(QLabel('timeout (s)'),3,1)
+        # savebox_layout.addWidget(self.autosave_timeout,3,2)
+
+
+
+        self.datasize_label = QLabel('data Size')
+        savebox_layout.addWidget(self.datasize_label,4,0,3,2)
+
+
+
         # ----------------------------------------------------------------------
         # Settings Box
         # ----------------------------------------------------------------------
@@ -254,54 +301,41 @@ class FastScanMainWindow(QMainWindow):
         shaker_calib_layout.addWidget(self.shaker_calib_iterations,0,3,1,1)
         shaker_calib_layout.addWidget(self.shaker_calib_integration,1,3,1,1)
 
+        # ----------------------------------------------------------------------
+        # Iterative Measurement Box
+        # ----------------------------------------------------------------------
+
+        iterative_measurement_box = QGroupBox('Iterative Measurement')
+        iterative_measurement_box_layout = QGridLayout()
+        iterative_measurement_box.setLayout(iterative_measurement_box_layout)
+        layout.addWidget(iterative_measurement_box)
+
+
+        self.im_save_name = QLineEdit('measurement session name')
+        iterative_measurement_box_layout.addWidget(QLabel('Name:'),0,0)
+        iterative_measurement_box_layout.addWidget(self.im_save_name,0,1)
+        self.im_save_dir = QLineEdit('D:\\')
+        iterative_measurement_box_layout.addWidget(QLabel('dir :'),1,0)
+        iterative_measurement_box_layout.addWidget(self.im_save_dir,1,1)
+        self.im_temperatures = QLineEdit('5,10,15,20')
+        iterative_measurement_box_layout.addWidget(QLabel('temperatures :'),2,0)
+        iterative_measurement_box_layout.addWidget(self.im_temperatures,2,1)
+
+        self.start_iterative_measurement_button = QPushButton('Start')
+        iterative_measurement_box_layout.addWidget(self.start_iterative_measurement_button,3,0,1,2)
+        self.start_iterative_measurement_button.clicked.connect(self.start_iterative_measurement)
+
 
         #layout.addWidget(shaker_calib_gbox)
 
-        # ----------------------------------------------------------------------
-        # Save Box
-        # ----------------------------------------------------------------------
-
-        save_box = QGroupBox('Save')
-        savebox_layout = QGridLayout()
-        layout.addWidget(save_box)
-
-        save_box.setLayout(savebox_layout)
-        h5_dir = parse_setting('paths','h5_data')
-        i=0
-        names  = [x for x in os.listdir(h5_dir) if 'noname_' in x]
-        filename = ''
-        while True:
-            filename = 'noname_{:03}'.format(i)
-            if f'{filename}.h5' in names:
-                i+=1
-            else:
-                break
-
-
-        self.save_name_ledit = QLineEdit(filename)
-        savebox_layout.addWidget(QLabel('Name:'),0,0)
-        savebox_layout.addWidget(self.save_name_ledit,0,1)
-        self.save_dir_ledit = QLineEdit(h5_dir)
-        savebox_layout.addWidget(QLabel('dir :'),1,0)
-        savebox_layout.addWidget(self.save_dir_ledit,1,1)
-
-        self.save_data_button = QPushButton('Save')
-        savebox_layout.addWidget(self.save_data_button,2,0,1,2)
-        self.save_data_button.clicked.connect(self.save_data)
-
-        # self.autosave_checkbox = QCheckBox('autosave')
-        # savebox_layout.addWidget(self.autosave_checkbox,3,0)
-        # self.autosave_timeout = QDoubleSpinBox()
-        # self.autosave_timeout.setValue(1)
-        # savebox_layout.addWidget(QLabel('timeout (s)'),3,1)
-        # savebox_layout.addWidget(self.autosave_timeout,3,2)
-
-
-
-        self.datasize_label = QLabel('data Size')
-        savebox_layout.addWidget(self.datasize_label,4,0,3,2)
-
         return widget
+
+
+
+    def start_iterative_measurement(self):
+        temperatures = [float(x) for x in self.im_temperatures.text().split(',')]
+        savename = os.path.join(self.im_save_dir.text(),self.im_save_name.text())
+        self.data_manager.start_iterative_measurement(temperatures,savename)
 
     def on_main_clock(self):
         # self.main_clock.setInterval(self.autosave_timeout.value())

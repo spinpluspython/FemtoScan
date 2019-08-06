@@ -30,7 +30,7 @@ import xarray as xr
 from PyQt5 import QtCore
 try:
     from instruments.delaystage import StandaStage as DelayStage
-    from instruments.cryostat import Cryostat as Cryostat
+    from instruments.cryostat import ITC503s as Cryostat
 except:
     print('failed importing devices')
 from measurement.fastscan.processor import project, fit_autocorrelation
@@ -74,7 +74,7 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.current_iteration = None
 
-        # self.cryo = Cryostat()
+        self.cryo = Cryostat()
         # self.delay_stage = DelayStage()
 
         self.timer = QtCore.QTimer()
@@ -337,7 +337,7 @@ class FastScanThreadManager(QtCore.QObject):
         else:
             self.cryo.connect()
             self.cryo.set_temperature(self.temperatures[self.current_iteration])
-            runnable = Runnable(self.cryo.check_temp,tolerance=.2,sleep_time=.1)
+            runnable = Runnable(self.cryo.check_temp,tolerance=.1,sleep_time=1)
             self.pool.start(runnable)
             runnable.signals.finished.connect(self.measure_current_iteration)
 
@@ -363,7 +363,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.start_next_iteration()
 
     @staticmethod
-    def check_temperature_stability(cryo,tolerance=.2,sleep_time=.1):
+    def check_temperature_stability(cryo,tolerance=.1,sleep_time=1):
         temp = []
         diff = 100000.
         while diff > tolerance:
@@ -444,7 +444,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def shaker_time_step(self):
-        return self.shaker_position_step / self.shaker_gain
+        return self.shaker_ps_per_step / self.shaker_gain
 
     @property
     def stage_position(self):

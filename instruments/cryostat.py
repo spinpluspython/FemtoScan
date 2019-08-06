@@ -226,6 +226,7 @@ class ITC503s(Cryostat):
     def disconnect(self):
         """Close com port
         """
+        self.read('C2')
         self.ser.close()
 
     def write(self, Command):
@@ -298,3 +299,10 @@ class ITC503s(Cryostat):
         except Exception as xui:
             print('error' + str(xui))
             self.ser.close
+
+
+if __name__ == '__main__':
+    cryo=ITC503s()
+    cryo.connect()
+    cryo.read('C2')
+    cryo.disconnect()

@@ -34,6 +34,15 @@ def sech2_fwhm(x, A, x0, fwhm,c):
     tau = fwhm*2/1.76
     return A / (np.cosh((x-x0)/tau))**2+c
 
+def sech2_fwhm_wings(x,a,xc,fwhm,off,wing_sep,wing_ratio,wings_n):
+    """ sech squared with n wings."""
+    res = sech2_fwhm(x,a,xc,fwhm,off)
+    for n in range(1,wings_n):
+        res += sech2_fwhm(x,a*(wing_ratio**n),xc-n*wing_sep,fwhm,off)
+        res += sech2_fwhm(x,a*(wing_ratio**n),xc+n*wing_sep,fwhm,off)
+
+    return res
+
 def gaussian_fwhm(x, A,x0, fwhm,c):
     sig = fwhm*2/2.355
     return A*np.exp(-np.power(x - x0, 2.) / (2 * np.power(sig, 2.)))+c

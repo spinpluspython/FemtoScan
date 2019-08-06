@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox,QPushButton
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox,QPushButton, QGridLayout
 from pyqtgraph.Qt import QtCore, QtGui
 
 
@@ -68,19 +68,24 @@ class FastScanPlotWidget(QWidget):
         self.small_plot_widget.setMinimumWidth(200)
 
         controls = QGroupBox('Plot Settings')
-        controls_layout = QVBoxLayout()
+        controls_layout = QGridLayout()
         controls.setLayout(controls_layout)
 
         self.cb_last_curve = QCheckBox('last curve')
-        controls_layout.addWidget(self.cb_last_curve)
+        controls_layout.addWidget(self.cb_last_curve, 0, 0)
         self.cb_last_curve.setChecked(True)
         self.cb_avg_curve = QCheckBox('average curve')
-        controls_layout.addWidget(self.cb_avg_curve)
+        controls_layout.addWidget(self.cb_avg_curve, 1, 0)
         self.cb_avg_curve.setChecked(False)
 
         self.cb_fit_curve = QCheckBox('fit curve')
-        controls_layout.addWidget(self.cb_fit_curve)
+        controls_layout.addWidget(self.cb_fit_curve, 2, 0)
         self.cb_fit_curve.setChecked(True)
+
+        self.cb_remove_baseline = QCheckBox('Remove Baseline')
+        controls_layout.addWidget(self.cb_remove_baseline, 0, 1)
+        self.cb_remove_baseline.setChecked(True)
+
 
         self.last_curve = self.main_plot_widget.plot(name='last')
         self.last_curve.setPen((pg.mkPen(200, 200, 200)))
@@ -132,6 +137,10 @@ class FastScanPlotWidget(QWidget):
         if self.cb_last_curve.isChecked():
             if 'last' not in self.curves:
                 self.add_curve('last',color=(200, 200, 200))
+            if self.cb_remove_baseline.isChecked():
+                n = len(da) // 20  # .shape[0]//20
+                off = da[:n].mean()
+                da -= off
             self.plot_curve('last', da)
         else:
             if 'last' in self.curves:

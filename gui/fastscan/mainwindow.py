@@ -402,16 +402,16 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
-        try:
-            t0 = self.processor_tick
-            self.processor_tick = time.time()
-            if len(self.fps_l) >= 100:
-                self.fps_l.pop(0)
-            self.fps_l.append(1. / (self.processor_tick - t0))
-            fps = np.mean(self.fps_l)
-            self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
-        except:
-            self.processor_tick = time.time()
+        # try:
+        #     t0 = self.processor_tick
+        #     self.processor_tick = time.time()
+        #     if len(self.fps_l) >= 100:
+        #         self.fps_l.pop(0)
+        #     self.fps_l.append(1. / (self.processor_tick - t0))
+        #     fps = np.mean(self.fps_l)
+        #     self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
+        # except:
+        #     self.processor_tick = time.time()
         self.apply_filter(data_array)
         self.visual_widget.plot_last_curve(data_array)
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))

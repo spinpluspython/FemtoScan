@@ -120,6 +120,30 @@ def fit_autocorrelation(da, expected_pulse_duration=.1):
                }
     return fitDict
 
+def fit_autocorrelation_wings(da, expected_pulse_duration=.1, wing_sep=.3, wing_ratio=.3):
+    """ fits the given data to a sech2 pulse shape"""
+    da_ = da.dropna('time')
+
+    xc = da_.time[np.argmax(da_.values)]
+    off = da_[da_.time - xc > .2].mean()
+    a = da_.max() - off
+
+    def sech_wings(x,a,xc,t,off,wing_sep,wing_ratio):
+        return sech2_fwhm(x,a,xc,t,off) + sech2_fwhm(x,a*wing_ratio,xc-wing_sep,t,off) + sech2_fwhm(x,a*wing_ratio,xc+wing_sep,t,off)
+
+    guess = [a, xc, expected_pulse_duration, off, wing_sep, wing_ratio]
+
+    try:
+        popt, pcov = curve_fit(sech_wings, da_.time, da_, p0=guess)
+    except RuntimeError:
+        popt, pcov = [0, 0, 0, 0, 0, 0], np.zeros((6, 6))
+    fitDict = {'popt': popt,
+               'pcov': pcov,
+               'perr': np.sqrt(np.diag(pcov)),
+               'curve': xr.DataArray(sech_wings(da_.time, *popt), coords={'time': da_.time}, dims='time')
+               }
+    return fitDict
+
 
 def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time_step=.05):
     spos_analog = stream_data[0]

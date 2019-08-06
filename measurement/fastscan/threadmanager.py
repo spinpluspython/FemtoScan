@@ -89,6 +89,15 @@ class FastScanThreadManager(QtCore.QObject):
         self.create_streamer()
 
     def project(self, stream_data):
+        """ Uses a thread to project stream data into pump-probe time scale.
+
+        Launch a runnable thread from the pool to convert data from streamer
+        into the correct time scale.
+
+        Args:
+            stream_data: np.array
+                data acquired by streamer.
+        """
         runnable = Runnable(project,
                             stream_data,
                             use_dark_control = self.dark_control,
@@ -98,12 +107,26 @@ class FastScanThreadManager(QtCore.QObject):
         runnable.signals.result.connect(self.on_processor_data)
 
     def fit_autocorrelation(self, da):
+        """ Uses a thread to fit the autocorrelation function to the projected data."""
         runnable = Runnable(fit_autocorrelation, da, expected_pulse_duration=.1)
         self.pool.start(runnable)
         # runnable.signals.result.connect(self.on_fit_result)
         runnable.signals.result.connect(self.newFitResult.emit)
 
     def calibrate_shaker(self, iterations, integration):
+        """
+        Shaker calibration method.
+
+        TODO: add description of shakercalib method.
+        Args:
+            iterations:
+                number of full time scales to acquire.
+            integration:
+                number of shaker cycles to integrate on for each iteration.
+        Returns:
+            plots the result of the calibration. Prints output result.
+
+        """
         assert not self.streamerRunning, 'Cannot run Shaker calibration while streamer is running'
 
         import matplotlib.pyplot as plt
@@ -192,7 +215,14 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def on_timer(self):
-        """ """
+        """ Timer event.
+
+        This is used for multiple purpouses:
+         - to stop threads when they are supposed to
+         - to end an acqusition which has finite number of iterations
+         - to increase the counter for 'wait' function
+         - maybe other stuff too...
+        """
         if self.should_stop:
             self.logger.debug('no data in queue, killing streamer')
             self.streamer_thread.exit()
@@ -211,6 +241,15 @@ class FastScanThreadManager(QtCore.QObject):
         self.counter += 1
 
     def wait(self, n, timeout=1000):
+        """ Gui safe waiting function.
+
+        Args:
+            n: int
+                number of clock cycles to wait
+            timeout: int
+                number of clock cycles after which the waiting will be terminated
+                notwithstanding n.
+        """
         self.counter = 0
         i = 0
         while self.counter < n:
@@ -219,6 +258,10 @@ class FastScanThreadManager(QtCore.QObject):
                 break
 
     def create_streamer(self):
+        """ Generate the streamer thread.
+
+        This creates the thread which will acquire data from the ADC.
+        """
         self.streamer_thread = QtCore.QThread()
 
         self.streamer = FastScanStreamer()
@@ -230,6 +273,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_streamer(self):
+        """ Start the acquisition by starting the streamer thread"""
         self.should_stop = False
         self.streamerRunning = True
         self.create_streamer()
@@ -239,13 +283,19 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def stop_streamer(self):
+        """ Stop the acquisition thread."""
         self.logger.debug('\n\nFastScan Streamer is stopping.\n\n')
         self.streamer.stop_acquisition()
         self.should_stop = True
 
     @QtCore.pyqtSlot(np.ndarray)
     def on_streamer_data(self, streamer_data):
-        """ """
+        """ Slot to handle streamer data.
+
+        Upon recieving streamer data from the streamer thread, this updates the
+        running average of raw data (streamer data) and adds the data to the
+        streamer data queue, ready to be processed by a processor thread.
+        """
         self.newStreamerData.emit(streamer_data)
         if self.streamer_average is None:
             self.streamer_average = streamer_data
@@ -260,7 +310,13 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processor_data(self, processed_dataarray):
-        """ called when new processed data is available
+        """ Slot to handle processed data.
+
+        Processed data is first emitted to the main window for plotting etc...
+        Then, the running average of the pump-probe data is updated, and also
+        emitted. Finally, if the option 'self._calculate_autocorrelation' is on,
+        it launches the thread to calculate the autocorrelation function.
+
         This emits data to the main window, so it can be plotted..."""
 
         self.newProcessedData.emit(processed_dataarray)
@@ -283,10 +339,13 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
+        """ Slot to bounce the fit result signal."""
         self.newFitResult.emit(fitDict)
 
     @QtCore.pyqtSlot()
     def reset_data(self):
+        """ Reset the data in memory, by reinitializing all data containers.
+        """
         # TODO: add popup check window
         self.running_average = None
         self.all_curves = None
@@ -294,6 +353,22 @@ class FastScanThreadManager(QtCore.QObject):
         self.streamer_average = None
 
     def save_data(self, filename, all_data=True):
+        """ Save data contained in memory.
+
+        Save average curves and optionally the single traces for each shaker
+        period. Additionally collects all available metadata and settings and
+        stores all in an HDF5 container.
+
+        Args:
+            filename: path
+                path and file name of the generated h5 file. Adds .h5 extension
+                if missing.
+            all_data:
+                if True, saves all projected data for each shaker loop measured,
+                otherwise only saves the avereage curve.
+        Returns:
+
+        """
         if not '.h5' in filename:
             filename += '.h5'
 
@@ -320,6 +395,15 @@ class FastScanThreadManager(QtCore.QObject):
                 # f.create_group('/settings')
 
     def start_iterative_measurement(self,temperatures,savename):
+        """ Starts a temperature dependence scan series.
+
+        Args:
+            temperatures: list of float
+                list of temperatures at which to perform measurements.
+            savename:
+                base name of the save file (and path) to which temperature info
+                will be appended. ex: c:\path\to\scan_folder\filename_T004,3K.h5
+        """
         assert True
         self.temperatures = temperatures
         self.iterative_measurement_name = savename
@@ -330,6 +414,10 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_next_iteration(self):
+        """
+        Initialize the next measurement iteration in the temperature dependence
+        scan series.
+        """
         if self.current_iteration >= len(self.temperatures):
             self.current_iteration = None
             print('\n\n\n\nMEASUREMENT FINISHED\n\n\n')
@@ -341,8 +429,9 @@ class FastScanThreadManager(QtCore.QObject):
             self.pool.start(runnable)
             runnable.signals.finished.connect(self.measure_current_iteration)
 
-
+    @QtCore.pyqtSlot()
     def measure_current_iteration(self):
+        """ Start the acquisition for the current measurement iteration."""
         self.cryo.disconnect()
         self.logger.info('Temperature stable, measuring interation {}, {}K'.format(self.current_iteration,self.temperatures[self.current_iteration]))
         self.reset_data()
@@ -350,6 +439,8 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def end_iteration_step(self):
+        """ Complete and finalize the current measurement iteration."""
+
         print('stopping iteration')
         self.recording_iteration = False
         t = self.temperatures[self.current_iteration]
@@ -363,7 +454,12 @@ class FastScanThreadManager(QtCore.QObject):
         self.start_next_iteration()
 
     @staticmethod
-    def check_temperature_stability(cryo,tolerance=.1,sleep_time=1):
+#<<<<<<< HEAD
+#    def check_temperature_stability(cryo,tolerance=.1,sleep_time=1):
+#=======
+    def check_temperature_stability(cryo,tolerance=.2,sleep_time=.1):
+        """ Tests the sample temperature stability. """
+#>>>>>>> 2f5a3a827acdde5aef2e522f648b6544e7e26d2b
         temp = []
         diff = 100000.
         while diff > tolerance:
@@ -378,12 +474,14 @@ class FastScanThreadManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def close(self):
+        """ stop the streamer when closing this widget."""
         self.stop_streamer()
 
     ### Properties
 
     @property
     def dark_control(self):
+        """ State of dark control. If True it's on."""
         return parse_setting('fastscan', 'dark_control')
 
     @dark_control.setter
@@ -393,6 +491,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def n_processors(self):
+        """ Number of processors to use for workers."""
         return parse_setting('fastscan', 'n_processors')
 
     @n_processors.setter
@@ -404,6 +503,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def n_averages(self):
+        """ Number of averages to keep in the running average memory."""
         return parse_setting('fastscan', 'n_averages')
 
     @n_averages.setter
@@ -415,6 +515,7 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def n_samples(self):
+        """ Number of laser pulses to measure at each acquisition trigger pulse. """
         return parse_setting('fastscan', 'n_samples')
 
     @n_samples.setter
@@ -425,6 +526,8 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def shaker_gain(self):
+        """ Shaker position gain as in ScanDelay software."""
+
         return parse_setting('fastscan', 'shaker_gain')
 
     @shaker_gain.setter
@@ -436,18 +539,34 @@ class FastScanThreadManager(QtCore.QObject):
 
     @property
     def shaker_position_step(self):
+        """ Shaker position ADC step size in v"""
         return parse_setting('fastscan', 'shaker_position_step')
 
     @property
     def shaker_ps_per_step(self):
+        """ Shaker position ADC step size in ps"""
         return parse_setting('fastscan', 'shaker_ps_per_step')
 
     @property
+<<<<<<< HEAD
     def shaker_time_step(self):
+=======
+    def shaker_ps_per_step(self):
+        """ Shaker digital step in ps.
+
+        Takes into account ADC conversion and shaker gain to return the minimum
+        step between two points converted from the shaker analog position signal.
+        This also defines the time resolution of the measurement.
+
+        Returns: float
+
+        """
+>>>>>>> 2f5a3a827acdde5aef2e522f648b6544e7e26d2b
         return self.shaker_ps_per_step / self.shaker_gain
 
     @property
     def stage_position(self):
+        """ Position of the probe delay stage."""
         return self.delay_stage.position_get()
 
     @stage_position.setter

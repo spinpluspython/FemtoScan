@@ -454,12 +454,9 @@ class FastScanThreadManager(QtCore.QObject):
         self.start_next_iteration()
 
     @staticmethod
-#<<<<<<< HEAD
-#    def check_temperature_stability(cryo,tolerance=.1,sleep_time=1):
-#=======
+
     def check_temperature_stability(cryo,tolerance=.2,sleep_time=.1):
         """ Tests the sample temperature stability. """
-#>>>>>>> 2f5a3a827acdde5aef2e522f648b6544e7e26d2b
         temp = []
         diff = 100000.
         while diff > tolerance:
@@ -548,10 +545,7 @@ class FastScanThreadManager(QtCore.QObject):
         return parse_setting('fastscan', 'shaker_ps_per_step')
 
     @property
-<<<<<<< HEAD
     def shaker_time_step(self):
-=======
-    def shaker_ps_per_step(self):
         """ Shaker digital step in ps.
 
         Takes into account ADC conversion and shaker gain to return the minimum
@@ -561,7 +555,6 @@ class FastScanThreadManager(QtCore.QObject):
         Returns: float
 
         """
->>>>>>> 2f5a3a827acdde5aef2e522f648b6544e7e26d2b
         return self.shaker_ps_per_step / self.shaker_gain
 
     @property

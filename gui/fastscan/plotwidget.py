@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox,QPushButton, QGridLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox,QPushButton, QGridLayout, QSpinBox, QLabel
 from pyqtgraph.Qt import QtCore, QtGui
 
 
@@ -85,6 +85,16 @@ class FastScanPlotWidget(QWidget):
         self.cb_remove_baseline = QCheckBox('Remove Baseline')
         controls_layout.addWidget(self.cb_remove_baseline, 0, 1)
         self.cb_remove_baseline.setChecked(True)
+
+
+        self.avg_side_cutoff = QSpinBox()
+        controls_layout.addWidget(QLabel('Side Cutoff:'), 1, 1)
+
+        controls_layout.addWidget(self.avg_side_cutoff, 1, 2)
+        self.avg_side_cutoff.setValue(5)
+        self.avg_side_cutoff.setMinimum(0)
+
+        #--------- curves -----------#
 
 
         self.last_curve = self.main_plot_widget.plot(name='last')
@@ -150,12 +160,14 @@ class FastScanPlotWidget(QWidget):
         if self.cb_avg_curve.isChecked():
             if 'avg' not in self.curves:
                 self.add_curve('avg',color=(255, 100, 100))
-            da = da[25:-25]
+            off = self.avg_side_cutoff.value()+1
+            da_ = da[off:-off]
+            print(da.shape,da_.shape)
             if self.cb_remove_baseline.isChecked():
-                n = len(da) // 20  # .shape[0]//20
-                off = da[:n].mean()
-                da -= off
-            self.plot_curve('avg', da)
+                n = len(da_) // 20  # .shape[0]//20
+                off = da_[:n].mean()
+                da_ -= off
+            self.plot_curve('avg', da_)
         else:
             if 'avg' in self.curves:
                 self.main_plot.removeItem(self.curves.pop('avg'))

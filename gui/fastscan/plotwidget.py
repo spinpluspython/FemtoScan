@@ -150,6 +150,11 @@ class FastScanPlotWidget(QWidget):
         if self.cb_avg_curve.isChecked():
             if 'avg' not in self.curves:
                 self.add_curve('avg',color=(255, 100, 100))
+            da = da[25:-25]
+            if self.cb_remove_baseline.isChecked():
+                n = len(da) // 20  # .shape[0]//20
+                off = da[:n].mean()
+                da -= off
             self.plot_curve('avg', da)
         else:
             if 'avg' in self.curves:
@@ -159,6 +164,10 @@ class FastScanPlotWidget(QWidget):
         if self.cb_fit_curve.isChecked():
             if 'fit' not in self.curves:
                 self.add_curve('fit',color=(100, 255, 100))
+            if self.cb_remove_baseline.isChecked():
+                n = len(da) // 20  # .shape[0]//20
+                off = da[:n].mean()
+                da -= off
             self.plot_curve('fit', da)
         else:
             if 'fit' in self.curves:

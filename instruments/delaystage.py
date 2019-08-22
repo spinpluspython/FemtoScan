@@ -22,6 +22,7 @@ Created on Sat Apr 21 16:22:35 2018
 """
 import time
 import sys
+import thorlabs_apt as apt
 sys.path.insert(0,'./..')
 
 from instruments import generic 
@@ -167,7 +168,7 @@ class NewportXPS(DelayStage):
     
 class StandaStage(DelayStage):
     def __init__(self):
-        super(StandaStage, self).__init__()
+        #super(StandaStage, self).__init__()
         self.standa=_PyUSMC.StepperMotorController()
         self.stage_N=0
         self.mm_in_step=0.000325 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for standa 026424
@@ -228,3 +229,26 @@ class StandaStage(DelayStage):
     def disconnect(self):
         self.standa.StopMotors(True)
         self.standa.Close()
+    
+class ThorLabs_rotational_stage(DelayStage):
+    def __init__(self):
+        #super(StandaStage, self).__init__()
+        self.serial_N=27504383
+        
+    def connect(self):
+        self.serial_N=apt.list_available_devices()[0][1]
+        self.motor=apt.Motor(self.serial_N)
+        self.motor.disable()
+        self.motor.enable()
+        #self.motor.move_home()
+        while self.motor.is_in_motion:
+            time.sleep(1)
+    def move_absolute(self,position):
+        while self.motor.is_in_motion:
+            time.sleep(1)
+        self.motor.move_to(position)
+        while self.motor.is_in_motion:
+            time.sleep(1)
+    def disconnect(self):
+        pass
+        #self.motor.disable()

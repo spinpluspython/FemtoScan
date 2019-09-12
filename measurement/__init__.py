@@ -7,7 +7,7 @@ import logging
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-from measurement.core import Experiment
+# from measurement.experiment import Experiment
 #
 # import logging
 # logging.getLogger(__name__).addHandler(logging.NullHandler())

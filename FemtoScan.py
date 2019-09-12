@@ -39,7 +39,7 @@ _RECOMPILE = parse_setting('launcher', 'recompile')
 _MODE = 'gui'
 
 def launch_cmd():
-    from measurement.stepscan import StepScan
+    from measurement.experiment import StepScan
     from instruments.lockinamplifier import SR830, LockInAmplifier
     from instruments.delaystage import DelayStage, NewportXPS
     from instruments.cryostat import Cryostat

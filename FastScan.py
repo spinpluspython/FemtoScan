@@ -23,7 +23,7 @@
 # import nidaqmx
 # import numpy as np
 # import pyqtgraph as pg
-# from PyQt5.QtCore import QCoreApplication, QTimer
+# from PyQt5.pQtCore import QCoreApplication, QTimer
 # from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QPushButton, \
 #     QGroupBox
 # from nidaqmx.constants import Edge, AcquisitionType
@@ -33,10 +33,9 @@ import logging
 import sys, os
 from logging.config import fileConfig
 
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtWidgets import QApplication
+from PyQt5 import QtCore, QtWidgets
 
-from gui.fastscan.mainwindow import FastScanMainWindow
+from measurement.fastscan_gui import FastScanMainWindow
 from utilities.settings import set_default_settings
 
 
@@ -53,10 +52,10 @@ def main():
     logger.setLevel(logging.DEBUG)
     logger.debug('Started logger')
 
-    app = QCoreApplication.instance()
+    app = QtCore.QCoreApplication.instance()
 
     if app is None:
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
     # Create handle prg for the Graphic Interface
     prg = FastScanMainWindow()
 

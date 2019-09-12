@@ -1,5 +1,5 @@
 from pyqtgraph.Qt import QtGui
-#import pyqtgraph.Qt.QtGui as QtGui
+#import pyqtgraph.Qt.pQtGui as pQtGui
 import PyQt5.QtCore as QtCore
 
 

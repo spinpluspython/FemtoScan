@@ -121,6 +121,7 @@ class FastScanThreadManager(QtCore.QObject):
                             use_dark_control=self.dark_control,
                             adc_step=self.shaker_position_step,
                             time_step=self.shaker_time_step,
+                            use_r0=True
                             )
 
         self.pool.start(runnable)
@@ -797,7 +798,6 @@ def projector(stream_data, spos_fit_pars=None, use_dark_control=True, adc_step=0
         print('using r0')
     else:
         use_r0 = False
-    print('shape of stream data to project: {}'.format(stream_data.shape))
     spos_analog = stream_data[0]
     signal = stream_data[1]
     dark_control = stream_data[2]

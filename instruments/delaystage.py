@@ -171,7 +171,7 @@ class NewportXPS(DelayStage):
     
 class StandaStage(DelayStage):
     def __init__(self):
-        super(StandaStage, self).__init__()
+        #super(StandaStage, self).__init__()
         self.standa=_PyUSMC.StepperMotorController()
         self.stage_N=0
         self.mm_in_step=0.000325 #depend on your stage typ: 0.000125 for standa 055709; 0.000325 for standa 026424

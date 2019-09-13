@@ -415,10 +415,10 @@ class SR830(LockInAmplifier):
 
         if sleep == None:
             sleeptime = self.time_constant
-            sleep = 3 * float(sleeptime)
+            sleep = float(sleeptime)
 
         signal = []
-        time.sleep(sleep)
+        time.sleep(3*sleep)
         for i in range(avg):
             signal.append(self.read_value(var))
             val = sum(signal) / avg

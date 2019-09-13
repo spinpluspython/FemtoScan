@@ -22,6 +22,10 @@ Created on Sat Apr 21 16:22:35 2018
 """
 import time
 import sys
+try:
+    import thorlabs_apt as apt
+except:
+    print("no thorlabs_apt found")
 sys.path.insert(0,'./..')
 
 from instruments import generic 
@@ -228,3 +232,29 @@ class StandaStage(DelayStage):
     def disconnect(self):
         self.standa.StopMotors(True)
         self.standa.Close()
+        
+        
+        
+        
+class ThorLabs_rotational_stage(DelayStage):  #added by Amon sorry if not good
+    def __init__(self):
+        #super(StandaStage, self).__init__()
+        self.serial_N=27504383
+        
+    def connect(self):
+        self.serial_N=apt.list_available_devices()[0][1]
+        self.motor=apt.Motor(self.serial_N)
+        self.motor.disable()
+        self.motor.enable()
+        #self.motor.move_home()
+        while self.motor.is_in_motion:
+            time.sleep(1)
+    def move_absolute(self,position):
+        while self.motor.is_in_motion:
+            time.sleep(1)
+        self.motor.move_to(position)
+        while self.motor.is_in_motion:
+            time.sleep(1)
+    def disconnect(self):
+        pass
+        #self.motor.disable()

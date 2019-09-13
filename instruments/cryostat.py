@@ -189,9 +189,13 @@ class MercuryITC(Cryostat):
 
 
 class ITC503s(Cryostat):
-    def __init__(self):
+    def __init__(self, COMport=None):
         super(ITC503s, self).__init__()
-        self.COMPort = 'COM6'  # set on the place
+        if COMport is None:
+            self.COMPort = 'COM6'  # set on the place
+        else:
+            self.COMPort = COMport  # set on the place
+
         self.Baud = 9600
         self.deviceAddr = 24
         self.ser = serial.Serial()

@@ -22,7 +22,10 @@ Created on Sat Apr 21 16:22:35 2018
 """
 import time
 import sys
-import thorlabs_apt as apt
+try:
+    import thorlabs_apt as apt
+except:
+    print("no thorlabs_apt found")
 sys.path.insert(0,'./..')
 
 from instruments import generic 
@@ -229,8 +232,11 @@ class StandaStage(DelayStage):
     def disconnect(self):
         self.standa.StopMotors(True)
         self.standa.Close()
-    
-class ThorLabs_rotational_stage(DelayStage):
+        
+        
+        
+        
+class ThorLabs_rotational_stage(DelayStage):  #added by Amon sorry if not good
     def __init__(self):
         #super(StandaStage, self).__init__()
         self.serial_N=27504383

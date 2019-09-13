@@ -917,18 +917,18 @@ class FastScanStreamer(QtCore.QObject):
         self.niTriggers = {  # default triggers
             'shaker_trigger': "/Dev1/PFI1",
             'laser_trigger': "/Dev1/PFI0"}
-        try:
-            self.niChannels = {}
-            for k, v in parse_category('ni_signal_channels').items():
-                self.niChannels[k] = v
-        except:
-            self.logger.critical('failed reading signal from SETTINGS, using default channels.')
-        try:
-            self.niTriggers = {}
-            for k, v in parse_category('ni_trigger_channels').items():
-                self.niTriggers[k] = v
-        except:
-            self.logger.critical('failed reading trigger channels from SETTINGS, using default channels.')
+#        try:
+#            self.niChannels = {}
+#            for k, v in parse_category('ni_signal_channels').items():
+#                self.niChannels[k] = v
+#        except:
+#            self.logger.critical('failed reading signal from SETTINGS, using default channels.')
+#        try:
+#            self.niTriggers = {}
+#            for k, v in parse_category('ni_trigger_channels').items():
+#                self.niTriggers[k] = v
+#        except:
+#            self.logger.critical('failed reading trigger channels from SETTINGS, using default channels.')
 
         self.data = np.zeros((len(self.niChannels), self.n_samples))
 

@@ -45,7 +45,11 @@ from scipy.optimize import curve_fit
 from instruments.cryostat import ITC503s as Cryostat
 from utilities.math import sech2_fwhm, sin, gaussian_fwhm, gaussian, transient_1expdec, update_average
 from utilities.settings import parse_setting, parse_category, write_setting
-
+try:
+    from measurement.cscripts.project import project, project_r0
+except:
+    print('warning: failed loading cython projector, loading python instead')
+    from measurement.cscripts.projectPy import project, project_r0
 
 # -----------------------------------------------------------------------------
 #       thread management
@@ -84,6 +88,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.streamerRunning = False
 
         self.current_iteration = None
+        self.spos_fit_pars = None # initialize the fit parameters for shaker position
 
         self.cryo = Cryostat()
         # self.delay_stage = DelayStage()
@@ -99,7 +104,7 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.create_streamer()
 
-    def project(self, stream_data):
+    def start_projector(self, stream_data):
         """ Uses a thread to project stream data into pump-probe time scale.
 
         Launch a runnable thread from the pool to convert data from streamer
@@ -109,11 +114,15 @@ class FastScanThreadManager(QtCore.QObject):
             stream_data: np.array
                 data acquired by streamer.
         """
-        runnable = Runnable(project,
-                            stream_data,
+        self.logger.debug('Projecting data with shape {}'.format(stream_data.shape))
+        runnable = Runnable(projector,
+                            stream_data=stream_data,
+                            spos_fit_pars=self.spos_fit_pars,
                             use_dark_control=self.dark_control,
                             adc_step=self.shaker_position_step,
-                            time_step=self.shaker_time_step)
+                            time_step=self.shaker_time_step,
+                            )
+
         self.pool.start(runnable)
         runnable.signals.result.connect(self.on_processor_data)
 
@@ -316,11 +325,13 @@ class FastScanThreadManager(QtCore.QObject):
             self.streamer_average = update_average(streamer_data, self.streamer_average, self.n_streamer_averages)
 
         self.__stream_queue.put(streamer_data)
-        self.logger.debug('added data to stream queue')
-        self.project(self.__stream_queue.get())
+        self.logger.debug('added data to stream queue, with shape {}'.format(streamer_data.shape))
+        _to_project = self.__stream_queue.get()
+        print('got stream from queue: {}'.format(_to_project.shape))
+        self.start_projector(_to_project)
 
-    @QtCore.pyqtSlot(xr.DataArray)
-    def on_processor_data(self, processed_dataarray):
+    @QtCore.pyqtSlot(tuple)#xr.DataArray, list)
+    def on_processor_data(self, processed_dataarray_tuple):
         """ Slot to handle processed data.
 
         Processed data is first emitted to the main window for plotting etc...
@@ -329,9 +340,10 @@ class FastScanThreadManager(QtCore.QObject):
         it launches the thread to calculate the autocorrelation function.
 
         This emits data to the main window, so it can be plotted..."""
+        processed_dataarray, spos_fit_pars = processed_dataarray_tuple
 
         self.newProcessedData.emit(processed_dataarray)
-
+        self.spos_fit_pars = spos_fit_pars
         t0 = time.time()
         if self.all_curves is None:
             self.all_curves = processed_dataarray
@@ -641,7 +653,7 @@ class Runnable(QtCore.QRunnable):
 # -----------------------------------------------------------------------------
 #       Processor
 # -----------------------------------------------------------------------------
-
+# DEPRECATED:
 class FastScanProcessor(QtCore.QObject):
     isReady = QtCore.pyqtSignal(int)
     finished = QtCore.pyqtSignal()
@@ -760,7 +772,61 @@ def fit_autocorrelation_wings(da, expected_pulse_duration=.1, wing_sep=.3, wing_
     return fitDict
 
 
-def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time_step=.05):
+def projector(stream_data, spos_fit_pars=None, use_dark_control=True, adc_step=0.000152587890625, time_step=.05, use_r0=True):
+    """
+
+    Args:
+        stream_data: ndarray
+            streamer data, shape should be: (number of channels, number of samples)
+        **kwargs:
+            :method: str | fast
+                projection method. Can be sine_fit, fast
+            :use_dark_control: bool | False
+                If to use the 3rd channel as dark control information
+            :use_r0: bool | False
+                if to use 4th channel as r0 (static reflectivity from reference channel)
+                for obtaining dR/R
+    Returns:
+
+    """
+    assert isinstance(stream_data,np.ndarray)
+    # assert stream_data.ndim >2, 'stream data must be 3 or 4 dimensional'
+
+    if stream_data.ndim == 4 and use_r0: # calculate dR/R only when required and when data for R0 is there
+        use_r0 = True
+        print('using r0')
+    else:
+        use_r0 = False
+    print('shape of stream data to project: {}'.format(stream_data.shape))
+    spos_analog = stream_data[0]
+    signal = stream_data[1]
+    dark_control = stream_data[2]
+
+    x = np.arange(0, stream_data.shape[1], 1)
+
+    if spos_fit_pars is None:
+        g_amp = spos_analog.max() - spos_analog.min()
+        g_freq = 15000 / np.pi
+        g_phase = 0
+        g_offset = g_amp / 5
+        guess = [g_amp, g_freq, g_phase, g_offset]
+    else:
+        guess = spos_fit_pars
+    popt, pcov = curve_fit(sin, x, spos_analog, p0=guess)
+    spos_fit_pars = popt
+    spos = np.array(sin(x, *popt) / adc_step, dtype=int)
+
+    if use_r0:
+        reference = stream_data[3]
+        result = project_r0(spos,signal,dark_control,reference, use_dark_control)
+    else:
+        result = project(spos, signal, dark_control, use_dark_control)
+
+    time_axis = np.arange(spos.min(), spos.max() + 1, 1) * time_step
+    output = xr.DataArray(result, coords={'time': time_axis}, dims='time').dropna('time')
+    return (output, spos_fit_pars)
+
+def project_OLD(stream_data, use_dark_control=True, adc_step=0.000152587890625, time_step=.05, r0=True):
     spos_analog = stream_data[0]
     x = np.arange(0, len(spos_analog), 1)
 
@@ -776,8 +842,10 @@ def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time
     spos_range = (spos.min(), spos.max())
     signal = stream_data[1]
     dark_control = stream_data[2]
+    reference = stream_data[3]
 
     result = np.zeros(spos_range[1] - spos_range[0] + 1)
+    result_ref = np.zeros_like(result)
     norm_array = np.zeros(spos_range[1] - spos_range[0] + 1)
 
     if use_dark_control:
@@ -787,9 +855,13 @@ def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time
             dc = (dark_control[2 * i], dark_control[2 * i + 1])
             if dc[1] < dc[0]:
                 val = signal[2 * i] - signal[2 * i + 1]
+                ref = reference[2 * i]
             else:
                 val = signal[2 * i + 1] - signal[2 * i]
+                ref = reference[2 * i + 1]
+
             result[pos] += val
+            result_ref[pos] += ref
             norm_array[pos] += 1
     #        dc_threshold = (min(dark_control[:10]) + max(dark_control[:10])) /2
     #        for val, pos, dc in zip(signal, spos - spos_range[0], dark_control):
@@ -804,6 +876,11 @@ def project(stream_data, use_dark_control=True, adc_step=0.000152587890625, time
             norm_array[pos] += 1.
 
     result /= norm_array
+    result_ref /= norm_array
+
+    if r0:
+        R0 = np.percentile(result_ref, 75).mean()
+        result /= result_ref.mean()
     time_axis = np.arange(spos_range[0], spos_range[1] + 1, 1) * time_step
     return xr.DataArray(result, coords={'time': time_axis}, dims='time').dropna('time')
 
@@ -816,18 +893,45 @@ class FastScanStreamer(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     newData = QtCore.pyqtSignal(np.ndarray)
     error = QtCore.pyqtSignal(Exception)
-
+    niChannel_order = ['shaker_position','signal','dark_control','reference']
     def __init__(self, ):
         super().__init__()
         self.logger = logging.getLogger('{}.FastScanStreamer'.format(__name__))
         self.logger.info('Created FastScanStreamer')
 
+        self.init_ni_channels()
+
+        self.should_stop = True
+
+    def init_ni_channels(self):
+
         for k, v in parse_category('fastscan').items():
             setattr(self, k, v)
 
-        self.data = np.zeros((3, self.n_samples))
+        self.niChannels = {  # default channels
+            'shaker_position': "Dev1/ai0",
+            'signal': "Dev1/ai1",
+            'dark_control': "Dev1/ai2",
+            'reference': "Dev1/ai3"}
 
-        self.should_stop = True
+        self.niTriggers = {  # default triggers
+            'shaker_trigger': "/Dev1/PFI1",
+            'laser_trigger': "/Dev1/PFI0"}
+        try:
+            self.niChannels = {}
+            for k, v in parse_category('ni_signal_channels').items():
+                self.niChannels[k] = v
+        except:
+            self.logger.critical('failed reading signal from SETTINGS, using default channels.')
+        try:
+            self.niTriggers = {}
+            for k, v in parse_category('ni_trigger_channels').items():
+                self.niTriggers[k] = v
+        except:
+            self.logger.critical('failed reading trigger channels from SETTINGS, using default channels.')
+
+        self.data = np.zeros((len(self.niChannels), self.n_samples))
+
 
     @QtCore.pyqtSlot()
     def start_acquisition(self):
@@ -881,16 +985,31 @@ class FastScanStreamer(QtCore.QObject):
             self.error.emit(e)
 
     def measure_triggered(self):
+        """ Define tasks and triggers for NIcard.
+
+        At each trigger signal from the shaker, it reads a number of samples
+        (self.n_samples) triggered by the laser pulses. It records the channels
+        given in self.niChannels.
+        The data is then emitted by the newData signal, and will have the shape
+        (number of channels, number of samples).
+        """
         try:
             with nidaqmx.Task() as task:
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
+                loaded_channels = 0
+                for chan in self.niChannel_order:
+                    try:
+                        task.ai_channels.add_ai_voltage_chan(self.niChannels[chan])
+                        loaded_channels += 1
+                    except KeyError:
+                        self.logger.critical('No {} channel found'.format(chan))
+                    except:
+                        self.logger.critical('Failed connecting to {} channel @ {}'.format(chan,self.niChannels[chan]))
 
-                task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/Dev1/PFI1",
+                self.logger.debug('added {} tasks'.format(loaded_channels))
+                task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source=self.niTriggers['shaker_trigger'],
                                                                     trigger_edge=Edge.RISING)
                 task.timing.cfg_samp_clk_timing(100000, samps_per_chan=self.n_samples,
-                                                source="/Dev1/PFI0",
+                                                source=self.niTriggers['laser_trigger'],
                                                 active_edge=Edge.RISING,
                                                 sample_mode=AcquisitionType.FINITE)  # external clock chanel
 
@@ -912,9 +1031,9 @@ class FastScanStreamer(QtCore.QObject):
     def measure_single_shot(self, n):
         try:
             with nidaqmx.Task() as task:
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
+                for k,v in self.niChannels: # add all channels to be recorded
+                    task.ai_channels.add_ai_voltage_chan(v)
+                self.logger.debug('added {} tasks'.format(len(self.niChannels)))
 
                 task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/Dev1/PFI1",
                                                                     trigger_edge=Edge.RISING)

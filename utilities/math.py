@@ -30,32 +30,38 @@ def monotonically_increasing(l):
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
-def sech2_fwhm(x, A, x0, fwhm,c):
-    tau = fwhm*2/1.76
-    return A / (np.cosh((x-x0)/tau))**2+c
 
-def sech2_fwhm_wings(x,a,xc,fwhm,off,wing_sep,wing_ratio,wings_n):
+def sech2_fwhm(x, A, x0, fwhm, c):
+    tau = fwhm * 2 / 1.76
+    return A / (np.cosh((x - x0) / tau)) ** 2 + c
+
+
+def sech2_fwhm_wings(x, a, xc, fwhm, off, wing_sep, wing_ratio, wings_n):
     """ sech squared with n wings."""
-    res = sech2_fwhm(x,a,xc,fwhm,off)
-    for n in range(1,wings_n):
-        res += sech2_fwhm(x,a*(wing_ratio**n),xc-n*wing_sep,fwhm,off)
-        res += sech2_fwhm(x,a*(wing_ratio**n),xc+n*wing_sep,fwhm,off)
+    res = sech2_fwhm(x, a, xc, fwhm, off)
+    for n in range(1, wings_n):
+        res += sech2_fwhm(x, a * (wing_ratio ** n), xc - n * wing_sep, fwhm, off)
+        res += sech2_fwhm(x, a * (wing_ratio ** n), xc + n * wing_sep, fwhm, off)
 
     return res
 
-def gaussian_fwhm(x, A,x0, fwhm,c):
-    sig = fwhm*2/2.355
-    return A*np.exp(-np.power(x - x0, 2.) / (2 * np.power(sig, 2.)))+c
 
-def sin(x,A,f,p,o):
-    return A* np.sin(x/f + p)+o
+def gaussian_fwhm(x, A, x0, fwhm, c):
+    sig = fwhm * 2 / 2.355
+    return A * np.exp(-np.power(x - x0, 2.) / (2 * np.power(sig, 2.))) + c
 
-def globalcounter(idx,M):
+
+def sin(x, A, f, p, o):
+    return A * np.sin(x / f + p) + o
+
+
+def globalcounter(idx, M):
     counterlist = idx[::-1]
     maxlist = M[::-1]
     for i in range(len(counterlist)):
-        counterlist[i] = counterlist[i]*np.prod(maxlist[:i])
+        counterlist[i] = counterlist[i] * np.prod(maxlist[:i])
     return int(np.sum(counterlist))
+
 
 def transient_1expdec(t, A1, tau1, sigma, y0, off, t0):
     """ Fitting function for transients, 1 exponent decay.
@@ -64,14 +70,17 @@ def transient_1expdec(t, A1, tau1, sigma, y0, off, t0):
     sigma: pump pulse duration
     y0: whole curve offset
     off: slow dynamics offset"""
-    t=t-t0
+    t = t - t0
     tmp = erf((sigma ** 2. - 5.545 * tau1 * t) / (2.7726 * sigma * tau1))
-    tmp = .5 * (1- tmp) * np.exp(sigma ** 2. / (11.09 * tau1 ** 2.))
+    tmp = .5 * (1 - tmp) * np.exp(sigma ** 2. / (11.09 * tau1 ** 2.))
     return y0 + tmp * (A1 * (np.exp(-t / tau1)) + off)
 
-def update_average(new,avg,n):
+
+def update_average(new, avg, n):
     'recalculate average with new dataset.'
-    return (avg  * (n - 1) + new) / n
+    prev_n = (n - 1) / n
+    # return (avg  * (n - 1) + new) / n
+    return avg * prev_n + new / n
 
 
 def main():

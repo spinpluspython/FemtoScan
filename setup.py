@@ -21,6 +21,7 @@
 """
 from distutils.core import setup, Extension
 from Cython.Build import cythonize
+# import py2exe
 import numpy
 import os
 
@@ -37,5 +38,6 @@ setup(
     author=['Steinn Ymir Agustsson','Vladimir Grigorev'],
     url='https://github.com/spinpluspython/FemtoScan',
     packages=['distutils', 'distutils.command'],
+    # windows=[{'script': 'FastScan.py'}],
     ext_modules=cythonize(extensions)
 )

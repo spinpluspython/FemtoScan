@@ -70,8 +70,8 @@ def main():
 
 if __name__ == '__main__':
     # print('asd')
-    # if not os.path.isfile('SETTINGS.ini'):
-    #     print('creating settings file')
-    #     set_default_settings()
+    if not os.path.isfile('SETTINGS.ini'):
+        print('creating settings file')
+        set_default_settings()
 
     main()

@@ -20,25 +20,24 @@
 
 """
 import logging
-import time
-import sys, os
+import os
+
 import numpy as np
 import pyqtgraph as pg
 import qdarkstyle
 import xarray as xr
-from scipy.signal import butter, filtfilt
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, \
-    QGroupBox, QGridLayout, QPushButton, QDoubleSpinBox, \
-    QRadioButton, QLabel, QLineEdit, QSpinBox, QCheckBox, QComboBox, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QDoubleSpinBox, \
+    QRadioButton, QLineEdit, QComboBox, QSizePolicy, \
+    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox, QPushButton, QGridLayout, QSpinBox, QLabel
+from pyqtgraph.Qt import QtCore as pQtCore, QtGui as pQtGui
+from scipy.signal import butter, filtfilt
 
-from gui.fastscan.plotwidget import FastScanPlotWidget
-from measurement.fastscan.threadmanager import FastScanThreadManager
-from utilities.qt import SpinBox, labeled_qitem, make_timer
 from utilities.settings import parse_category, parse_setting, write_setting
-from gui.instrumentControlWidgets import DelayStageWidget
+from measurement.fastscan import FastScanThreadManager
+
 
 class FastScanMainWindow(QMainWindow):
 
@@ -87,8 +86,8 @@ class FastScanMainWindow(QMainWindow):
 
         control_widget = self.make_controlwidget()
         self.visual_widget = FastScanPlotWidget()
-        self.visual_widget.setSizePolicy(QSizePolicy.Maximum,QSizePolicy.Maximum)
-        control_widget.setSizePolicy(QSizePolicy.MinimumExpanding,QSizePolicy.MinimumExpanding)
+        self.visual_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        control_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         main_splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         main_splitter.addWidget(control_widget)
         main_splitter.addWidget(self.visual_widget)
@@ -134,11 +133,10 @@ class FastScanMainWindow(QMainWindow):
 
         self.n_averages_spinbox.setValue(parse_setting('fastscan', 'n_averages'))
         # self.n_averages_spinbox.valueChanged[int].connect(self.set_n_averages)
-        self.n_averages_spinbox.valueChanged[int].connect(lambda x: write_setting(x,'fastscan','n_averages'))
+        self.n_averages_spinbox.valueChanged[int].connect(lambda x: write_setting(x, 'fastscan', 'n_averages'))
 
         acquisition_box_layout.addWidget(QLabel('Averages: '), 2, 0, 1, 1)
         acquisition_box_layout.addWidget(self.n_averages_spinbox, 2, 1, 1, 1)
-
 
         # ----------------------------------------------------------------------
         # Save Box
@@ -149,34 +147,33 @@ class FastScanMainWindow(QMainWindow):
         layout.addWidget(save_box)
 
         save_box.setLayout(savebox_layout)
-        h5_dir = parse_setting('paths','h5_data')
-        i=0
-        names  = [x for x in os.listdir(h5_dir) if 'noname_' in x]
+        h5_dir = parse_setting('paths', 'h5_data')
+        i = 0
+        names = [x for x in os.listdir(h5_dir) if 'noname_' in x]
         filename = ''
         while True:
             filename = 'noname_{:03}'.format(i)
             if f'{filename}.h5' in names:
-                i+=1
+                i += 1
             else:
                 break
 
-
         self.save_name_ledit = QLineEdit(filename)
-        savebox_layout.addWidget(QLabel('Name:'),0,0)
-        savebox_layout.addWidget(self.save_name_ledit,0,1)
+        savebox_layout.addWidget(QLabel('Name:'), 0, 0)
+        savebox_layout.addWidget(self.save_name_ledit, 0, 1)
         self.save_dir_ledit = QLineEdit(h5_dir)
-        savebox_layout.addWidget(QLabel('dir :'),1,0)
-        savebox_layout.addWidget(self.save_dir_ledit,1,1)
+        savebox_layout.addWidget(QLabel('dir :'), 1, 0)
+        savebox_layout.addWidget(self.save_dir_ledit, 1, 1)
 
         self.save_all_cb = QCheckBox('Save avgs')
-        self.save_all_cb.setToolTip('If Checked, saves all projected average curves, \nelse it only saves the accumulate average trace.')
-        savebox_layout.addWidget(self.save_all_cb,2,0)
+        self.save_all_cb.setToolTip(
+            'If Checked, saves all projected average curves, \nelse it only saves the accumulate average trace.')
+        savebox_layout.addWidget(self.save_all_cb, 2, 0)
         self.save_all_cb.setChecked(True)
 
         self.save_data_button = QPushButton('Save')
-        savebox_layout.addWidget(self.save_data_button,2,1,2,2)
+        savebox_layout.addWidget(self.save_data_button, 2, 1, 2, 2)
         self.save_data_button.clicked.connect(self.save_data)
-
 
         # self.autosave_checkbox = QCheckBox('autosave')
         # savebox_layout.addWidget(self.autosave_checkbox,3,0)
@@ -185,12 +182,8 @@ class FastScanMainWindow(QMainWindow):
         # savebox_layout.addWidget(QLabel('timeout (s)'),3,1)
         # savebox_layout.addWidget(self.autosave_timeout,3,2)
 
-
-
         self.datasize_label = QLabel('data Size')
-        savebox_layout.addWidget(self.datasize_label,4,0,3,2)
-
-
+        savebox_layout.addWidget(self.datasize_label, 4, 0, 3, 2)
 
         # ----------------------------------------------------------------------
         # Settings Box
@@ -205,11 +198,11 @@ class FastScanMainWindow(QMainWindow):
         self.spinbox_n_samples = QSpinBox()
         self.spinbox_n_samples.setMaximum(2147483647)
         self.spinbox_n_samples.setMinimum(100)
-        self.spinbox_n_samples.setValue(parse_setting('fastscan','n_samples'))
+        self.spinbox_n_samples.setValue(parse_setting('fastscan', 'n_samples'))
         self.spinbox_n_samples.setSingleStep(100)
         self.spinbox_n_samples.valueChanged.connect(self.set_n_samples)
-        settings_box_layout.addWidget(QLabel('n° of samples'),0,0)
-        settings_box_layout.addWidget(self.spinbox_n_samples,0,1)
+        settings_box_layout.addWidget(QLabel('n° of samples'), 0, 0)
+        settings_box_layout.addWidget(self.spinbox_n_samples, 0, 1)
 
         self.label_processor_fps = QLabel('FPS: 0')
         # settings_box_layout.addWidget(self.label_processor_fps)
@@ -218,19 +211,21 @@ class FastScanMainWindow(QMainWindow):
         self.shaker_gain_combobox.addItem('1')
         self.shaker_gain_combobox.addItem('10')
         self.shaker_gain_combobox.addItem('100')
+
         def set_shaker_gain(val):
-            self.data_manager.shaker_gain=val
+            self.data_manager.shaker_gain = val
+
         self.shaker_gain_combobox.activated[str].connect(set_shaker_gain)
-        settings_box_layout.addWidget(QLabel('Shaker Gain'), 1,0)
-        settings_box_layout.addWidget(self.shaker_gain_combobox, 1,1)
+        settings_box_layout.addWidget(QLabel('Shaker Gain'), 1, 0)
+        settings_box_layout.addWidget(self.shaker_gain_combobox, 1, 1)
 
         self.radio_dark_control = QRadioButton('Dark Control')
         self.radio_dark_control.setChecked(parse_setting('fastscan', 'dark_control'))
         settings_box_layout.addWidget(self.radio_dark_control)
         self.radio_dark_control.clicked.connect(self.toggle_darkcontrol_mode)
 
-        #self.filter_frequency_spinbox.setMaximum(1.)
-        #self.filter_frequency_spinbox.setMinimum(0.0)
+        # self.filter_frequency_spinbox.setMaximum(1.)
+        # self.filter_frequency_spinbox.setMinimum(0.0)
 
         # self.apply_settings_button.clicked.connect(self.apply_settings)
 
@@ -249,14 +244,14 @@ class FastScanMainWindow(QMainWindow):
         filter_box_layout.addWidget(self.butter_filter_checkbox, 0, 0)
         self.filter_order_spinbox = QSpinBox()
         self.filter_order_spinbox.setValue(2)
-        filter_box_layout.addWidget(QLabel('Order:'),0,1)
-        filter_box_layout.addWidget(self.filter_order_spinbox,0,2)
+        filter_box_layout.addWidget(QLabel('Order:'), 0, 1)
+        filter_box_layout.addWidget(self.filter_order_spinbox, 0, 2)
 
         self.filter_frequency_spinbox = QDoubleSpinBox()
         self.filter_frequency_spinbox.setValue(.3)
 
-        filter_box_layout.addWidget(QLabel('Cut (0.-1.):'),0,3)
-        filter_box_layout.addWidget(self.filter_frequency_spinbox,0,4)
+        filter_box_layout.addWidget(QLabel('Cut (0.-1.):'), 0, 3)
+        filter_box_layout.addWidget(self.filter_frequency_spinbox, 0, 4)
         self.butter_filter_checkbox.setChecked(False)
 
         # ----------------------------------------------------------------------
@@ -272,28 +267,25 @@ class FastScanMainWindow(QMainWindow):
         self.calculate_autocorrelation_box.setChecked(False)
         self.calculate_autocorrelation_box.clicked.connect(self.toggle_calculate_autocorrelation)
 
-
         font = QFont()
         font.setBold(True)
         font.setPointSize(16)
         report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
-            'Amp','Xc','FWHM','off',.0,.0,.0,.0)
-        self.autocorrelation_report_label= QLabel(report)
+            'Amp', 'Xc', 'FWHM', 'off', .0, .0, .0, .0)
+        self.autocorrelation_report_label = QLabel(report)
 
         self.pulse_duration_label = QLabel('0 fs')
         self.pulse_duration_label.setFont(font)
-        autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box,0, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.calculate_autocorrelation_box, 0, 0, 1, 1)
         autocorrelation_box_layout.addWidget(self.autocorrelation_report_label, 0, 1, 1, 2)
-        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'),         2, 0, 1, 1)
-        autocorrelation_box_layout.addWidget(self.pulse_duration_label,         2, 1, 1, 2)
-
+        autocorrelation_box_layout.addWidget(QLabel('Pulse duration:'), 2, 0, 1, 1)
+        autocorrelation_box_layout.addWidget(self.pulse_duration_label, 2, 1, 1, 2)
 
         layout.addWidget(autocorrelation_box)
 
         # ----------------------------------------------------------------------
         # Stage Control Box
         # ----------------------------------------------------------------------
-		
 
         # self.delay_stage_widget = DelayStageWidget(self.data_manager.delay_stage)
         # # layout.addWidget(self.delay_stage_widget)
@@ -328,32 +320,28 @@ class FastScanMainWindow(QMainWindow):
         iterative_measurement_box.setLayout(iterative_measurement_box_layout)
         layout.addWidget(iterative_measurement_box)
 
-
         self.im_save_name = QLineEdit('measurement session name')
-        iterative_measurement_box_layout.addWidget(QLabel('Name:'),0,0)
-        iterative_measurement_box_layout.addWidget(self.im_save_name,0,1)
+        iterative_measurement_box_layout.addWidget(QLabel('Name:'), 0, 0)
+        iterative_measurement_box_layout.addWidget(self.im_save_name, 0, 1)
         self.im_save_dir = QLineEdit('D:\\')
-        iterative_measurement_box_layout.addWidget(QLabel('dir :'),1,0)
-        iterative_measurement_box_layout.addWidget(self.im_save_dir,1,1)
+        iterative_measurement_box_layout.addWidget(QLabel('dir :'), 1, 0)
+        iterative_measurement_box_layout.addWidget(self.im_save_dir, 1, 1)
         self.im_temperatures = QLineEdit('5,10,15,20')
-        iterative_measurement_box_layout.addWidget(QLabel('temperatures :'),2,0)
-        iterative_measurement_box_layout.addWidget(self.im_temperatures,2,1)
+        iterative_measurement_box_layout.addWidget(QLabel('temperatures :'), 2, 0)
+        iterative_measurement_box_layout.addWidget(self.im_temperatures, 2, 1)
 
         self.start_iterative_measurement_button = QPushButton('Start')
-        iterative_measurement_box_layout.addWidget(self.start_iterative_measurement_button,3,0,1,2)
+        iterative_measurement_box_layout.addWidget(self.start_iterative_measurement_button, 3, 0, 1, 2)
         self.start_iterative_measurement_button.clicked.connect(self.start_iterative_measurement)
 
-
-        #layout.addWidget(shaker_calib_gbox)
+        # layout.addWidget(shaker_calib_gbox)
 
         return widget
 
-
-
     def start_iterative_measurement(self):
         temperatures = [float(x) for x in self.im_temperatures.text().split(',')]
-        savename = os.path.join(self.im_save_dir.text(),self.im_save_name.text())
-        self.data_manager.start_iterative_measurement(temperatures,savename)
+        savename = os.path.join(self.im_save_dir.text(), self.im_save_name.text())
+        self.data_manager.start_iterative_measurement(temperatures, savename)
 
     def on_main_clock(self):
         # self.main_clock.setInterval(self.autosave_timeout.value())
@@ -361,10 +349,10 @@ class FastScanMainWindow(QMainWindow):
             streamer_shape = self.data_manager.streamer_average.shape
             projected_shape = self.data_manager.all_curves.shape
         except AttributeError:
-            streamer_shape = projected_shape = (0,0)
+            streamer_shape = projected_shape = (0, 0)
 
         string = 'Data Size :\n streamer: {} - {:10.3f} Kb\n projected: {} - {:10.3f} Kb'.format(
-            streamer_shape, np.prod(streamer_shape)/(1024), projected_shape, np.prod(projected_shape)/(1024)
+            streamer_shape, np.prod(streamer_shape) / (1024), projected_shape, np.prod(projected_shape) / (1024)
         )
         self.datasize_label.setText(string)
         # if self.autosave_checkbox.isChecked():
@@ -398,7 +386,7 @@ class FastScanMainWindow(QMainWindow):
         self.data_manager._calculate_autocorrelation = self.calculate_autocorrelation_box.isChecked()
 
     def on_shaker_calib(self):
-        self.data_manager.calibrate_shaker(self.shaker_calib_iterations.value(),self.shaker_calib_integration.value())
+        self.data_manager.calibrate_shaker(self.shaker_calib_iterations.value(), self.shaker_calib_integration.value())
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
@@ -418,9 +406,9 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_fit_result(self, fitDict):
-        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2]*.65))
+        self.pulse_duration_label.setText('{:.3f} ps'.format(fitDict['popt'][2] * .65))
         report = '{:^8}|{:^8}|{:^8}|{:^8}\n{:^8.3f}|{:^8.3f}|{:^8.3f}|{:^8.3f}'.format(
-            'Amp','Xc','FWHM','off',*fitDict['popt'])
+            'Amp', 'Xc', 'FWHM', 'off', *fitDict['popt'])
         self.autocorrelation_report_label.setText(report)
 
         self.visual_widget.plot_fit_curve(fitDict['curve'])
@@ -433,7 +421,7 @@ class FastScanMainWindow(QMainWindow):
     def on_streamer_data(self, data):
         self.visual_widget.plot_stream_curve(data)
 
-    def apply_filter(self,data_array):
+    def apply_filter(self, data_array):
         if self.butter_filter_checkbox.isChecked():
             try:
                 b, a = butter(2, self.filter_frequency_spinbox.value())
@@ -450,11 +438,9 @@ class FastScanMainWindow(QMainWindow):
         self.status_bar.showMessage('Acquisition Stopped')
         self.data_manager.stop_streamer()
 
-
     def reset_data(self):
         self.status_bar.showMessage('Data reset')
         self.data_manager.reset_data()
-
 
     def set_n_samples(self, var):
         self.data_manager.n_samples = var
@@ -467,7 +453,7 @@ class FastScanMainWindow(QMainWindow):
 
         dir = self.save_dir_ledit.text()
         filename = self.save_name_ledit.text()
-        filepath = os.path.join(dir,filename)
+        filepath = os.path.join(dir, filename)
         self.data_manager.save_data(filepath, all_data=self.save_all_cb.isChecked())
         self.status_bar.showMessage('Successfully saved data as {}'.format(filepath))
 
@@ -481,6 +467,187 @@ class FastScanMainWindow(QMainWindow):
         self.logger.info('Closing window: terminating all threads.')
         self.data_manager.close()
         self.data_manager_thread.exit()
+
+
+class FastScanPlotWidget(QWidget):
+
+    def __init__(self):
+        super(FastScanPlotWidget, self).__init__()
+        self.logger = logging.getLogger('-.{}.PlotWidget'.format(__name__))
+        self.logger.info('Created PlotWidget')
+
+        self.clock = QTimer()
+        self.clock.setInterval(1000. / 30)
+        self.clock.timeout.connect(self.on_clock)
+        self.clock.start()
+
+        self.curves = {}
+        self.use_r0 = parse_setting('fastscan', 'use_r0')
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.main_plot_widget = pg.PlotWidget(name='main_plot')
+        self.main_plot = self.main_plot_widget.getPlotItem()
+        self.setup_plot_widget(self.main_plot_widget, title='Main')
+        self.main_plot_widget.showAxis('top', True)
+        self.main_plot_widget.showAxis('right', True)
+        self.main_plot_widget.showGrid(True, True, .2)
+        self.main_plot_widget.setLabel('left', '<font>&Delta;R</font>', units='V')
+        self.main_plot_widget.setLabel('left', '<font>&Delta;R / R</font>', units='%')
+        self.main_plot_widget.setLabel('bottom', 'Time', units='s')
+        self.small_plot_widget = pg.PlotWidget(name='stream_plot')
+        self.small_plot = self.small_plot_widget.getPlotItem()
+        self.setup_plot_widget(self.small_plot_widget, title='Stream')
+        self.small_plot_widget.showAxis('top', True)
+        self.small_plot_widget.showAxis('right', True)
+        self.small_plot_widget.showGrid(True, True, .2)
+        self.small_plot_widget.setLabel('left', 'Value', units='V')
+        self.small_plot_widget.setLabel('bottom', 'Time', units='samples')
+
+        # self.small_plot_widget.setMinimumHeight(int(h * .7))
+        self.small_plot_widget.setMaximumWidth(400)
+        self.small_plot_widget.setMinimumWidth(200)
+
+        controls = QGroupBox('Plot Settings')
+        controls_layout = QGridLayout()
+        controls.setLayout(controls_layout)
+
+        self.cb_last_curve = QCheckBox('last curve')
+        controls_layout.addWidget(self.cb_last_curve, 0, 0)
+        self.cb_last_curve.setChecked(True)
+        self.cb_avg_curve = QCheckBox('average curve')
+        controls_layout.addWidget(self.cb_avg_curve, 1, 0)
+        self.cb_avg_curve.setChecked(False)
+
+        self.cb_fit_curve = QCheckBox('fit curve')
+        controls_layout.addWidget(self.cb_fit_curve, 2, 0)
+        self.cb_fit_curve.setChecked(True)
+
+        self.cb_remove_baseline = QCheckBox('Remove Baseline')
+        controls_layout.addWidget(self.cb_remove_baseline, 0, 1)
+        self.cb_remove_baseline.setChecked(True)
+
+        self.avg_side_cutoff = QSpinBox()
+        controls_layout.addWidget(QLabel('Side Cutoff:'), 1, 1)
+
+        controls_layout.addWidget(self.avg_side_cutoff, 1, 2)
+        self.avg_side_cutoff.setValue(5)
+        self.avg_side_cutoff.setMinimum(0)
+
+        # --------- curves -----------#
+
+        self.last_curve = self.main_plot_widget.plot(name='last')
+        self.last_curve.setPen((pg.mkPen(200, 200, 200)))
+        self.avg_curve = self.main_plot_widget.plot(name='avg')
+        self.avg_curve.setPen((pg.mkPen(100, 255, 100)))
+        self.fit_curve = self.main_plot_widget.plot(name='fit')
+        self.fit_curve.setPen((pg.mkPen(255, 100, 100)))
+
+        self.stream_curve = self.small_plot_widget.plot()
+        self.stream_curve.setPen((pg.mkPen(255, 100, 100)))
+
+        self.stream_signal_dc0 = self.small_plot_widget.plot()
+        self.stream_signal_dc0.setPen((pg.mkPen(100, 255, 100)))
+        self.stream_signal_dc1 = self.small_plot_widget.plot()
+        self.stream_signal_dc1.setPen((pg.mkPen(100, 100, 255)))
+
+        vsplitter = pQtGui.QSplitter(pQtCore.Qt.Vertical)
+        hsplitter = pQtGui.QSplitter(pQtCore.Qt.Horizontal)
+        vsplitter.addWidget(self.main_plot_widget)
+        vsplitter.addWidget(hsplitter)
+        hsplitter.addWidget(controls)
+        hsplitter.addWidget(self.small_plot_widget)
+
+        layout.addWidget(vsplitter)
+
+    def setup_plot_widget(self, plot_widget, title='Plot'):
+        plot_widget.showAxis('top', True)
+        plot_widget.showAxis('right', True)
+        plot_widget.showGrid(True, True, .2)
+        plot_widget.setLabel('left', 'Value', units='V')
+        plot_widget.setLabel('bottom', 'Time', units='s')
+        # plot_widget.setLabel('top', title)
+
+    def resizeEvent(self, event):
+        h = self.frameGeometry().height()
+        w = self.frameGeometry().width()
+        self.main_plot_widget.setMinimumHeight(int(h * .7))
+        self.main_plot_widget.setMinimumWidth(500)
+
+    def add_curve(self, name, color=(255, 255, 255)):
+        self.curves[name] = self.main_plot_widget.plot(name=name)
+        self.curves[name].setPen((pg.mkPen(*color)))
+
+    def plot_curve(self, name, da):
+        if name in self.curves:
+            if self.use_r0:
+                self.main_plot_widget.setLabel('left', '<font>&Delta;R / R</font>', units='')
+                self.curves[name].setData(da.time * 10 ** -12, da)#*100) # uncomment to represent in %
+            else:
+                self.main_plot_widget.setLabel('left', '<font>&Delta;R</font>', units='V')
+                self.curves[name].setData(da.time * 10 ** -12, da)
+
+    def plot_last_curve(self, da):
+        if self.cb_last_curve.isChecked():
+            if 'last' not in self.curves:
+                self.add_curve('last', color=(200, 200, 200))
+            if self.cb_remove_baseline.isChecked():
+                n = len(da) // 20  # .shape[0]//20
+                off = da[:n].mean()
+                da -= off
+            self.plot_curve('last', da)
+        else:
+            if 'last' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('last'))
+
+    def plot_avg_curve(self, da):
+        if self.cb_avg_curve.isChecked():
+            if 'avg' not in self.curves:
+                self.add_curve('avg', color=(255, 100, 100))
+            off = self.avg_side_cutoff.value() + 1
+            da_ = da[off:-off]
+            print(da.shape, da_.shape)
+            if self.cb_remove_baseline.isChecked():
+                n = len(da_) // 20  # .shape[0]//20
+                off = da_[:n].mean()
+                da_ -= off
+            self.plot_curve('avg', da_)
+        else:
+            if 'avg' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('avg'))
+
+    def plot_fit_curve(self, da):
+        if self.cb_fit_curve.isChecked():
+            if 'fit' not in self.curves:
+                self.add_curve('fit', color=(100, 255, 100))
+            if self.cb_remove_baseline.isChecked():
+                n = len(da) // 20  # .shape[0]//20
+                off = da[:n].mean()
+                da -= off
+            self.plot_curve('fit', da)
+        else:
+            if 'fit' in self.curves:
+                self.main_plot.removeItem(self.curves.pop('fit'))
+
+    def plot_stream_curve(self, data):
+        #check if we have r0, and change main plot accordingly
+        if parse_setting('fastscan', 'use_r0') and data.shape[0] == 4:
+            self.use_r0 = True
+        x = np.arange(len(data[0]))
+        pos = data[0, :]
+        if data[2, 1] > data[2, 0]:
+            sig_dc0 = data[1, 1::2]
+            sig_dc1 = data[1, 0::2]
+        else:
+            sig_dc1 = data[1, 1::2]
+            sig_dc0 = data[1, 0::2]
+        self.stream_curve.setData(x, pos)
+        self.stream_signal_dc0.setData(x[::2], sig_dc0)
+        self.stream_signal_dc1.setData(x[::2], sig_dc1)
+
+    def on_clock(self):
+        pass
 
 
 if __name__ == '__main__':

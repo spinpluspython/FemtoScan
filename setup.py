@@ -19,19 +19,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import logging
-
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-# import logging
-# from logging.config import fileConfig
-#
-# fileConfig('./cfg/logging_config.ini')
-# logger = logging.getLogger(__name__)
+from distutils.core import setup, Extension
+from Cython.Build import cythonize
+# import py2exe
+import numpy
+import os
 
 
-def main():
-    pass
+extensions = [
+    Extension("measurement.cscripts.project", [os.path.join("measurement", "cscripts", "project.pyx")],
+        include_dirs=[numpy.get_include()]),
+]
 
-
-if __name__ == '__main__':
-    main()
+setup(
+    name="FemtoScan",
+    version='0.1.0',
+    description='Optical Pump Probe software and instrument manager',
+    author=['Steinn Ymir Agustsson','Vladimir Grigorev'],
+    url='https://github.com/spinpluspython/FemtoScan',
+    packages=['distutils', 'distutils.command'],
+    # windows=[{'script': 'FastScan.py'}],
+    ext_modules=cythonize(extensions)
+)

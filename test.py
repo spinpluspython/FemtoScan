@@ -8,7 +8,7 @@ import time
 from instruments.lockinamplifier import SR830
 from instruments.delaystage import DelayStage
 from instruments.cryostat import Cryostat
-from measurement.stepscan import StepScan
+from measurement.experiment import StepScan
 from PyQt5 import QtCore, QtWidgets
 import os, sys
 

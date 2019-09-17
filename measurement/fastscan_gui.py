@@ -21,7 +21,7 @@
 """
 import logging
 import os
-
+import time
 import numpy as np
 import pyqtgraph as pg
 import qdarkstyle
@@ -67,6 +67,7 @@ class FastScanMainWindow(QMainWindow):
         self.data_manager, self.data_manager_thread = self.initialize_data_manager()
 
         self.fps_l = []
+        self.streamer_qsize = 0
 
         self.main_clock = QtCore.QTimer()
         self.main_clock.setInterval(.100)
@@ -184,6 +185,8 @@ class FastScanMainWindow(QMainWindow):
 
         self.datasize_label = QLabel('data Size')
         savebox_layout.addWidget(self.datasize_label, 4, 0, 3, 2)
+        # self.fps_label = QLabel('data Size')
+        # savebox_layout.addWidget(self.fps_label, 6, 0, 3, 2)
 
         # ----------------------------------------------------------------------
         # Settings Box
@@ -350,16 +353,23 @@ class FastScanMainWindow(QMainWindow):
             projected_shape = self.data_manager.all_curves.shape
         except AttributeError:
             streamer_shape = projected_shape = (0, 0)
+        try:
+            if len(self.fps_l) >10:
+                self.fps_l.pop(0)
+            fps = np.mean(self.fps_l)
+        except:
+            fps = 0
 
-        string = 'Data Size :\n streamer: {} - {:10.3f} Kb\n projected: {} - {:10.3f} Kb'.format(
-            streamer_shape, np.prod(streamer_shape) / (1024), projected_shape, np.prod(projected_shape) / (1024)
+
+        string = 'Data Size :\n streamer: {} - {:10.3f} Kb\n projected: {} - {:10.3f} Kb\n Streams queued: {}\n Cycles per Second [Hz]: {:10.3f}       '.format(
+            streamer_shape, np.prod(streamer_shape) / (1024),
+            projected_shape, np.prod(projected_shape) / (1024),
+            self.data_manager.stream_qsize,
+            fps,
+
         )
         self.datasize_label.setText(string)
-        # if self.autosave_checkbox.isChecked():
-        #     try:
-        #         self.save_data()
-        #     except (TypeError,AttributeError):
-        #         pass
+
 
     def initialize_data_manager(self):
 
@@ -390,16 +400,16 @@ class FastScanMainWindow(QMainWindow):
 
     @QtCore.pyqtSlot(xr.DataArray)
     def on_processed_data(self, data_array):
-        # try:
-        #     t0 = self.processor_tick
-        #     self.processor_tick = time.time()
-        #     if len(self.fps_l) >= 100:
-        #         self.fps_l.pop(0)
-        #     self.fps_l.append(1. / (self.processor_tick - t0))
-        #     fps = np.mean(self.fps_l)
-        #     self.label_processor_fps.setText('FPS: {:.2f}'.format(fps))
-        # except:
-        #     self.processor_tick = time.time()
+        try:
+            t0 = self.processor_tick
+            self.processor_tick = time.time()
+            if len(self.fps_l) >= 100:
+                self.fps_l.pop(0)
+            self.fps_l.append(1. / (self.processor_tick - t0))
+            # fps = np.mean(self.fps_l)
+            # self.fps_label.setText('Cycles (Hz): {:.2f}'.format(fps))
+        except:
+            self.processor_tick = time.time()
         self.apply_filter(data_array)
         self.visual_widget.plot_last_curve(data_array)
         self.logger.debug('recieved processed data as {}'.format(type(data_array)))
@@ -440,6 +450,7 @@ class FastScanMainWindow(QMainWindow):
 
     def reset_data(self):
         self.status_bar.showMessage('Data reset')
+        self.fps_l = []
         self.data_manager.reset_data()
 
     def set_n_samples(self, var):

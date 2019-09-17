@@ -94,7 +94,7 @@ class FastScanThreadManager(QtCore.QObject):
         # self.delay_stage = DelayStage()
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(50.)
+        self.timer.setInterval(1)
         self.timer.timeout.connect(self.on_timer)
         self.timer.start()
         self.counter = 0
@@ -249,12 +249,26 @@ class FastScanThreadManager(QtCore.QObject):
             self.streamer_thread.exit()
             self.should_stop = False
             self.streamerRunning = False
+        try:
+            if not self.__stream_queue.empty():
+                _to_project = self.__stream_queue.get()
+                self.start_projector(_to_project)
+
+                self.logger.debug('got stream from queue: {} elements remaining'.format(self.stream_qsize))
+        except Exception as e:
+            self.logger.debug('Queue error: {}'.format(e))
+
+        try:
+            qsize = self.__stream_queue.qsize()
+        except:
+            qsize = -1
+        # self.start_projector(_to_project)
+
 
         try:
             # print(self.all_curves.shape[0], self.n_averages, self.all_curves.shape[0]==self.n_averages, self.recording_iteration)
             if self.all_curves.shape[0] == self.n_averages and self.recording_iteration:
                 self.logger.info('n of averages reached: ending iteration step')
-
                 self.end_iteration_step()
         except AttributeError as e:
             pass
@@ -327,9 +341,9 @@ class FastScanThreadManager(QtCore.QObject):
 
         self.__stream_queue.put(streamer_data)
         self.logger.debug('added data to stream queue, with shape {}'.format(streamer_data.shape))
-        _to_project = self.__stream_queue.get()
-        print('got stream from queue: {}'.format(_to_project.shape))
-        self.start_projector(_to_project)
+        # _to_project = self.__stream_queue.get()
+        # print('got stream from queue: {}'.format(_to_project.shape))
+        # self.start_projector(_to_project)
 
     @QtCore.pyqtSlot(tuple)#xr.DataArray, list)
     def on_projector_data(self, processed_dataarray_tuple):
@@ -498,6 +512,15 @@ class FastScanThreadManager(QtCore.QObject):
         self.stop_streamer()
 
     ### Properties
+
+    @property
+    def stream_qsize(self):
+        """ State of dark control. If True it's on."""
+        try:
+            val = self.__stream_queue.qsize()
+        except:
+            val = -1
+        return val
 
     @property
     def dark_control(self):
@@ -972,6 +995,8 @@ class FastScanStreamer(QtCore.QObject):
                 task.ai_channels.add_ai_voltage_chan("Dev1/ai0")  # shaker position chanel
                 task.ai_channels.add_ai_voltage_chan("Dev1/ai1")  # signal chanel
                 task.ai_channels.add_ai_voltage_chan("Dev1/ai2")  # dark control chanel
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai3")  # reference
+
                 self.logger.debug('added 3 tasks')
                 task.timing.cfg_samp_clk_timing(1000000, source="/Dev1/PFI0",
                                                 active_edge=Edge.RISING,
@@ -981,7 +1006,7 @@ class FastScanStreamer(QtCore.QObject):
 
                 self.should_stop = False
                 i = 0
-                while self.should_stop:
+                while not self.should_stop:
                     i += 1
                     self.logger.debug('measuring cycle {}'.format(i))
                     self.reader.read_many_sample(self.data, number_of_samples_per_channel=self.n_samples)

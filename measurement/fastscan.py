@@ -121,11 +121,11 @@ class FastScanThreadManager(QtCore.QObject):
                             use_dark_control=self.dark_control,
                             adc_step=self.shaker_position_step,
                             time_step=self.shaker_time_step,
-                            use_r0=True
+                            use_r0=self.use_r0,
                             )
 
         self.pool.start(runnable)
-        runnable.signals.result.connect(self.on_processor_data)
+        runnable.signals.result.connect(self.on_projector_data)
 
     def fit_autocorrelation(self, da):
         """ Uses a thread to fit the autocorrelation function to the projected data."""
@@ -332,7 +332,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.start_projector(_to_project)
 
     @QtCore.pyqtSlot(tuple)#xr.DataArray, list)
-    def on_processor_data(self, processed_dataarray_tuple):
+    def on_projector_data(self, processed_dataarray_tuple):
         """ Slot to handle processed data.
 
         Processed data is first emitted to the main window for plotting etc...
@@ -508,6 +508,16 @@ class FastScanThreadManager(QtCore.QObject):
     def dark_control(self, val):
         assert isinstance(val, bool), 'dark control must be boolean.'
         write_setting(val, 'fastscan', 'dark_control')
+
+    @property
+    def use_r0(self):
+        """ Choose to output DR/R or DR. If True it's DR/R."""
+        return parse_setting('fastscan', 'use_r0')
+
+    @use_r0.setter
+    def use_r0(self, val):
+        assert isinstance(val, bool), 'use_r0 must be boolean.'
+        write_setting(val, 'fastscan', 'use_r0')
 
     @property
     def n_processors(self):
@@ -793,10 +803,11 @@ def projector(stream_data, spos_fit_pars=None, use_dark_control=True, adc_step=0
     assert isinstance(stream_data,np.ndarray)
     # assert stream_data.ndim >2, 'stream data must be 3 or 4 dimensional'
 
-    if stream_data.ndim == 4 and use_r0: # calculate dR/R only when required and when data for R0 is there
+    if stream_data.shape[0] == 4 and use_r0: # calculate dR/R only when required and when data for R0 is there
         use_r0 = True
         print('using r0')
     else:
+        print('Not using r0:\n ndim = {}\n use_r0 = {}'.format(stream_data.ndim ,use_r0))
         use_r0 = False
     spos_analog = stream_data[0]
     signal = stream_data[1]

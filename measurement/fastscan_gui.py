@@ -482,6 +482,7 @@ class FastScanPlotWidget(QWidget):
         self.clock.start()
 
         self.curves = {}
+        self.use_r0 = parse_setting('fastscan', 'use_r0')
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -492,7 +493,8 @@ class FastScanPlotWidget(QWidget):
         self.main_plot_widget.showAxis('top', True)
         self.main_plot_widget.showAxis('right', True)
         self.main_plot_widget.showGrid(True, True, .2)
-        self.main_plot_widget.setLabel('left', 'Value', units='V')
+        self.main_plot_widget.setLabel('left', '<font>&Delta;R</font>', units='V')
+        self.main_plot_widget.setLabel('left', '<font>&Delta;R / R</font>', units='%')
         self.main_plot_widget.setLabel('bottom', 'Time', units='s')
         self.small_plot_widget = pg.PlotWidget(name='stream_plot')
         self.small_plot = self.small_plot_widget.getPlotItem()
@@ -579,7 +581,12 @@ class FastScanPlotWidget(QWidget):
 
     def plot_curve(self, name, da):
         if name in self.curves:
-            self.curves[name].setData(da.time * 10 ** -12, da)
+            if self.use_r0:
+                self.main_plot_widget.setLabel('left', '<font>&Delta;R / R</font>', units='')
+                self.curves[name].setData(da.time * 10 ** -12, da)#*100) # uncomment to represent in %
+            else:
+                self.main_plot_widget.setLabel('left', '<font>&Delta;R</font>', units='V')
+                self.curves[name].setData(da.time * 10 ** -12, da)
 
     def plot_last_curve(self, da):
         if self.cb_last_curve.isChecked():
@@ -624,6 +631,9 @@ class FastScanPlotWidget(QWidget):
                 self.main_plot.removeItem(self.curves.pop('fit'))
 
     def plot_stream_curve(self, data):
+        #check if we have r0, and change main plot accordingly
+        if parse_setting('fastscan', 'use_r0') and data.shape[0] == 4:
+            self.use_r0 = True
         x = np.arange(len(data[0]))
         pos = data[0, :]
         if data[2, 1] > data[2, 0]:

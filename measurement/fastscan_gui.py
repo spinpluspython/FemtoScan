@@ -608,7 +608,7 @@ class FastScanPlotWidget(QWidget):
                 self.add_curve('last', color=(200, 200, 200))
             off = self.avg_side_cutoff.value() + 1
             n_prepump = len(da) // 20  # .shape[0]//20
-            self.curve_std = np.std(da.values[off:n_prepump])
+            # self.curve_std = np.std(da.values[off:n_prepump])
             if self.cb_remove_baseline.isChecked():
                 off = da[:n_prepump].mean()
                 da -= off
@@ -626,7 +626,7 @@ class FastScanPlotWidget(QWidget):
             # print(da.shape, da_.shape)
             n_prepump = len(da_) // 20 +off  # .shape[0]//20
             self.avg_std = np.std(da_.values[:n_prepump])
-            self.avg_max = max(np.max(da_.values),-np.max(da_.values))
+            # self.avg_max = max(np.max(da_.values),-np.max(da_.values))
             if self.cb_remove_baseline.isChecked():
                 off = da_[off:n_prepump].mean()
                 da_ -= off
@@ -665,10 +665,12 @@ class FastScanPlotWidget(QWidget):
         self.stream_signal_dc1.setData(x[::2], sig_dc1)
 
     def on_clock(self):
-        self.noise_label.setText('Noise Floor:\n  {:15}:   {:.2E}\n  {:15}:   {:.2E}\n  {:15}:   {:.2E}'.format(
-            'Single Scan',self.curve_std,
-            'Average',self.avg_std,
-            'Signal/noise',self.avg_max/self.avg_std))
+        label = 'Noise Floor:\n'
+        label += '   {:15}:   {:.2E}\n'.format('Average',self.avg_std)
+        # label += '   {:15}:   {:.2E}\n'.format('Single Scan',self.curve_std)
+        # label += '   {:15}:   {:.2E}\n'.format('Signal/noise',self.avg_max/self.avg_std)
+        self.noise_label.setText(label)
+
 
 
 if __name__ == '__main__':

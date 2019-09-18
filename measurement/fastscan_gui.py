@@ -158,13 +158,17 @@ class FastScanMainWindow(QMainWindow):
                 i += 1
             else:
                 break
+        f_name = parse_setting('paths','filename')
 
-        self.save_name_ledit = QLineEdit(filename)
+        self.save_name_ledit = QLineEdit(f_name)
         savebox_layout.addWidget(QLabel('Name:'), 0, 0)
         savebox_layout.addWidget(self.save_name_ledit, 0, 1)
+        self.save_name_ledit.editingFinished.connect(self.update_savename)
+
         self.save_dir_ledit = QLineEdit(h5_dir)
         savebox_layout.addWidget(QLabel('dir :'), 1, 0)
         savebox_layout.addWidget(self.save_dir_ledit, 1, 1)
+        self.save_dir_ledit.editingFinished.connect(self.update_savedir)
 
         self.save_all_cb = QCheckBox('Save avgs')
         self.save_all_cb.setToolTip(
@@ -222,6 +226,8 @@ class FastScanMainWindow(QMainWindow):
             self.shaker_gain_combobox.setCurrentIndex(idx)
 
         # self.shaker_gain_combobox. #TODO: read starting value from settings!
+
+
 
         def set_shaker_gain(val):
             self.data_manager.shaker_gain = val
@@ -352,6 +358,14 @@ class FastScanMainWindow(QMainWindow):
         # layout.addWidget(shaker_calib_gbox)
 
         return widget
+
+    def update_savename(self):
+        name = self.save_name_ledit.text()
+        write_setting(name,'paths','filename')
+
+    def update_savedir(self):
+        name = self.save_dir_ledit.text()
+        write_setting(name,'paths','h5_data')
 
     def start_iterative_measurement(self):
         temperatures = [float(x) for x in self.im_temperatures.text().split(',')]

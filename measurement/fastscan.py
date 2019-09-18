@@ -90,7 +90,7 @@ class FastScanThreadManager(QtCore.QObject):
         self.current_iteration = None
         self.spos_fit_pars = None # initialize the fit parameters for shaker position
 
-        self.cryo = Cryostat()
+        self.cryo = Cryostat(parse_setting('instruments','cryostat_com'))
         # self.delay_stage = DelayStage()
 
         self.timer = QtCore.QTimer()
@@ -445,9 +445,15 @@ class FastScanThreadManager(QtCore.QObject):
         assert True
         self.temperatures = temperatures
         self.iterative_measurement_name = savename
+        # self.start_streamer()
+        # self.wait(1000)
+        # self.save_data(savename) #TODO: remove
+        # self.stop_streamer()
+        # self.reset_data()
         self.logger.info('starting measurement loop')
         self.current_iteration = 0
-        self.start_streamer()
+        # self.stop_streamer()
+
         self.start_next_iteration()
 
     @QtCore.pyqtSlot()
@@ -456,12 +462,15 @@ class FastScanThreadManager(QtCore.QObject):
         Initialize the next measurement iteration in the temperature dependence
         scan series.
         """
+        self.stop_streamer()
+
         if self.current_iteration >= len(self.temperatures):
             self.current_iteration = None
             print('\n\n\n\nMEASUREMENT FINISHED\n\n\n')
             self.logger.info('Iterative mesasurement complete!!')
         else:
             self.cryo.connect()
+            self.logger.info('Connected to Cryostat: setting temperature....')
             self.cryo.set_temperature(self.temperatures[self.current_iteration])
             runnable = Runnable(self.cryo.check_temp, tolerance=.1, sleep_time=1)
             self.pool.start(runnable)
@@ -474,22 +483,26 @@ class FastScanThreadManager(QtCore.QObject):
         self.logger.info('Temperature stable, measuring interation {}, {}K'.format(self.current_iteration,
                                                                                    self.temperatures[
                                                                                        self.current_iteration]))
+        self.stop_streamer()
         self.reset_data()
+        self.start_streamer()
         self.recording_iteration = True
 
     @QtCore.pyqtSlot()
     def end_iteration_step(self):
         """ Complete and finalize the current measurement iteration."""
 
-        print('stopping iteration')
+        self.logger.info('Stopping iteration')
         self.recording_iteration = False
+
         t = self.temperatures[self.current_iteration]
-        print(t)
         temp_string = '_{:0.2f}K'.format(float(t)).replace('.', ',')
-        print(temp_string)
-        savename = self.iterative_measurement_name + temp_string
-        self.logger.info('Iteration ')  # {} complete. Saved data as {}'.format(self.current_iteration,savename))
+
+        savename = self.iterative_measurement_name+temp_string
+        self.logger.info('Iteration {} complete. Saved data as {}'.format(self.current_iteration,savename))
         self.save_data(savename)
+
+        self.stop_streamer()
         self.current_iteration += 1
         self.start_next_iteration()
 
@@ -828,7 +841,6 @@ def projector(stream_data, spos_fit_pars=None, use_dark_control=True, adc_step=0
 
     if stream_data.shape[0] == 4 and use_r0: # calculate dR/R only when required and when data for R0 is there
         use_r0 = True
-        print('using r0')
     else:
         print('Not using r0:\n ndim = {}\n use_r0 = {}'.format(stream_data.ndim ,use_r0))
         use_r0 = False

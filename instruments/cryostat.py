@@ -106,7 +106,7 @@ class MercuryITC(Cryostat):
 
 
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
             self.ser.close()
 
     def disconnect(self):
@@ -164,7 +164,8 @@ class MercuryITC(Cryostat):
 
 
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
+            # print('error' + str(xui))
             self.ser.close
 
     def get_temperature(self, Units='TEMP'):
@@ -182,7 +183,7 @@ class MercuryITC(Cryostat):
             return (temperature)
             
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
             self.ser.close
 
     # %%
@@ -191,6 +192,7 @@ class MercuryITC(Cryostat):
 class ITC503s(Cryostat):
     def __init__(self, COMport=None):
         super(ITC503s, self).__init__()
+
         if COMport is None:
             self.COMPort = 'COM6'  # set on the place
         else:
@@ -223,8 +225,9 @@ class ITC503s(Cryostat):
             self.read('V')
             self.read('C1')
             self.read('A1')
+            print('-----------------\n\n\n    connected cryostat    \n\n\n-----------------')
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
             self.ser.close()
 
     def disconnect(self):
@@ -285,7 +288,7 @@ class ITC503s(Cryostat):
 
 
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
             self.ser.close
 
     def get_temperature(self):
@@ -301,12 +304,14 @@ class ITC503s(Cryostat):
 
 
         except Exception as xui:
-            print('error' + str(xui))
+            self.logger.critical('ERROR: {}'.format(xui))
             self.ser.close
 
 
 if __name__ == '__main__':
-    cryo=ITC503s()
+    cryo=ITC503s(COMport='COM5')
+
+
     cryo.connect()
     cryo.read('C2')
     cryo.disconnect()

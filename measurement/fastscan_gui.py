@@ -214,6 +214,14 @@ class FastScanMainWindow(QMainWindow):
         self.shaker_gain_combobox.addItem('1')
         self.shaker_gain_combobox.addItem('10')
         self.shaker_gain_combobox.addItem('100')
+        set_value = parse_setting('fastscan', 'shaker_gain')
+        idx = self.shaker_gain_combobox.findText(str(set_value))
+        if idx == -1:
+            self.shaker_gain_combobox.setCurrentIndex(1)
+        else:
+            self.shaker_gain_combobox.setCurrentIndex(idx)
+
+        # self.shaker_gain_combobox. #TODO: read starting value from settings!
 
         def set_shaker_gain(val):
             self.data_manager.shaker_gain = val
@@ -252,6 +260,10 @@ class FastScanMainWindow(QMainWindow):
 
         self.filter_frequency_spinbox = QDoubleSpinBox()
         self.filter_frequency_spinbox.setValue(.3)
+        self.filter_frequency_spinbox.setMaximum(1.)
+        self.filter_frequency_spinbox.setMinimum(0.0)
+        self.filter_frequency_spinbox.setSingleStep(0.1)
+
 
         filter_box_layout.addWidget(QLabel('Cut (0.-1.):'), 0, 3)
         filter_box_layout.addWidget(self.filter_frequency_spinbox, 0, 4)

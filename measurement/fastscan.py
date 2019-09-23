@@ -65,9 +65,9 @@ class FastScanThreadManager(QtCore.QObject):
     newProcessedData = QtCore.pyqtSignal(xr.DataArray)
     newFitResult = QtCore.pyqtSignal(dict)
     newAverage = QtCore.pyqtSignal(xr.DataArray)
-    acquisitionStopped = QtCore.pyqtSignal()
-    finished = QtCore.pyqtSignal()
-    newData = QtCore.pyqtSignal(np.ndarray)
+    # acquisitionStopped = QtCore.pyqtSignal()
+    # finished = QtCore.pyqtSignal()
+    # newData = QtCore.pyqtSignal(np.ndarray)
     error = QtCore.pyqtSignal(Exception)
 
     def __init__(self):
@@ -259,9 +259,9 @@ class FastScanThreadManager(QtCore.QObject):
             self.logger.debug('Queue error: {}'.format(e))
 
         try:
-            qsize = self.__stream_queue.qsize()
+            self.qsize = self.__stream_queue.qsize()
         except:
-            qsize = -1
+            self.qsize = -1
         # self.start_projector(_to_project)
 
 

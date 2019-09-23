@@ -70,7 +70,7 @@ class FastScanMainWindow(QMainWindow):
         self.streamer_qsize = 0
 
         self.main_clock = QtCore.QTimer()
-        self.main_clock.setInterval(.100)
+        self.main_clock.setInterval(50)
         self.main_clock.start()
         self.main_clock.timeout.connect(self.on_main_clock)
 

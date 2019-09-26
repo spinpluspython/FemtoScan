@@ -527,7 +527,7 @@ class Worker(QtCore.QObject):
         raise NotImplementedError("Method 'project' not implemented in worker (sub)class")
 
     def initialize_progress_counter(self):
-        """ initialize the progress counter which helps keep track of measurement loop status"""
+        """ initialize the progress _counter which helps keep track of measurement loop status"""
         self.n_of_steps = 1
         for i in self.__max_ranges:
             self.n_of_steps *= i

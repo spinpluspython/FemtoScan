@@ -1,41 +1,36 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug 28 14:30:00 2019
+Created on Mon Aug 26 12:28:55 2019
 
 @author: amonl
+
+Runs
 """
 
 from instruments import  delaystage, lockinamplifier, cryostat
-import random
 
 """ROT SCAN"""
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib import style
+import matplotlib
 import time
 import h5py
 
 
 class Rotscan_measurements(object):
     def __init__(self):
-        #self.lockin_amplifier = lockinamplifier.SR830()
+        self.lockin_amplifier = lockinamplifier.SR830_Ethernet('169.254.88.32', 1234)
         self.rot_stage = delaystage.ThorLabs_rotational_stage()
-        #self.cryostat = cryostat.ITC503s(COMport='COM5')
-        
+        self.cryostat = cryostat.ITC503s()
 
     def init_instruments(self):
         #self.lockin_amplifier.ser.port='COM4'
-        #self.lockin_amplifier.connect()
-        #self.cryostat.connect()
-        ## Magnet=CurrentSupplyLib.CurrentSUP()
-        ## Magnet.initcurrentsupply()
-        ## Magnet.SetVoltage(40)
-        ## Magnet.SetCurrent(0)
-        ## Magnet.SwitchForward()
+        #self.lockin_amplifier.port= 1234 #'COM6'
+        #self.lockin_amplifier.GPIB_adress = 8
+        #self.host = "169.254.88.32"
+        self.lockin_amplifier.connect()
+        self.cryostat.connect()
         self.rot_stage.connect()
         time.sleep(2)  # TODO: move to inside stage class
-        self.rot_stage.move_absolute(180)
 
     def create_points(self, N):
         Points = []
@@ -54,41 +49,41 @@ class Rotscan_measurements(object):
         File.close()
         np.savetxt(name + time.ctime().replace(':', '-') + 'txt.txt', (X,Y))
 
-    def rotscan_measure(self, name, N_steps, save=False, time_constant=1, var='Y'):
+    def rotscan_measure(self, name, N_steps, save=False, time_constant=100, var='Y'):
         self.init_instruments()
-        style.use("fivethirtyeight")
-        fig = plt.gcf()
-        fig.show()
-        fig.canvas.draw()
         #time.sleep(3)        
         X = self.create_points(N_steps)
         Y = []
-        
         for item in X:
-            X_helper = []
             self.rot_stage.move_absolute(item)
-            ##time.sleep(3*time_constant)
-            Y.append(random.randint(0, N_steps))   #lockin readout herte when lockin is available!!!
-            for i in range(len(Y)):
-                X_helper.append([X[i]])
-            
-        #self.lockin_amplifier.disconnect()
-            
-            plt.plot(X_helper, Y)
-            plt.pause(0.01)
-            fig.canvas.draw()
-            
+            #time.sleep(3*time_constant)
+            Y.append(self.lockin_amplifier.measure_avg(sleep=time_constant, var=var))
+        self.lockin_amplifier.disconnect()
+        matplotlib.pyplot.plot(X, Y)
         if save:
-            self.save(name, X, Y) #+'-'+str(N_steps), X, Y)
+            self.save(name +'-'+str(N_steps), X, Y)
         return X, Y
     
-
     
-    
+    def temperaturescan_measure(self, name, angle, T_List, save=False, time_constant=1, var='Y'):
+        self.init_instruments()
+        self.rot_stage.move_absolute(angle)
+        #time.sleep(3)        
+        X = T_List
+        Y = []
+        for item in X:
+            self.cryostat.change_temperature(item)
+            #time.sleep(3*time_constant)
+            Y.append(self.lockin_amplifier.measure_avg(sleep=time_constant, var=var))
+        self.lockin_amplifier.disconnect()
+        matplotlib.pyplot.plot(X, Y)
+        if save:
+            self.save(name +'-'+str(N_steps), X, Y)
+        return X, Y
         
 
     def finish(self):
-        #self.lockin_amplifier.disconnect()
+        self.lockin_amplifier.disconnect()
         self.rot_stage.disconnect()
         self.cryostat.disconnect()
 
@@ -96,23 +91,19 @@ class Rotscan_measurements(object):
 # %%
 def main():
 
-    temperature = 295.5
-    save = False
-    N_angles = 6
+    temperature = 290
     
     meas = Rotscan_measurements()
-    print(1)
     meas.init_instruments()
     #or temperature in range(297,305):
      #   meas.cryostat.connect()
       #  meas.cryostat.change_temperature(temperature)
        # meas.cryostat.disconnect()
     
-    """file_name = 'test'#+str(temperature)
+    file_name = 'test'#+str(temperature)
     meas.cryostat.change_temperature(temperature)
-    meas.cryostat.disconnect()
-    meas.rotscan_measure(file_name, N_angles, save)  
-    meas.finish()"""
+    meas.rotscan_measure(file_name, 18)  
+    meas.finish()
     
     '''
     
@@ -133,6 +124,7 @@ def main():
     
     ''' # move these ''' right below 'def main()'
     
+
 
 if __name__ == '__main__':
     main()

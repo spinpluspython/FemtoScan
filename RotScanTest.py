@@ -35,7 +35,7 @@ class Rotscan_measurements(object):
         ## Magnet.SwitchForward()
         self.rot_stage.connect()
         time.sleep(2)  # TODO: move to inside stage class
-        self.rot_stage.move_absolute(180)
+        #self.rot_stage.move_absolute(180)
 
     def create_points(self, N):
         Points = []
@@ -90,11 +90,21 @@ class Rotscan_measurements(object):
     def finish(self):
         #self.lockin_amplifier.disconnect()
         self.rot_stage.disconnect()
-        self.cryostat.disconnect()
+        #self.cryostat.disconnect()
 
 
 # %%
 def main():
+    
+    def turn(x):
+        for i in range(2):
+            meas.rot_stage.move_absolute(x+0)
+            meas.rot_stage.move_absolute(x+90)
+            meas.rot_stage.move_absolute(x+180)
+            meas.rot_stage.move_absolute(x+270)
+            
+    def turnto(x):
+        meas.rot_stage.move_absolute(x)
 
     temperature = 295.5
     save = False
@@ -103,6 +113,12 @@ def main():
     meas = Rotscan_measurements()
     print(1)
     meas.init_instruments()
+   
+    turn(121)
+    #meas.rot_stage.move_absolute(125+180)
+    
+    
+    meas.finish()
     #or temperature in range(297,305):
      #   meas.cryostat.connect()
       #  meas.cryostat.change_temperature(temperature)
@@ -132,6 +148,10 @@ def main():
     meas.finish()
     
     ''' # move these ''' right below 'def main()'
+    
+    
+    
+    
     
 
 if __name__ == '__main__':

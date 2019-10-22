@@ -12,6 +12,9 @@ from instruments import  delaystage, lockinamplifier, cryostat
 """ROT SCAN"""
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
+#import matplotlib.animation as animation
+from matplotlib import style
 import time
 import h5py
 
@@ -49,15 +52,26 @@ class Rotscan_measurements(object):
         File.close()
         np.savetxt(name + time.ctime().replace(':', '-') + 'txt.txt', (X,Y))
 
-    def rotscan_measure(self, name, N_steps, save=False, time_constant=100, var='Y'):
+    def rotscan_measure(self, name, N_steps, save=False, time_constant=100, var='Y'):  #ggf. save =True
         self.init_instruments()
         #time.sleep(3)        
         X = self.create_points(N_steps)
+        x_tmp =[]
         Y = []
+        style.use("fivethirtyeight")
+        fig = plt.gcf()
+        fig.show()
+        fig.canvas.draw()
+        
+        
         for item in X:
             self.rot_stage.move_absolute(item)
             #time.sleep(3*time_constant)
+            x_tmp.append(item)
             Y.append(self.lockin_amplifier.measure_avg(sleep=time_constant, var=var))
+            plt.plot(x_tmp, Y)
+            plt.pause(0.01)
+            fig.canvas.draw()
         self.lockin_amplifier.disconnect()
         matplotlib.pyplot.plot(X, Y)
         if save:

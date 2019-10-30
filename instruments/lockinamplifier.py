@@ -1404,6 +1404,7 @@ class SR830_Ethernet(LockInAmplifier):
         time.sleep(3*sleep)
         for i in range(avg):
             signal.append(self.read_value(var))
+            print(signal) #!!!!
             val = sum(signal) / avg
         return val
 

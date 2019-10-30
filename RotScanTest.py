@@ -114,7 +114,7 @@ def main():
     print(1)
     meas.init_instruments()
    
-    turn(121)
+    turnto(121)
     #meas.rot_stage.move_absolute(125+180)
     
     

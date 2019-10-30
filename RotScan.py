@@ -23,7 +23,7 @@ class Rotscan_measurements(object):
     def __init__(self):
         self.lockin_amplifier = lockinamplifier.SR830_Ethernet('169.254.88.32', 1234)
         self.rot_stage = delaystage.ThorLabs_rotational_stage()
-        self.cryostat = cryostat.ITC503s()
+        #self.cryostat = cryostat.ITC503s()
 
     def init_instruments(self):
         #self.lockin_amplifier.ser.port='COM4'
@@ -31,7 +31,7 @@ class Rotscan_measurements(object):
         #self.lockin_amplifier.GPIB_adress = 8
         #self.host = "169.254.88.32"
         self.lockin_amplifier.connect()
-        self.cryostat.connect()
+        #self.cryostat.connect()
         self.rot_stage.connect()
         time.sleep(2)  # TODO: move to inside stage class
 
@@ -58,22 +58,27 @@ class Rotscan_measurements(object):
         X = self.create_points(N_steps)
         x_tmp =[]
         Y = []
-        style.use("fivethirtyeight")
+        print("we here")
+        """style.use("fivethirtyeight")
         fig = plt.gcf()
         fig.show()
-        fig.canvas.draw()
+        fig.canvas.draw() """
         
         
         for item in X:
             self.rot_stage.move_absolute(item)
+            print("moved")
             #time.sleep(3*time_constant)
             x_tmp.append(item)
-            Y.append(self.lockin_amplifier.measure_avg(sleep=time_constant, var=var))
-            plt.plot(x_tmp, Y)
-            plt.pause(0.01)
-            fig.canvas.draw()
+            Y.append(self.lockin_amplifier.measure_avg(sleep=1, var=var))
+            print(Y)
+            #plt.plot(x_tmp, Y)
+            #plt.pause(0.01)
+            #fig.canvas.draw()
         self.lockin_amplifier.disconnect()
-        matplotlib.pyplot.plot(X, Y)
+        #matplotlib.pyplot.plot(X, Y)
+        print(X)
+        print(Y)
         if save:
             self.save(name +'-'+str(N_steps), X, Y)
         return X, Y
@@ -99,13 +104,14 @@ class Rotscan_measurements(object):
     def finish(self):
         self.lockin_amplifier.disconnect()
         self.rot_stage.disconnect()
-        self.cryostat.disconnect()
+        #self.cryostat.disconnect()
 
 
 # %%
 def main():
 
     temperature = 290
+    stepnumber =18
     
     meas = Rotscan_measurements()
     meas.init_instruments()
@@ -115,8 +121,8 @@ def main():
        # meas.cryostat.disconnect()
     
     file_name = 'test'#+str(temperature)
-    meas.cryostat.change_temperature(temperature)
-    meas.rotscan_measure(file_name, 18)  
+    #for non room temp un-hashtag here    meas.cryostat.change_temperature(temperature)
+    meas.rotscan_measure(file_name, stepnumber)  
     meas.finish()
     
     '''

@@ -527,7 +527,6 @@ class FastScanThreadManager(QtCore.QObject):
     @QtCore.pyqtSlot()
     def end_iteration_step(self):
         """ Complete and finalize the current measurement iteration."""
-
         self.logger.info('Stopping iteration')
         self._recording_iteration = False
 

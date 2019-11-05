@@ -25,7 +25,7 @@ import time
 
 import numpy as np
 import serial
-import socket              #needs to be installed first
+import socket
 
 import sys
 sys.path.insert(0,'./..')
@@ -985,7 +985,9 @@ class SR830(LockInAmplifier):
             self._settings[setting]['value'] = value
             
             
-   
+            
+            
+            
 
 
 
@@ -994,8 +996,6 @@ class SR830(LockInAmplifier):
 
 
 
-
-         
 
 class SR830_Ethernet(LockInAmplifier):
     #host IP has to be adapted by hand at end of __init__
@@ -1278,8 +1278,7 @@ class SR830_Ethernet(LockInAmplifier):
     def _send(self, value):
         #encoded_value = ('%s\n' % value).encode('ascii')
         encoded_value = (value+"\n").encode("ascii")
-        self.socket.send(encoded_value)   
-            
+        self.socket.send(encoded_value)    
         
     def _recv(self, byte_num):
         value = self.socket.recv(byte_num)
@@ -1405,6 +1404,7 @@ class SR830_Ethernet(LockInAmplifier):
         time.sleep(3*sleep)
         for i in range(avg):
             signal.append(self.read_value(var))
+            print(signal) #!!!!
             val = sum(signal) / avg
         return val
 
@@ -1966,10 +1966,11 @@ class SR830_Ethernet(LockInAmplifier):
                                 '\n Local value of {} changed from {} '
                                 'to {}\n'.format(setting, old_val, value))
             self._settings[setting]['value'] = value
-
-
-
-
+            
+            
+            
+            
+            
 
 
 if __name__ == '__main__':

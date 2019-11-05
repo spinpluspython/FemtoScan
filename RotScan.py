@@ -33,8 +33,13 @@ class Rotscan_measurements(object):
         self.lockin_amplifier.connect()
         #self.cryostat.connect()
         self.rot_stage.connect()
+        value = self.lockin_amplifier.query('++ver', 1024)
+                    #'++ver\r\n')
+        print(value)
         time.sleep(2)  # TODO: move to inside stage class
-
+        
+        
+        
     def create_points(self, N):
         Points = []
         step = 360 / N
@@ -70,11 +75,12 @@ class Rotscan_measurements(object):
             print("moved")
             #time.sleep(3*time_constant)
             x_tmp.append(item)
-            Y.append(self.lockin_amplifier.measure_avg(sleep=1, var=var))
+            Y.append(self.lockin_amplifier.measure_avg(sleep=1, var="Y"))
             print(Y)
             #plt.plot(x_tmp, Y)
             #plt.pause(0.01)
             #fig.canvas.draw()
+        
         self.lockin_amplifier.disconnect()
         #matplotlib.pyplot.plot(X, Y)
         print(X)
@@ -82,6 +88,9 @@ class Rotscan_measurements(object):
         if save:
             self.save(name +'-'+str(N_steps), X, Y)
         return X, Y
+    
+    def readLockin(self):
+        print(self.lockin_amplifier.query("OUTP ? 1"))
     
     
     def temperaturescan_measure(self, name, angle, T_List, save=False, time_constant=1, var='Y'):
@@ -99,6 +108,13 @@ class Rotscan_measurements(object):
         if save:
             self.save(name +'-'+str(N_steps), X, Y)
         return X, Y
+    
+    def test(self):
+        print(self.lockin_amplifier.measure_avg(sleep=1, var='Y'))
+        
+    def measureAverage(self):
+        return self.lockin_amplifier.measure_avg(sleep=1, var='Y')
+        
         
 
     def finish(self):
@@ -111,18 +127,34 @@ class Rotscan_measurements(object):
 def main():
 
     temperature = 290
-    stepnumber =18
+    stepnumber =2
+    
+    data=[]
+    
+    Points = []
+    step = 360 / stepnumber
+    for i in range(0, stepnumber):
+        Points.append(i * step)
+    
     
     meas = Rotscan_measurements()
     meas.init_instruments()
+    #meas.readLockin()
     #or temperature in range(297,305):
      #   meas.cryostat.connect()
       #  meas.cryostat.change_temperature(temperature)
        # meas.cryostat.disconnect()
+    for i in Points:
+        meas.rot_stage.move_absolute(i)
+        data.append(meas.measureAverage())
+    #meas.rot_stage.move_absolute(20)
+    #meas.test()
+    print(data)
+    
     
     file_name = 'test'#+str(temperature)
     #for non room temp un-hashtag here    meas.cryostat.change_temperature(temperature)
-    meas.rotscan_measure(file_name, stepnumber)  
+    #meas.rotscan_measure(file_name, stepnumber)  
     meas.finish()
     
     '''

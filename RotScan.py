@@ -126,8 +126,12 @@ class Rotscan_measurements(object):
 # %%
 def main():
 
+    
+    stepnumber =2  #number of datapoints
+    saveBool = True #False #True
+    filename = 'test'#+str(temperature)
+    
     temperature = 290
-    stepnumber =2
     
     data=[]
     
@@ -150,12 +154,18 @@ def main():
     #meas.rot_stage.move_absolute(20)
     #meas.test()
     print(data)
+    plt.plot(Points, data)
+    plt.show()
     
     
-    file_name = 'test'#+str(temperature)
+    
     #for non room temp un-hashtag here    meas.cryostat.change_temperature(temperature)
     #meas.rotscan_measure(file_name, stepnumber)  
     meas.finish()
+    
+    
+    if saveBool:
+        np.savetxt("D:/RotScanTests/" + filename + '.txt', (Points, data))
     
     '''
     

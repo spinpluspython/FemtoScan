@@ -127,7 +127,7 @@ class Rotscan_measurements(object):
 def main():
 
     
-    stepnumber =2  #number of datapoints
+    stepnumber =8  #number of datapoints
     saveBool = True #False #True
     filename = 'test'#+str(temperature)
     

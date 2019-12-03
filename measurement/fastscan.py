@@ -46,7 +46,10 @@ from instruments.cryostat import ITC503s as Cryostat
 from utilities.math import sech2_fwhm, sin, gaussian_fwhm, gaussian, transient_1expdec, update_average
 from utilities.settings import parse_setting, parse_category, write_setting
 try:
+    raise Exception
     from measurement.cscripts.project import project, project_r0
+    print('Successfully loaded cython projector')
+
 except:
     print('warning: failed loading cython projector, loading python instead')
     from measurement.cscripts.projectPy import project, project_r0

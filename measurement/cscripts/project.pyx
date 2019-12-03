@@ -14,7 +14,7 @@ def project_r0(
         np.ndarray[DTYPE_t, ndim = 1]  dark_control,
         np.ndarray[DTYPE_t, ndim = 1]  reference,
         bint use_dark_control):
-    cdef int n_pts, pos_min, res_size, i, pos
+    cdef int n_pts, pos_min, res_size, i, pos, count
     cdef float r0, val,ref
 
     n_pts = len(spos)
@@ -23,6 +23,8 @@ def project_r0(
 
     cdef np.ndarray[DTYPE_t, ndim = 1] result_val = np.zeros(res_size, dtype=DTYPE)
     cdef np.ndarray[DTYPE_t, ndim = 1] result_ref = np.zeros(res_size, dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim = 1] result_normref = np.zeros(res_size, dtype=DTYPE)
+
     cdef np.ndarray[DTYPE_t, ndim = 1] norm_array = np.zeros(res_size, dtype=DTYPE)
 
 
@@ -47,7 +49,7 @@ def project_r0(
             result_ref[spos[i]-pos_min] += reference[i]
             norm_array[spos[i]-pos_min] += 1.
 
-    r0 = np.mean(result_ref/norm_array)
+    r0 = np.nanmean(result_ref/norm_array)
     return result_val/(norm_array*r0)
 
 

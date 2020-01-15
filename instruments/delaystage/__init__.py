@@ -19,6 +19,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+import logging
+from .generic import DelayStage
+from instruments.delaystage.standa import Standa_8SMC5
+
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 def main():

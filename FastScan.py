@@ -47,7 +47,9 @@ def main():
     sys.excepthook = my_exception_hook
 
     # create main logger
-    fileConfig('./cfg/logging_config.ini')
+    # fileConfig('./cfg/logging_config.ini')
+    fileConfig('./SETTINGS.ini')
+
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     logger.debug('Started logger')

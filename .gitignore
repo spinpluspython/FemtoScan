@@ -110,3 +110,5 @@ ENV/
 # PyCharm project settings
 .idea
 
+
+instruments/standa_prove.py

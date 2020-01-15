@@ -43,7 +43,7 @@ except:
 from scipy.optimize import curve_fit
 
 from instruments.cryostat import ITC503s as Cryostat
-from instruments.Standastage import StandaStage_8SMC5
+from instruments.delaystage import Standa_8SMC5
 from utilities.math import sech2_fwhm, sin, gaussian_fwhm, gaussian, transient_1expdec, update_average
 from utilities.settings import parse_setting, parse_category, write_setting
 try:

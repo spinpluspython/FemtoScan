@@ -37,7 +37,7 @@ import logging
 from utilities.exceptions import DeviceNotFoundError
 from instruments.delaystage.generic import DelayStage, StageError
 
-ximc_dir = 'E:/STANDA_TESTS/ximc-2.10.5/ximc/'
+ximc_dir = 'C:/code/standa_stage/ximc-2.10.5/ximc/'
 ximc_package_dir = os.path.join(ximc_dir, "crossplatform", "wrappers", "python")
 sys.path.append(ximc_package_dir)
 if platform.system() == "Windows":
@@ -349,7 +349,7 @@ if __name__ == "__main__":
     sc.connect(0)
     sc.print_device_status()
     print('Current speed settings: {}'.format(sc.speed))
-    setspeed = 900
+    setspeed = 400
     sc.speed = setspeed
     print('Speed changed to {} speed settings reads: {}\n'.format(setspeed,sc.speed))
 
@@ -359,20 +359,20 @@ if __name__ == "__main__":
     sc.move_relative(moveby,unit='ps')
     print('\ncurrent pos: {} ps | {} um| {},{} step \n'.format(sc.position_ps,sc.position_um,*sc.position_step))
     #
-    positions = np.linspace(100,110,1)
-    print(positions)
-    y = []
-    for pos in positions:
-        print('going to pos {}'.format(pos))
-        sc.move_absolute(pos)
-        y.append(sc.position_ps)
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.plot(positions,y)
-    # plt.show()
-    # TODO: try improve precision with accel and decel
-    for vv in zip(positions,y,(y-positions)*1000):
-        print(*vv,sep='  |  ')
-    # print('---- Y ----\n',*y,sep='\n')
-    # print(*positions,sep='\n')
+    # positions = np.linspace(100,110,1)
+    # print(positions)
+    # y = []
+    # for pos in positions:
+    #     print('going to pos {}'.format(pos))
+    #     sc.move_absolute(pos)
+    #     y.append(sc.position_ps)
+    # # import matplotlib.pyplot as plt
+    # # plt.figure()
+    # # plt.plot(positions,y)
+    # # plt.show()
+    # # TODO: try improve precision with accel and decel
+    # for vv in zip(positions,y,(y-positions)*1000):
+    #     print(*vv,sep='  |  ')
+    # # print('---- Y ----\n',*y,sep='\n')
+    # # print(*positions,sep='\n')
     sc.disconnect()

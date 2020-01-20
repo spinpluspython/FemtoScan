@@ -20,6 +20,7 @@
 
 """
 from instruments import generic
+import time
 
 class DelayStage(generic.Instrument):
     def __init__(self):

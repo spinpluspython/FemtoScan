@@ -31,7 +31,7 @@ import time
 import traceback
 
 import h5py
-import nidaqmx
+# import nidaqmx
 import numpy as np
 import xarray as xr
 from PyQt5 import QtCore
